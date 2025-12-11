@@ -11,7 +11,9 @@ let db;
 const collections = {};
 let databaseError = false;
 
-MongoClient.connect(config.mongoUrl)
+const client = new MongoClient(config.mongoUrl);
+
+client.connect()
     .then(client => {
         db = client.db(config.dbName);
         collections.posts = db.collection("posts");
@@ -21,6 +23,7 @@ MongoClient.connect(config.mongoUrl)
     })
     .catch(err => {
         databaseError = err;
+        console.log(new Date(), err);
         app.listen(app.get("port"), () => console.log("Running on port 3000"));
     });
 
