@@ -1,18 +1,18 @@
-(function() {
-    angular.module("geosilesia").component("map", {
+(function () {
+    angular.module('geosilesia').component('map', {
         bindings: {
-            markersModels: "<",
-            currentResult: "<",
-            markerCluster: "<",
-            categories: "<",
-            activeCategory: "@"
+            markersModels: '<',
+            currentResult: '<',
+            markerCluster: '<',
+            categories: '<',
+            activeCategory: '@'
         },
-        controllerAs: "vm",
+        controllerAs: 'vm',
         controller: MapController,
         template: '<div class="search__container__map"></div>'
     });
 
-    MapController.$inject = ["$timeout", "$element", "mapStyle", "mapService"];
+    MapController.$inject = ['$timeout', '$element', 'mapStyle', 'mapService'];
     function MapController($timeout, $element, mapStyle, mapService) {
         var vm = this;
         vm.$onInit = onInit;
@@ -40,7 +40,7 @@
                     changes.currentResult.currentValue !== undefined
                 ) {
                     if (markers && markers.length) {
-                        var resultMarkerArray = markers.filter(function(
+                        var resultMarkerArray = markers.filter(function (
                             marker
                         ) {
                             return (
@@ -53,7 +53,7 @@
                             map.panTo(resultMarkerArray[0].position);
                             google.maps.event.trigger(
                                 resultMarkerArray[0],
-                                "click"
+                                'click'
                             );
                         }
                     }
@@ -71,7 +71,7 @@
                     zoom: 9,
                     scrollwheel: false,
                     draggable: true,
-                    mapTypeId: "styled_map",
+                    mapTypeId: 'styled_map',
                     fullscreenControl: true,
                     zoomControl: true,
                     zoomControlOptions: {
@@ -85,11 +85,11 @@
                     mapTypeControlOptions: {
                         position: google.maps.ControlPosition.LEFT_TOP,
                         mapTypeIds: [
-                            "roadmap",
-                            "satellite",
-                            "hybrid",
-                            "terrain",
-                            "styled_map"
+                            'roadmap',
+                            'satellite',
+                            'hybrid',
+                            'terrain',
+                            'styled_map'
                         ],
                         style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
                     },
@@ -129,11 +129,11 @@
                 if (markerCluster) {
                     markerCluster.clearMarkers();
                 }
-                if (vm.markerCluster) {
-                    markerCluster = new MarkerClusterer(map, markers, {
-                        imagePath: "images/markers/"
-                    });
-                }
+                // if (vm.markerCluster) {
+                //     markerCluster = new MarkerClusterer(map, markers, {
+                //         imagePath: "images/markers/"
+                //     });
+                // }
                 mapService.setBounds(markers, map);
             }
         }

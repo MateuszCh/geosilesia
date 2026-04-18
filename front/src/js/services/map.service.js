@@ -1,21 +1,22 @@
-(function() {
-    angular.module("geosilesia").service("mapService", [
-        "gmapConfig",
-        "$q",
-        function(gmapConfig, $q) {
+(function () {
+    angular.module('geosilesia').service('mapService', [
+        'gmapConfig',
+        '$q',
+        function (gmapConfig, $q) {
             var _googleMapsScriptAdded = false;
 
             function loadGoogleMaps() {
                 if (!isGoogleMapsScriptAdded()) {
-                    var script = document.createElement("script");
+                    var script = document.createElement('script');
                     script.src =
-                        "https://maps.googleapis.com/maps/api/js?key=" +
-                        gmapConfig.key;
-                    script.onerror = function() {
+                        'https://maps.googleapis.com/maps/api/js?key=' +
+                        gmapConfig.key +
+                        '&libraries=marker';
+                    script.onerror = function () {
                         _googleMapsScriptAdded = false;
                     };
                     document
-                        .getElementsByTagName("head")[0]
+                        .getElementsByTagName('head')[0]
                         .appendChild(script);
                     _googleMapsScriptAdded = true;
                 }
@@ -35,13 +36,16 @@
             function getCoordinates(input) {
                 var q = $q.defer();
                 var geocoder = new google.maps.Geocoder();
-                geocoder.geocode({ address: input }, function(results, status) {
-                    if (status === "OK") {
-                        q.resolve(results[0]);
-                    } else {
-                        q.reject(status);
+                geocoder.geocode(
+                    { address: input },
+                    function (results, status) {
+                        if (status === 'OK') {
+                            q.resolve(results[0]);
+                        } else {
+                            q.reject(status);
+                        }
                     }
-                });
+                );
                 return q.promise;
             }
 
@@ -56,19 +60,19 @@
                         )
                     },
                     address: address.formatted_address,
-                    type: "home",
+                    type: 'home',
                     id: 0
                 };
             }
 
             function sortMarkersByDistance(markers, lat, lng) {
-                return setDistance(markers, lat, lng).sort(function(a, b) {
+                return setDistance(markers, lat, lng).sort(function (a, b) {
                     return a.distance - b.distance;
                 });
             }
 
             function setDistance(markers, lat, lng) {
-                return markers.map(function(marker) {
+                return markers.map(function (marker) {
                     marker.distance = getDistance(
                         lat,
                         lng,
@@ -99,7 +103,7 @@
             function createMap(element, mapOptions, mapStyleOptions) {
                 var map = new google.maps.Map(element, mapOptions);
                 map.mapTypes.set(
-                    "styled_map",
+                    'styled_map',
                     new google.maps.StyledMapType(
                         mapStyleOptions.style,
                         mapStyleOptions.name
@@ -109,14 +113,14 @@
             }
 
             function deleteMarkers(markers) {
-                markers.forEach(function(marker) {
+                markers.forEach(function (marker) {
                     marker.setMap(null);
                 });
             }
 
             function setBounds(markers, map) {
                 var bounds = new google.maps.LatLngBounds();
-                markers.forEach(function(marker) {
+                markers.forEach(function (marker) {
                     bounds.extend(marker.getPosition());
                 });
                 // if (bounds.b.f < bounds.b.b) {
@@ -138,7 +142,7 @@
             ) {
                 var infowindow = new google.maps.InfoWindow();
                 var markers = [];
-                markersModels.forEach(function(markerModel) {
+                markersModels.forEach(function (markerModel) {
                     if (
                         !(
                             markerModel.position.lat &&
@@ -159,8 +163,8 @@
                         !markerModel.categories ||
                         !markerModel.categories.length
                     ) {
-                        icon = "";
-                    } else if (!activeCategory || activeCategory === "all") {
+                        icon = '';
+                    } else if (!activeCategory || activeCategory === 'all') {
                         icon = categories[markerModel.categories[0]].icon;
                     } else {
                         icon = categories[activeCategory].icon;
@@ -169,52 +173,52 @@
                     var marker = new google.maps.Marker({
                         position: position,
                         map: map,
-                        title: markerModel.title || "",
+                        title: markerModel.title || '',
                         icon: icon,
                         id: markerModel.id
                     });
                     google.maps.event.addListener(
                         marker,
-                        "click",
-                        (function(marker) {
-                            return function() {
-                                if (markerModel.type === "home") {
+                        'click',
+                        (function (marker) {
+                            return function () {
+                                if (markerModel.type === 'home') {
                                     infowindow.setContent(
                                         "<div class='marker-description'>" +
                                             "<p class='marker-description__text'>" +
                                             markerModel.address +
-                                            "</p>" +
+                                            '</p>' +
                                             "<p class='marker-description__text'>" +
                                             markerModel.position.lat +
-                                            ", " +
+                                            ', ' +
                                             markerModel.position.lng +
-                                            "</p>" +
-                                            "</div>"
+                                            '</p>' +
+                                            '</div>'
                                     );
                                 } else {
                                     infowindow.setContent(
                                         "<div class='marker-description'>" +
                                             "<p class='marker-description__text'>" +
                                             markerModel.title +
-                                            "</p>" +
+                                            '</p>' +
                                             "<p class='marker-description__text'>" +
                                             markerModel.position.lat +
-                                            ", " +
+                                            ', ' +
                                             markerModel.position.lng +
-                                            "</p>" +
+                                            '</p>' +
                                             (markerModel.distance
                                                 ? "<p class='marker-description__text'>Odległość: " +
                                                   markerModel.distance.toFixed(
                                                       2
                                                   ) +
-                                                  " km</p>"
-                                                : "") +
+                                                  ' km</p>'
+                                                : '') +
                                             (markerModel.hyperlink
-                                                ? "<a href=" +
+                                                ? '<a href=' +
                                                   markerModel.hyperlink +
                                                   " target='_blank'>Więcej</a>"
-                                                : "") +
-                                            "</div>"
+                                                : '') +
+                                            '</div>'
                                     );
                                 }
                                 infowindow.open(map, marker);
@@ -238,13 +242,13 @@
 
                 var allowedCategories = {};
 
-                markerModels.forEach(function(markerModel) {
+                markerModels.forEach(function (markerModel) {
                     if (
                         markerModel.data &&
                         markerModel.data.categories &&
                         markerModel.data.categories.length
                     ) {
-                        markerModel.data.categories.forEach(function(
+                        markerModel.data.categories.forEach(function (
                             categoryName
                         ) {
                             if (allowedCategories[categoryName]) {
@@ -257,7 +261,7 @@
                 });
 
                 var categories = {};
-                iconModels.forEach(function(iconModel) {
+                iconModels.forEach(function (iconModel) {
                     if (
                         iconModel.data &&
                         iconModel.data.category &&
@@ -279,7 +283,7 @@
                 }
 
                 return markerModels
-                    .filter(function(marker) {
+                    .filter(function (marker) {
                         return (
                             marker.title &&
                             marker.data &&
@@ -287,7 +291,7 @@
                             marker.data.long
                         );
                     })
-                    .map(function(marker) {
+                    .map(function (marker) {
                         return {
                             title: marker.title,
                             hyperlink: marker.data.link,

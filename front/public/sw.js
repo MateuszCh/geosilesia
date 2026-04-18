@@ -1,7 +1,7 @@
 importScripts('/js/idb.js');
 
-var CACHE_STATIC_NAME = 'static-v19';
-var CACHE_DYNAMIC_NAME = 'dynamic-v19';
+var CACHE_STATIC_NAME = 'static-v20';
+var CACHE_DYNAMIC_NAME = 'dynamic-v20';
 var STATIC_FILES = [
     '/',
     'index.html',
@@ -28,7 +28,7 @@ var STATIC_FILES = [
     '/html/components/title-and-text.html'
 ];
 
-var dbPromise = idb.open('geosilesia', 1, function(db) {
+var dbPromise = idb.open('geosilesia', 1, function (db) {
     if (!db.objectStoreNames.contains('pages')) {
         db.createObjectStore('pages', { keyPath: 'pageUrl' });
     }
@@ -42,7 +42,7 @@ var dbPromise = idb.open('geosilesia', 1, function(db) {
     }
 });
 function writeData(st, data) {
-    return dbPromise.then(function(db) {
+    return dbPromise.then(function (db) {
         var tx = db.transaction(st, 'readwrite');
         var store = tx.objectStore(st);
         store.put(data);
@@ -51,7 +51,7 @@ function writeData(st, data) {
 }
 
 function clearData(st) {
-    return dbPromise.then(function(db) {
+    return dbPromise.then(function (db) {
         var tx = db.transaction(st, 'readwrite');
         tx.objectStore(st).clear();
         return tx.complete;
@@ -59,7 +59,7 @@ function clearData(st) {
 }
 
 function clearPostsByType(type) {
-    return dbPromise.then(function(db) {
+    return dbPromise.then(function (db) {
         var tx = db.transaction('posts', 'readwrite');
         var store = tx.objectStore('posts');
         var index = store.index('type');
@@ -75,19 +75,19 @@ function clearPostsByType(type) {
     });
 }
 
-self.addEventListener('install', function(event) {
+self.addEventListener('install', function (event) {
     event.waitUntil(
-        caches.open(CACHE_STATIC_NAME).then(function(cache) {
+        caches.open(CACHE_STATIC_NAME).then(function (cache) {
             cache.addAll(STATIC_FILES);
         })
     );
 });
 
-self.addEventListener('activate', function(event) {
+self.addEventListener('activate', function (event) {
     event.waitUntil(
-        caches.keys().then(function(keysList) {
+        caches.keys().then(function (keysList) {
             return Promise.all(
-                keysList.map(function(key) {
+                keysList.map(function (key) {
                     if (
                         key !== CACHE_STATIC_NAME &&
                         key !== CACHE_DYNAMIC_NAME
@@ -101,7 +101,7 @@ self.addEventListener('activate', function(event) {
     return self.clients.claim();
 });
 
-self.addEventListener('fetch', function(event) {
+self.addEventListener('fetch', function (event) {
     if (
         event.request.url.indexOf('https://maps.') == 0 ||
         event.request.url.indexOf('googleapis.com') > -1
@@ -111,21 +111,21 @@ self.addEventListener('fetch', function(event) {
         event.request.url.indexOf(self.location.origin + '/api/appData') > -1
     ) {
         event.respondWith(
-            fetch(event.request).then(function(response) {
+            fetch(event.request).then(function (response) {
                 response
                     .clone()
                     .json()
-                    .then(function(res) {
+                    .then(function (res) {
                         if (res.pages && res.pages.length) {
-                            clearData('pages').then(function() {
-                                res.pages.forEach(function(page) {
+                            clearData('pages').then(function () {
+                                res.pages.forEach(function (page) {
                                     writeData('pages', page);
                                 });
                             });
                         }
                         if (res.posts && res.posts.length) {
-                            clearData('posts').then(function() {
-                                res.posts.forEach(function(post) {
+                            clearData('posts').then(function () {
+                                res.posts.forEach(function (post) {
                                     writeData('posts', post);
                                 });
                             });
@@ -136,7 +136,7 @@ self.addEventListener('fetch', function(event) {
         );
     } else if (event.request.url.indexOf(self.location.origin + '/api') > -1) {
         event.respondWith(
-            fetch(event.request).then(function(res) {
+            fetch(event.request).then(function (res) {
                 var clonedRes = res.clone();
                 var typeOfRequest =
                     event.request.url.indexOf('/api/page') > -1
@@ -145,12 +145,12 @@ self.addEventListener('fetch', function(event) {
                         ? 'posts'
                         : '';
                 if (typeOfRequest) {
-                    clonedRes.json().then(function(data) {
+                    clonedRes.json().then(function (data) {
                         if (typeOfRequest === 'posts') {
                             var type = event.request.url.substring(
                                 event.request.url.lastIndexOf('/') + 1
                             );
-                            clearPostsByType(type).then(function() {
+                            clearPostsByType(type).then(function () {
                                 for (var key in data) {
                                     writeData(typeOfRequest, data[key]);
                                 }
@@ -177,10 +177,10 @@ self.addEventListener('fetch', function(event) {
                     self.location.origin + '/uploads/'
                 ) === -1
                 ? caches.match('index.html')
-                : caches.match(event.request).then(function(response) {
+                : caches.match(event.request).then(function (response) {
                       return (
                           response ||
-                          fetch(event.request).then(function(res) {
+                          fetch(event.request).then(function (res) {
                               var cacheToOpen = isInArray(
                                   event.request.url,
                                   STATIC_FILES
@@ -189,7 +189,7 @@ self.addEventListener('fetch', function(event) {
                                   : CACHE_DYNAMIC_NAME;
                               return caches
                                   .open(cacheToOpen)
-                                  .then(function(cache) {
+                                  .then(function (cache) {
                                       if (
                                           event.request.url.indexOf('http') == 0
                                       ) {

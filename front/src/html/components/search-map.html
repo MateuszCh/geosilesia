@@ -1,60 +1,60 @@
 <div class="homepage-map">
     <div id="search"
-        class="search">
+         class="search">
         <div id="search-form"
-            class="search__form"
-            ng-class="{'search__form--active' : vm.showSearch || !vm.isGoogleMapsAdded()}">
+             class="search__form"
+             ng-class="{'search__form--active' : vm.showSearch || !vm.isGoogleMapsAdded()}">
             <h3 class="search__form__heading"
                 ng-bind="::vm.component.title"></h3>
             <form ng-submit="vm.search()">
                 <div class="search__form__search"
-                    ng-if="vm.isGoogleMapsAdded()">
+                     ng-if="vm.isGoogleMapsAdded()">
                     <input class="search__form__search__input"
-                        ng-model="vm.searchInput"
-                        type="text"
-                        aria-label="Lokalizacja"
-                        placeholder="Wpisz szukaną lokalizację">
+                           ng-model="vm.searchInput"
+                           type="text"
+                           aria-label="Lokalizacja"
+                           placeholder="Wpisz szukaną lokalizację">
                     <button class="search__form__search__button"
-                        ng-class="{'busy': vm.searchStatus.busy}"
-                        type="submit"
-                        aria-label="Szukaj atrakcji geoturystycznych"></button>
+                            ng-class="{'busy': vm.searchStatus.busy}"
+                            type="submit"
+                            aria-label="Szukaj atrakcji geoturystycznych"></button>
                     <p class="search__form__search__message"
-                        ng-if="vm.searchStatus.message"
-                        ng-bind="vm.searchStatus.message"></p>
+                       ng-if="vm.searchStatus.message"
+                       ng-bind="vm.searchStatus.message"></p>
                 </div>
                 <div class="search__form__category">
                     <h3 class="search__form__category__heading">Kategorie</h3>
                     <div class="search__form__category__container"
-                        ng-repeat="category in vm.categories track by category.id">
+                         ng-repeat="category in vm.categories track by category.id">
                         <input class="search__form__category__radio"
-                            type="radio"
-                            ng-attr-id="{{::category.category}}"
-                            ng-model="vm.category"
-                            value="{{::category.category}}"
-                            ng-change="vm.pickCategory()">
+                               type="radio"
+                               ng-attr-id="{{::category.category}}"
+                               ng-model="vm.category"
+                               value="{{::category.category}}"
+                               ng-change="vm.pickCategory()">
                         <label class="search__form__category__label"
-                            ng-attr-for="{{::category.category}}">
+                               ng-attr-for="{{::category.category}}">
                             <span class="search__form__category__label__icon"></span>
                             <span class="search__form__category__label__text"
-                                ng-bind="category.name + ' (' + category.count + ')'"></span>
+                                  ng-bind="category.name + ' (' + category.count + ')'"></span>
                             <img class="search__form__category__label__image"
-                                ng-attr-alt="{{::category.name}}"
-                                style="height:27px; width: 24px;"
-                                ng-src="{{::category.icon}}">
+                                 ng-attr-alt="{{::category.name}}"
+                                 style="height:27px; width: 24px;"
+                                 ng-src="{{::category.icon}}">
                         </label>
                     </div>
                     <div class="search__form__category__container">
                         <input class="search__form__category__radio"
-                            type="radio"
-                            ng-model="vm.category"
-                            value="all"
-                            id="all"
-                            ng-change="vm.pickCategory()">
+                               type="radio"
+                               ng-model="vm.category"
+                               value="all"
+                               id="all"
+                               ng-change="vm.pickCategory()">
                         <label class="search__form__category__label"
-                            for="all">
+                               for="all">
                             <span class="search__form__category__label__icon"></span>
                             <span class="search__form__category__label__text"
-                                ng-bind="'Wszystkie (' + vm.markersCount + ')'"></span>
+                                  ng-bind="'Wszystkie (' + vm.markersCount + ')'"></span>
                         </label>
                     </div>
                 </div>
@@ -63,10 +63,10 @@
                 <h3 class="search__form__results__heading">Obiekty/Produkty</h3>
                 <div class="search__form__results__container">
                     <div class="result"
-                        ng-class="{'cursor-pointer': vm.isGoogleMapsAdded()}"
-                        ng-repeat="result in vm.selectedMarkers track by result.id"
-                        ng-if="::!result.type"
-                        ng-click="vm.isGoogleMapsAdded() ? vm.setCurrentResult(result.id) : null">
+                         ng-class="{'cursor-pointer': vm.isGoogleMapsAdded()}"
+                         ng-repeat="result in vm.selectedMarkers track by result.id"
+                         ng-if="::!result.type"
+                         ng-click="vm.isGoogleMapsAdded() ? vm.setCurrentResult(result.id) : null">
                         <h4 class="result__heading"
                             ng-bind="::result.title"></h4>
                         <div class="result__container">
@@ -76,44 +76,45 @@
                                     <span ng-bind="::result.position.lng"></span>
                                 </p> -->
                                 <p class="result__container__left__address"
-                                    ng-bind="::result.place"
-                                    ng-if="::result.place"></p>
+                                   ng-bind="::result.place"
+                                   ng-if="::result.place"></p>
                             </div>
                             <div class="result__container__right">
                                 <a class="result__container__right__directions"
-                                    ng-href="{{::'https://www.google.com/maps/dir/Current+Location/' + result.position.lat + ',' + result.position.lng}}"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    ng-click="$event.stopPropagation()">Dojazd</a>
+                                   ng-href="{{::'https://www.google.com/maps/dir/Current+Location/' + result.position.lat + ',' + result.position.lng}}"
+                                   target="_blank"
+                                   rel="noreferrer"
+                                   ng-click="$event.stopPropagation()">Dojazd</a>
                             </div>
                         </div>
                         <p class="result__distance"
-                            ng-if="::result.distance">Odległość:
-                            <span ng-bind="::result.distance | number : 2"></span> km</p>
+                           ng-if="::result.distance">Odległość:
+                            <span ng-bind="::result.distance | number : 2"></span> km
+                        </p>
                     </div>
                     <div class="search__form__results__container__show-more">
                         <button class="search__form__results__container__show-more__button"
-                            ng-click="vm.increaseSearchQty()"
-                            ng-if="vm.showMore">Pokaż wiecęj</button>
+                                ng-click="vm.increaseSearchQty()"
+                                ng-if="vm.showMore">Pokaż wiecęj</button>
                     </div>
                 </div>
 
             </div>
             <div class="search__form__activate"
-                ng-if="vm.isGoogleMapsAdded()"
-                ng-click="vm.toggleSearchPanel()">
+                 ng-if="vm.isGoogleMapsAdded()"
+                 ng-click="vm.toggleSearchPanel()">
                 <img class="search__form__activate__image"
-                    alt="otwórz panel wyszukiwania atrakcji geoturystycznych"
-                    src="images/search-icon.png">
+                     alt="otwórz panel wyszukiwania atrakcji geoturystycznych"
+                     src="images/search-icon.png">
             </div>
         </div>
         <map class="search__container"
-            ng-class="{'search__container--smaller' : vm.showSearch}"
-            ng-if="vm.isGoogleMapsAdded()"
-            markers-models="vm.selectedMarkers"
-            categories="vm.categories"
-            active-category="{{vm.category}}"
-            current-result="vm.currentResult"
-            marker-cluster="::vm.component.marker_cluster"></map>
+             ng-class="{'search__container--smaller' : vm.showSearch}"
+             ng-if="vm.isGoogleMapsAdded()"
+             markers-models="vm.selectedMarkers"
+             categories="vm.categories"
+             active-category="{{vm.category}}"
+             current-result="vm.currentResult"
+             marker-cluster="::vm.component.marker_cluster"></map>
     </div>
 </div>
