@@ -11,14 +11,31 @@
                     script.src =
                         'https://maps.googleapis.com/maps/api/js?key=' +
                         gmapConfig.key +
-                        '&libraries=marker';
+                        '&loading=async';
+                    script.async = true;
                     script.onerror = function () {
                         _googleMapsScriptAdded = false;
+                    };
+                    script.onload = function () {
+                        // _googleMapsScriptAdded = true;
+                        var markerClustererScript =
+                            document.createElement('script');
+                        markerClustererScript.src =
+                            'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+                        markerClustererScript.async = true;
+                        markerClustererScript.onload = function () {
+                            _googleMapsScriptAdded = true;
+                        };
+                        markerClustererScript.onerror = function () {
+                            _googleMapsScriptAdded = true;
+                        };
+                        document
+                            .getElementsByTagName('head')[0]
+                            .appendChild(markerClustererScript);
                     };
                     document
                         .getElementsByTagName('head')[0]
                         .appendChild(script);
-                    _googleMapsScriptAdded = true;
                 }
             }
 
@@ -109,6 +126,7 @@
                         mapStyleOptions.name
                     )
                 );
+                console.log('map', map);
                 return map;
             }
 
@@ -169,7 +187,6 @@
                     } else {
                         icon = categories[activeCategory].icon;
                     }
-
                     var marker = new google.maps.Marker({
                         position: position,
                         map: map,
