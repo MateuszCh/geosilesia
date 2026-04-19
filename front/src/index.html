@@ -7,36 +7,36 @@
     <base href="/">
     <title>Geosilesia</title>
     <link rel="shortcut icon"
-        href="/images/favicon.ico"
-        type="image/x-icon">
+          href="/images/favicon.ico"
+          type="image/x-icon">
     <meta name="description"
-        content="GeoSilesia to „Edukacyjno-informacyjny serwis internetowy o dziedzictwie geologicznym, geomorfologicznym i poprzemysłowym województwa śląskiego”.">
+          content="GeoSilesia to „Edukacyjno-informacyjny serwis internetowy o dziedzictwie geologicznym, geomorfologicznym i poprzemysłowym województwa śląskiego”.">
     <meta name="viewport"
-        content="width=device-width, initial-scale=1">
+          content="width=device-width, initial-scale=1">
     <meta name="theme-color"
-        content="#28293e" />
+          content="#28293e" />
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700|Poiret+One&subset=latin-ext"
-        rel="stylesheet">
+          rel="stylesheet">
     <!-- inject:css -->
     <!-- endinject -->
     <link rel="manifest"
-        href="/manifest.json">
+          href="/manifest.json">
 </head>
 
 <body ng-app="geosilesia"
-    ng-controller="MainController">
+      ng-controller="MainController">
     <header></header>
     <div ng-view
-        class="fade"
-        id="page"></div>
+         class="fade"
+         id="page"></div>
     <button class="button-up"
-        id="scroll"
-        ng-class="{'scrolled' : scrolled}"
-        style="transform: scale(0)"
-        du-smooth-scroll="page">
+            id="scroll"
+            ng-class="{'scrolled' : scrolled}"
+            style="transform: scale(0)"
+            du-smooth-scroll="page">
         <img class="button-up__image"
-            alt="przewiń do góry"
-            src="images/arrow.svg">
+             alt="przewiń do góry"
+             src="images/arrow.svg">
     </button>
     <noscript class="noscript">
         <h1 class="header__logo__heading">GeoSilesia</h1>

@@ -129,12 +129,50 @@
                 if (markerCluster) {
                     markerCluster.clearMarkers();
                 }
-                // if (vm.markerCluster) {
-                //     markerCluster = new MarkerClusterer(map, markers, {
-                //         imagePath: "images/markers/"
-                //     });
-                // }
+                if (vm.markerCluster && window.markerClusterer) {
+                    markerCluster = new markerClusterer.MarkerClusterer({
+                        map: map,
+                        markers: markers,
+                        algorithm: new markerClusterer.SuperClusterAlgorithm({
+                            radius: 120,
+                            maxZoom: 15
+                        }),
+                        renderer: {
+                            render: function (i) {
+                                var length = i.markers.length;
+                                return new google.maps.Marker({
+                                    position: i.position,
+                                    label: {
+                                        text: i.count.toString(),
+                                        color: 'white',
+                                        fontSize: '12px'
+                                    },
+                                    icon: {
+                                        url: getMarkerClustererImage(length),
+                                        scaledSize: new google.maps.Size(60, 60)
+                                    },
+                                    zIndex:
+                                        Number(google.maps.Marker.MAX_ZINDEX) +
+                                        i.count
+                                });
+                            }
+                        }
+                    });
+                }
                 mapService.setBounds(markers, map);
+            }
+        }
+
+        function getMarkerClustererImage(length) {
+            switch (true) {
+                case length < 10:
+                    return '/images/markers/1.png';
+                case length < 100:
+                    return '/images/markers/2.png';
+                case length < 1000:
+                    return '/images/markers/3.png';
+                default:
+                    return '/images/markers/4.png';
             }
         }
     }

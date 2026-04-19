@@ -1,7 +1,7 @@
 importScripts('/js/idb.js');
 
-var CACHE_STATIC_NAME = 'static-v20';
-var CACHE_DYNAMIC_NAME = 'dynamic-v20';
+var CACHE_STATIC_NAME = 'static-v22';
+var CACHE_DYNAMIC_NAME = 'dynamic-v22';
 var STATIC_FILES = [
     '/',
     'index.html',
@@ -104,7 +104,8 @@ self.addEventListener('activate', function (event) {
 self.addEventListener('fetch', function (event) {
     if (
         event.request.url.indexOf('https://maps.') == 0 ||
-        event.request.url.indexOf('googleapis.com') > -1
+        event.request.url.indexOf('googleapis.com') > -1 ||
+        event.request.url.indexOf('markerclusterer') > -1
     ) {
         event.respondWith(fetch(event.request));
     } else if (

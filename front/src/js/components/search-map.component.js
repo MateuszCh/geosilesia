@@ -1,21 +1,21 @@
-(function() {
-    angular.module("geosilesia").component("searchMap", {
-        templateUrl: "html/components/search-map.html",
-        controllerAs: "vm",
+(function () {
+    angular.module('geosilesia').component('searchMap', {
+        templateUrl: 'html/components/search-map.html',
+        controllerAs: 'vm',
         controller: SearchMapController,
         bindings: {
-            component: "<"
+            component: '<'
         }
     });
 
     SearchMapController.$inject = [
-        "$q",
-        "$document",
-        "$element",
-        "pwaService",
-        "resourceService",
-        "mapService",
-        "$timeout"
+        '$q',
+        '$document',
+        '$element',
+        'pwaService',
+        'resourceService',
+        'mapService',
+        '$timeout'
     ];
 
     function SearchMapController(
@@ -29,19 +29,19 @@
     ) {
         var vm = this;
         var searchQty;
-        var searchForm = document.getElementById("search-form");
+        var searchForm = document.getElementById('search-form');
         var markers = [];
         var searchStatusTimeout;
 
         vm.$onInit = onInit;
         vm.searchStatus = {
             busy: false,
-            message: ""
+            message: ''
         };
-        vm.category = "all";
+        vm.category = 'all';
         vm.showSearch = false;
         vm.showMore = false;
-        vm.searchInput = "";
+        vm.searchInput = '';
         vm.currentResult = undefined;
 
         vm.dataLoaded = false;
@@ -56,18 +56,18 @@
         function onInit() {
             if (pwaService.isAvailable()) {
                 $q.all([
-                    resourceService.loadModelsFromIDB("posts", "marker"),
-                    resourceService.loadModelsFromIDB("posts", "icon")
-                ]).then(function(posts) {
+                    resourceService.loadModelsFromIDB('posts', 'marker'),
+                    resourceService.loadModelsFromIDB('posts', 'icon')
+                ]).then(function (posts) {
                     if (!vm.dataLoaded && posts[0] && posts[1]) {
                         onLoad(posts[0], posts[1]);
                     }
                 });
             }
             $q.all([
-                resourceService.loadModelsFromNetwork("posts", "marker"),
-                resourceService.loadModelsFromNetwork("posts", "icon")
-            ]).then(function(posts) {
+                resourceService.loadModelsFromNetwork('posts', 'marker'),
+                resourceService.loadModelsFromNetwork('posts', 'icon')
+            ]).then(function (posts) {
                 if (posts[0].data && posts[1].data) {
                     vm.dataLoaded = true;
                     mapService.loadGoogleMaps();
@@ -81,7 +81,7 @@
 
             markers = mapService.getFormattedMarkers(markerModels);
             vm.markersCount = markers.length;
-            vm.selectedMarkers = angular.copy(markers).sort(function(a, b) {
+            vm.selectedMarkers = angular.copy(markers).sort(function (a, b) {
                 return b.position.lat - a.position.lat;
             });
         }
@@ -96,25 +96,26 @@
 
         function search() {
             $timeout.cancel(searchStatusTimeout);
-            vm.searchStatus.message = "";
+            vm.searchStatus.message = '';
             if (vm.searchInput) {
                 vm.searchStatus.busy = true;
                 mapService
                     .getCoordinates(vm.searchInput)
-                    .then(function(result) {
+                    .then(function (result) {
                         searchQty = 11;
-                        vm.category = "";
+                        vm.category = '';
                         if (window.innerWidth < 850 && vm.isGoogleMapsAdded) {
                             $document.scrollToElementAnimated($element);
                         }
 
                         var location = mapService.getLocationDetails(result);
 
-                        vm.markersSortedByDistance = mapService.sortMarkersByDistance(
-                            markers,
-                            location.position.lat,
-                            location.position.lng
-                        );
+                        vm.markersSortedByDistance =
+                            mapService.sortMarkersByDistance(
+                                markers,
+                                location.position.lat,
+                                location.position.lng
+                            );
 
                         vm.markersSortedByDistance.unshift(location);
                         nearestPlaces();
@@ -122,20 +123,20 @@
                         vm.currentResult = undefined;
                         vm.searchStatus.busy = false;
                     })
-                    .catch(function(err) {
-                        if (err === "ZERO_RESULTS") {
+                    .catch(function (err) {
+                        if (err === 'ZERO_RESULTS') {
                             vm.searchStatus.message =
-                                "Lokalizacja nie została znaleziona";
+                                'Lokalizacja nie została znaleziona';
                         }
                         vm.searchStatus.busy = false;
-                        searchStatusTimeout = $timeout(function() {
-                            vm.searchStatus.message = "";
+                        searchStatusTimeout = $timeout(function () {
+                            vm.searchStatus.message = '';
                         }, 5000);
                     });
             } else {
-                vm.searchStatus.message = "Proszę wpisać lokalizację";
-                searchStatusTimeout = $timeout(function() {
-                    vm.searchStatus.message = "";
+                vm.searchStatus.message = 'Proszę wpisać lokalizację';
+                searchStatusTimeout = $timeout(function () {
+                    vm.searchStatus.message = '';
                 }, 5000);
             }
         }
@@ -156,10 +157,10 @@
             vm.showMore = false;
             vm.currentResult = undefined;
             var selectedMarkers = [];
-            if (vm.category === "all") {
+            if (vm.category === 'all') {
                 selectedMarkers = angular.copy(markers);
             } else {
-                markers.forEach(function(marker) {
+                markers.forEach(function (marker) {
                     if (
                         marker.categories &&
                         marker.categories.length &&
@@ -170,7 +171,7 @@
                 });
             }
 
-            vm.selectedMarkers = selectedMarkers.sort(function(a, b) {
+            vm.selectedMarkers = selectedMarkers.sort(function (a, b) {
                 return b.position.lat - a.position.lat;
             });
             if (window.innerWidth < 850 && vm.isGoogleMapsAdded) {
