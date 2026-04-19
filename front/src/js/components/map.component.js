@@ -134,7 +134,7 @@
                         map: map,
                         markers: markers,
                         algorithm: new markerClusterer.SuperClusterAlgorithm({
-                            radius: 80,
+                            radius: 120,
                             maxZoom: 15
                         }),
                         renderer: {

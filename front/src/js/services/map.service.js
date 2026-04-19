@@ -5,14 +5,15 @@
         function (gmapConfig, $q) {
             var _googleMapsScriptAdded = false;
 
+            var _isLoading = false;
+
             function loadGoogleMaps() {
-                if (!isGoogleMapsScriptAdded()) {
+                if (!isGoogleMapsScriptAdded() && !_isLoading) {
+                    _isLoading = true;
                     var script = document.createElement('script');
                     script.src =
                         'https://maps.googleapis.com/maps/api/js?key=' +
-                        gmapConfig.key +
-                        '&loading=async';
-                    script.async = true;
+                        gmapConfig.key;
                     script.onerror = function () {
                         _googleMapsScriptAdded = false;
                     };
@@ -126,7 +127,6 @@
                         mapStyleOptions.name
                     )
                 );
-                console.log('map', map);
                 return map;
             }
 
