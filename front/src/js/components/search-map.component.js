@@ -53,7 +53,13 @@
         vm.setCurrentResult = setCurrentResult;
         vm.isGoogleMapsAdded = mapService.isGoogleMapsScriptAdded;
 
+        var resultsQty = 10;
+
         function onInit() {
+            var numberOfResults = vm.component.number_results;
+            if (numberOfResults) {
+                resultsQty = numberOfResults;
+            }
             if (pwaService.isAvailable()) {
                 $q.all([
                     resourceService.loadModelsFromIDB('posts', 'marker'),
@@ -102,7 +108,7 @@
                 mapService
                     .getCoordinates(vm.searchInput)
                     .then(function (result) {
-                        searchQty = 11;
+                        searchQty = resultsQty + 1;
                         vm.category = '';
                         if (window.innerWidth < 850 && vm.isGoogleMapsAdded) {
                             $document.scrollToElementAnimated($element);
@@ -146,7 +152,7 @@
         }
 
         function increaseSearchQty() {
-            searchQty = searchQty + 10;
+            searchQty = searchQty + resultsQty;
             nearestPlaces();
             if (searchQty > vm.markersSortedByDistance.length) {
                 vm.showMore = false;
