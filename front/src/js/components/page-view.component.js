@@ -8,9 +8,9 @@
         }
     });
 
-    PageViewController.$inject = ["$location", "pwaService", "resourceService"];
+    PageViewController.$inject = ["$location", "pwaService", "resourceService", "seoService"];
 
-    function PageViewController($location, pwaService, resourceService) {
+    function PageViewController($location, pwaService, resourceService, seoService) {
         var vm = this;
         vm.$onInit = onInit;
         vm.pwaIsAvailable = pwaService.isAvailable();
@@ -46,6 +46,11 @@
                 vm.page = page;
             }
             vm.loaded = true;
+            if (vm.page && vm.page.rows && vm.page.rows.length) {
+                seoService.applyForPage(vm.page);
+            } else {
+                seoService.applyNotFound();
+            }
         }
     }
 })();

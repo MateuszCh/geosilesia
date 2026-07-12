@@ -1,10 +1,12 @@
 .idea/
+.DS_Store
 front/node_modules/
 front/public/css
 front/public/html
 front/public/js
 front/public/index.html
 front/public/images
+front/public/sitemap.xml
 front/package-lock.json
 node_modules/
 package-lock.json

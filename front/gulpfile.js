@@ -10,6 +10,7 @@ const gulp = require('gulp'),
     htmlmin = require('gulp-htmlmin'),
     cleancss = require('gulp-clean-css'),
     series = require('stream-series'),
+    fs = require('fs'),
     // nodemon = require('gulp-nodemon'),
     del = require('del');
 
@@ -106,6 +107,67 @@ gulp.task('images', function () {
         .pipe(gulp.dest(paths.publicIMAGES));
 });
 
+// Generuje public/sitemap.xml oraz uzupełnia public/robots.txt o dyrektywę Sitemap.
+// Konfiguracja przez zmienne środowiskowe:
+//   SITE_URL  – bezwzględny adres produkcyjny (np. https://twoja-domena.pl). Wymagany.
+//   API_URL   – bazowy adres API do pobrania listy stron (domyślnie http://localhost:3000).
+// Task nie przerywa buildu przy braku SITE_URL lub błędzie sieci – wtedy tylko ostrzega.
+gulp.task('seo', async function () {
+    const siteUrl = (process.env.SITE_URL || '').replace(/\/+$/, '');
+    const apiUrl = (process.env.API_URL || 'http://localhost:3000').replace(
+        /\/+$/,
+        ''
+    );
+
+    if (!siteUrl) {
+        console.warn(
+            '[seo] Pominięto generowanie sitemap.xml – ustaw SITE_URL, np. SITE_URL=https://twoja-domena.pl gulp seo'
+        );
+        return;
+    }
+
+    let pageUrls = ['/'];
+    try {
+        const res = await fetch(`${apiUrl}/api/appData/`);
+        const data = await res.json();
+        if (data && Array.isArray(data.pages)) {
+            pageUrls = data.pages
+                .map(p => p && p.pageUrl)
+                .filter(Boolean)
+                .filter((v, i, a) => a.indexOf(v) === i);
+        }
+    } catch (err) {
+        console.warn(
+            `[seo] Nie udało się pobrać listy stron z ${apiUrl}/api/appData/ – sitemap tylko ze stroną główną. (${err.message})`
+        );
+    }
+
+    const urls = pageUrls
+        .map(url => {
+            const loc = `${siteUrl}${url === '/' ? '/' : url}`;
+            return `    <url>\n        <loc>${loc}</loc>\n    </url>`;
+        })
+        .join('\n');
+
+    const sitemap =
+        '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+        urls +
+        '\n</urlset>\n';
+
+    fs.mkdirSync(paths.public, { recursive: true });
+    fs.writeFileSync(`${paths.public}/sitemap.xml`, sitemap);
+
+    const robots =
+        'User-agent: *\nAllow: /\n\nSitemap: ' +
+        `${siteUrl}/sitemap.xml\n`;
+    fs.writeFileSync(`${paths.public}/robots.txt`, robots);
+
+    console.log(
+        `[seo] Zapisano sitemap.xml (${pageUrls.length} URL) oraz robots.txt dla ${siteUrl}`
+    );
+});
+
 gulp.task('copy', gulp.series(gulp.parallel('html', 'css', 'js')));
 
 gulp.task(
@@ -156,7 +218,7 @@ gulp.task(
 
 gulp.task(
     'default',
-    gulp.series(gulp.parallel('images', 'jsLib', 'idbLib', 'inject'))
+    gulp.series(gulp.parallel('images', 'jsLib', 'idbLib', 'inject'), 'seo')
 );
 
 gulp.task('clean', function () {

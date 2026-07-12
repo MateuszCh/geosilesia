@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Sitemap (URL bezwzględny). Uzupełniany przy buildzie przez task `gulp seo`,
+# gdy ustawiona jest zmienna środowiskowa SITE_URL, np.:
+#   SITE_URL=https://twoja-domena.pl gulp seo
+# Sitemap: https://twoja-domena.pl/sitemap.xml
