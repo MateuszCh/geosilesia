@@ -14,6 +14,18 @@ const gulp = require('gulp'),
     // nodemon = require('gulp-nodemon'),
     del = require('del');
 
+// Konfiguracja środowiska (mongoUrl, dbName, siteUrl, apiUrl) – wzorzec w config.example.json.
+// Plik jest w .gitignore, więc może go nie być (np. świeży klon) – wtedy tylko ostrzegamy,
+// żeby jego brak nie ubijał pozostałych tasków.
+let config = {};
+try {
+    config = require('../config.json');
+} catch (err) {
+    console.warn(
+        '[seo] Nie znaleziono config.json w katalogu głównym projektu.'
+    );
+}
+
 const paths = {
     srcHTML: 'src/**/*.html',
     srcTemplates: 'src/html/**/*.html',
@@ -108,20 +120,20 @@ gulp.task('images', function () {
 });
 
 // Generuje public/sitemap.xml oraz uzupełnia public/robots.txt o dyrektywę Sitemap.
-// Konfiguracja przez zmienne środowiskowe:
-//   SITE_URL  – bezwzględny adres produkcyjny (np. https://twoja-domena.pl). Wymagany.
-//   API_URL   – bazowy adres API do pobrania listy stron (domyślnie http://localhost:3000).
-// Task nie przerywa buildu przy braku SITE_URL lub błędzie sieci – wtedy tylko ostrzega.
+// Konfiguracja w config.json (katalog główny projektu):
+//   siteUrl  – bezwzględny adres produkcyjny (np. https://twoja-domena.pl). Wymagany.
+//   apiUrl   – bazowy adres API do pobrania listy stron (domyślnie http://localhost:3000).
+// Task nie przerywa buildu przy braku siteUrl lub błędzie sieci – wtedy tylko ostrzega.
 gulp.task('seo', async function () {
-    const siteUrl = (process.env.SITE_URL || '').replace(/\/+$/, '');
-    const apiUrl = (process.env.API_URL || 'http://localhost:3000').replace(
+    const siteUrl = (config.siteUrl || '').replace(/\/+$/, '');
+    const apiUrl = (config.apiUrl || 'http://localhost:3000').replace(
         /\/+$/,
         ''
     );
 
     if (!siteUrl) {
         console.warn(
-            '[seo] Pominięto generowanie sitemap.xml – ustaw SITE_URL, np. SITE_URL=https://twoja-domena.pl gulp seo'
+            '[seo] Pominięto generowanie sitemap.xml – ustaw "siteUrl" w config.json, np. "https://twoja-domena.pl"'
         );
         return;
     }
@@ -137,14 +149,22 @@ gulp.task('seo', async function () {
                 .filter((v, i, a) => a.indexOf(v) === i);
         }
     } catch (err) {
+        // Przy fetch prawdziwa przyczyna (np. ECONNREFUSED) siedzi w err.cause –
+        // err.message to zawsze ogólne "fetch failed".
+        const cause = (err.cause && err.cause.code) || err.message;
         console.warn(
-            `[seo] Nie udało się pobrać listy stron z ${apiUrl}/api/appData/ – sitemap tylko ze stroną główną. (${err.message})`
+            `[seo] Nie udało się pobrać listy stron z ${apiUrl}/api/appData/ – sitemap tylko ze stroną główną. (${cause})`
         );
+        if (cause === 'ECONNREFUSED') {
+            console.warn(
+                '[seo] Nikt nie słucha pod tym adresem – uruchom serwer (node app.js) albo popraw "apiUrl" w config.json.'
+            );
+        }
     }
 
     const urls = pageUrls
         .map(url => {
-            const loc = `${siteUrl}${url === '/' ? '/' : url}`;
+            const loc = siteUrl + (url.charAt(0) === '/' ? url : `/${url}`);
             return `    <url>\n        <loc>${loc}</loc>\n    </url>`;
         })
         .join('\n');
@@ -159,8 +179,7 @@ gulp.task('seo', async function () {
     fs.writeFileSync(`${paths.public}/sitemap.xml`, sitemap);
 
     const robots =
-        'User-agent: *\nAllow: /\n\nSitemap: ' +
-        `${siteUrl}/sitemap.xml\n`;
+        'User-agent: *\nAllow: /\n\nSitemap: ' + `${siteUrl}/sitemap.xml\n`;
     fs.writeFileSync(`${paths.public}/robots.txt`, robots);
 
     console.log(
