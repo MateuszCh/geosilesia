@@ -3,18 +3,33 @@
         "$document",
         "$location",
         function($document, $location) {
-            var SITE_NAME = "GeoSilesia";
-            var DEFAULT_TITLE = "GeoSilesia";
-            var DEFAULT_DESCRIPTION =
-                "GeoSilesia to „Edukacyjno-informacyjny serwis internetowy o dziedzictwie geologicznym, geomorfologicznym i poprzemysłowym województwa śląskiego”.";
-            var DEFAULT_IMAGE = "/images/icons/app-icon-512x512.png";
-            var MAX_DESCRIPTION = 160;
+            // Derywacja title/description jest wspólna z serwerem – shared/seo-meta.js
+            // (doklejany do bundla przed tym plikiem przez task `js` w gulpfile).
+            var meta = window.GeoSeoMeta;
 
             var head = $document[0].head;
 
+            // Serwer wstrzykuje canonical zbudowany z config.siteUrl. Gdybyśmy liczyli
+            // origin z window.location, przy wejściu przez inny host (www vs bez, http
+            // vs https) klient zamazałby go adresem, którego akurat użył odwiedzający —
+            // czyli dokładnie tym duplikatem treści, przed którym siteUrl chroni.
+            // Czytamy więc origin raz, z canonical wstawionego przez serwer.
+            var cachedOrigin = null;
+
+            function serverOrigin() {
+                var el = head.querySelector('link[rel="canonical"]');
+                var href = el ? el.getAttribute("href") || "" : "";
+                var match = /^(https?:\/\/[^/]+)/.exec(href);
+                return match ? match[1] : "";
+            }
+
             function origin() {
-                // $location.absUrl bez ścieżki — bierzemy z window dla pewności
-                return window.location.origin;
+                if (cachedOrigin === null) {
+                    // Fallback dotyczy sytuacji bez wstrzyknięcia – np. gdy shell
+                    // przyszedł z cache'u service workera.
+                    cachedOrigin = serverOrigin() || window.location.origin;
+                }
+                return cachedOrigin;
             }
 
             function setDocumentTitle(title) {
@@ -41,80 +56,6 @@
                 el.setAttribute("href", href);
             }
 
-            function stripHtml(html) {
-                if (!html) return "";
-                var tmp = $document[0].createElement("div");
-                tmp.innerHTML = html;
-                return (tmp.textContent || tmp.innerText || "")
-                    .replace(/\s+/g, " ")
-                    .trim();
-            }
-
-            function truncate(text, max) {
-                if (!text || text.length <= max) return text;
-                var cut = text.substring(0, max);
-                var lastSpace = cut.lastIndexOf(" ");
-                if (lastSpace > 40) cut = cut.substring(0, lastSpace);
-                return cut.trim() + "…";
-            }
-
-            // Wyprowadza tytuł strony z jej treści (bez pól meta w DB):
-            // 1) homepage_banner.title, 2) pierwszy heading (preferuj h1),
-            // 3) pierwszy title_and_text.title.
-            function deriveTitle(page) {
-                if (!page || !page.rows || !page.rows.length) return "";
-                var rows = page.rows;
-                var i;
-                for (i = 0; i < rows.length; i++) {
-                    if (rows[i].type === "homepage_banner" && rows[i].data && rows[i].data.title) {
-                        return stripHtml(rows[i].data.title);
-                    }
-                }
-                var firstHeading = null;
-                for (i = 0; i < rows.length; i++) {
-                    if (rows[i].type === "heading" && rows[i].data && rows[i].data.text) {
-                        if (rows[i].data.type === "h1") return stripHtml(rows[i].data.text);
-                        if (!firstHeading) firstHeading = rows[i].data.text;
-                    }
-                }
-                if (firstHeading) return stripHtml(firstHeading);
-                for (i = 0; i < rows.length; i++) {
-                    if (rows[i].type === "title_and_text" && rows[i].data && rows[i].data.title) {
-                        return stripHtml(rows[i].data.title);
-                    }
-                }
-                return "";
-            }
-
-            // Wyprowadza opis z pierwszego akapitu treści.
-            function deriveDescription(page) {
-                if (!page || !page.rows || !page.rows.length) return "";
-                var rows = page.rows;
-                for (var i = 0; i < rows.length; i++) {
-                    if (
-                        rows[i].type === "title_and_text" &&
-                        rows[i].data &&
-                        rows[i].data.text &&
-                        rows[i].data.text.length
-                    ) {
-                        for (var j = 0; j < rows[i].data.text.length; j++) {
-                            var para = rows[i].data.text[j].paragraph;
-                            if (para) {
-                                var text = stripHtml(para);
-                                if (text) return truncate(text, MAX_DESCRIPTION);
-                            }
-                        }
-                    }
-                }
-                return "";
-            }
-
-            function buildTitle(rawTitle, page) {
-                if (!rawTitle) return DEFAULT_TITLE;
-                if (page && page.pageUrl === "/") return rawTitle;
-                return rawTitle + " – " + SITE_NAME;
-            }
-
             function absolute(url) {
                 if (!url) return url;
                 if (/^https?:\/\//.test(url)) return url;
@@ -122,7 +63,9 @@
             }
 
             function apply(data) {
-                var canonical = origin() + $location.path();
+                // Ścieżkę bierzemy z pageUrl strony, nie z $location.path() – inaczej
+                // wejście na "/slownik/" ogłosiłoby się kanonicznym osobno od "/slownik".
+                var canonical = origin() + encodeURI(data.path || $location.path());
 
                 setDocumentTitle(data.title);
                 upsertMeta('meta[name="description"]', "name", "description", data.description);
@@ -132,7 +75,7 @@
                 upsertMeta('meta[property="og:description"]', "property", "og:description", data.description);
                 upsertMeta('meta[property="og:url"]', "property", "og:url", canonical);
                 upsertMeta('meta[property="og:type"]', "property", "og:type", "website");
-                upsertMeta('meta[property="og:site_name"]', "property", "og:site_name", SITE_NAME);
+                upsertMeta('meta[property="og:site_name"]', "property", "og:site_name", meta.SITE_NAME);
                 upsertMeta('meta[property="og:image"]', "property", "og:image", absolute(data.image));
 
                 upsertMeta('meta[name="twitter:card"]', "name", "twitter:card", "summary_large_image");
@@ -143,21 +86,21 @@
 
             // Ustawia meta na podstawie danych strony (wyprowadzone z treści).
             function applyForPage(page) {
-                var rawTitle = deriveTitle(page);
-                var description = deriveDescription(page) || DEFAULT_DESCRIPTION;
+                var derived = meta.deriveMeta(page);
                 apply({
-                    title: buildTitle(rawTitle, page),
-                    description: description,
-                    image: DEFAULT_IMAGE
+                    title: meta.buildTitle(derived.title, page),
+                    description: derived.description,
+                    image: meta.DEFAULT_IMAGE,
+                    path: page && page.pageUrl ? meta.normalizePath(page.pageUrl) : ""
                 });
             }
 
             // Ustawia neutralne meta dla strony 404 (soft-404).
             function applyNotFound() {
                 apply({
-                    title: "Nie znaleziono strony – " + SITE_NAME,
-                    description: DEFAULT_DESCRIPTION,
-                    image: DEFAULT_IMAGE
+                    title: meta.NOT_FOUND_TITLE,
+                    description: meta.DEFAULT_DESCRIPTION,
+                    image: meta.DEFAULT_IMAGE
                 });
             }
 

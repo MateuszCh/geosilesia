@@ -1,9 +1,13 @@
 importScripts('/js/idb.js');
 
-var CACHE_STATIC_NAME = 'static-v22';
-var CACHE_DYNAMIC_NAME = 'dynamic-v22';
+// Wersja wstawiana przy buildzie przez zadanie `sw` w gulpfile.js – hash zawartości
+// plików ze STATIC_FILES. Bez buildu public/sw.js w ogóle nie powstaje.
+var CACHE_VERSION = '@@CACHE_VERSION@@';
+var CACHE_STATIC_NAME = 'static-' + CACHE_VERSION;
+var CACHE_DYNAMIC_NAME = 'dynamic-' + CACHE_VERSION;
 var STATIC_FILES = [
-    '/',
+    // Bez '/' – serwer wstrzykuje tam meta strony głównej, a jako fallback
+    // offline dla dowolnego adresu potrzebny jest generyczny index.html.
     'index.html',
     '/css/main.css',
     '/js/app.min.js',
@@ -78,7 +82,7 @@ function clearPostsByType(type) {
 self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open(CACHE_STATIC_NAME).then(function (cache) {
-            cache.addAll(STATIC_FILES);
+            return cache.addAll(STATIC_FILES);
         })
     );
 });
@@ -100,6 +104,56 @@ self.addEventListener('activate', function (event) {
     );
     return self.clients.claim();
 });
+
+var NAVIGATION_TIMEOUT = 3000;
+
+// Generyczny shell z instalacji – celowo bez meta konkretnej strony, bo służy
+// każdemu adresowi offline. Gdyby cache był pusty, respondWith(undefined) rzuciłoby
+// błędem, więc zawsze zwracamy jakąś odpowiedź.
+function fallbackShell() {
+    return caches.match('index.html').then(function (response) {
+        return (
+            response ||
+            new Response(
+                '<!DOCTYPE html><meta charset="utf-8"><title>GeoSilesia</title>' +
+                    '<p>Brak połączenia z siecią.</p>',
+                {
+                    status: 503,
+                    headers: { 'Content-Type': 'text/html; charset=utf-8' }
+                }
+            )
+        );
+    });
+}
+
+// Network-first z wyścigiem o czas: sieć daje meta wstrzyknięte przez serwer i świeży
+// HTML po deployu, a licznik pilnuje, żeby zerwane połączenie nie trzymało użytkownika
+// przed pustym ekranem. Odpowiedź z sieci wraca niezależnie od statusu – 404 z serwera
+// to poprawna odpowiedź, nie awaria. Niczego tu nie cache'ujemy: HTML jest per-strona,
+// więc zapisany pod kluczem shella zatrułby kolejne nawigacje cudzymi meta.
+function navigationResponse(request) {
+    return new Promise(function (resolve) {
+        var settled = false;
+        function done(value) {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        }
+        var timer = setTimeout(function () {
+            done(fallbackShell());
+        }, NAVIGATION_TIMEOUT);
+        fetch(request).then(
+            function (response) {
+                clearTimeout(timer);
+                done(response);
+            },
+            function () {
+                clearTimeout(timer);
+                done(fallbackShell());
+            }
+        );
+    });
+}
 
 self.addEventListener('fetch', function (event) {
     if (
@@ -172,12 +226,12 @@ self.addEventListener('fetch', function (event) {
     ) {
         return;
     } else {
-        event.respondWith(
+        var isNavigation =
             event.request.mode === 'navigate' &&
-                event.request.url.indexOf(
-                    self.location.origin + '/uploads/'
-                ) === -1
-                ? caches.match('index.html')
+            event.request.url.indexOf(self.location.origin + '/uploads/') === -1;
+        event.respondWith(
+            isNavigation
+                ? navigationResponse(event.request)
                 : caches.match(event.request).then(function (response) {
                       return (
                           response ||

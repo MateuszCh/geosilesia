@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-
-# Sitemap (URL bezwzględny). Uzupełniany przy buildzie przez task `gulp seo`,
-# gdy w config.json (katalog główny projektu) ustawiony jest "siteUrl", np.:
-#   "siteUrl": "https://twoja-domena.pl"
-# Sitemap: https://twoja-domena.pl/sitemap.xml

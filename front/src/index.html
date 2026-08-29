@@ -5,18 +5,13 @@
     <!-- src/index.html -->
     <meta charset="UTF-8">
     <base href="/">
-    <title>Geosilesia</title>
-    <link rel="shortcut icon"
-          href="/images/favicon.ico"
-          type="image/x-icon">
+
+    <!-- Blok podmieniany per-stronę przez serwer (app.js). Treść poniżej to fallback
+         używany, gdy podmiana nie zajdzie (np. baza niedostępna). Markerów nie ruszać. -->
+    <!--seo:start-->
+    <title>GeoSilesia</title>
     <meta name="description"
           content="GeoSilesia to „Edukacyjno-informacyjny serwis internetowy o dziedzictwie geologicznym, geomorfologicznym i poprzemysłowym województwa śląskiego”.">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1">
-    <meta name="theme-color"
-          content="#28293e" />
-
-    <!-- Open Graph / Twitter — statyczne fallbacki; nadpisywane per-strona przez seoService -->
     <meta property="og:type"
           content="website">
     <meta property="og:site_name"
@@ -29,15 +24,6 @@
           content="/images/icons/app-icon-512x512.png">
     <meta name="twitter:card"
           content="summary_large_image">
-
-    <link rel="preconnect"
-          href="https://fonts.googleapis.com">
-    <link rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossorigin>
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700|Poiret+One&subset=latin-ext"
-          rel="stylesheet">
-
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -47,6 +33,24 @@
         "logo": "/images/icons/app-icon-512x512.png"
     }
     </script>
+    <!--seo:end-->
+
+    <link rel="shortcut icon"
+          href="/images/favicon.ico"
+          type="image/x-icon">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+    <meta name="theme-color"
+          content="#28293e" />
+
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700|Poiret+One&subset=latin-ext"
+          rel="stylesheet">
+
     <!-- inject:css -->
     <!-- endinject -->
     <link rel="manifest"

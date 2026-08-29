@@ -11,20 +11,10 @@ const gulp = require('gulp'),
     cleancss = require('gulp-clean-css'),
     series = require('stream-series'),
     fs = require('fs'),
+    crypto = require('crypto'),
+    Transform = require('stream').Transform,
     // nodemon = require('gulp-nodemon'),
     del = require('del');
-
-// Konfiguracja środowiska (mongoUrl, dbName, siteUrl, apiUrl) – wzorzec w config.example.json.
-// Plik jest w .gitignore, więc może go nie być (np. świeży klon) – wtedy tylko ostrzegamy,
-// żeby jego brak nie ubijał pozostałych tasków.
-let config = {};
-try {
-    config = require('../config.json');
-} catch (err) {
-    console.warn(
-        '[seo] Nie znaleziono config.json w katalogu głównym projektu.'
-    );
-}
 
 const paths = {
     srcHTML: 'src/**/*.html',
@@ -32,7 +22,11 @@ const paths = {
     srcSCSS: 'src/sass/main.scss',
     srcSCSSs: 'src/sass/**/*.scss',
     srcJS: 'src/js/**/*.js',
+    // Wspólny z serwerem moduł SEO – musi trafić do bundla przed seo.service.js.
+    sharedSEO: '../shared/seo-meta.js',
     srcIMAGES: 'src/images/**/*',
+    srcSW: 'src/sw.js',
+    publicSW: 'public/sw.js',
     idb: './node_modules/idb/lib/idb.js',
 
     public: 'public',
@@ -50,6 +44,26 @@ const vendor = require('./vendor');
 //     hashLength: 40,
 //     template: "<%= name %><%= ext %>?hash=<%= hash %>"
 // };
+
+// gulp.src('src/js/**/*.js') zwraca katalogi rodzeństwa w niestabilnej kolejności,
+// przez co app.min.js potrafił różnić się bajtowo między buildami przy identycznych
+// źródłach. Dla Angulara kolejność rejestracji nie ma znaczenia, ale powtarzalny build
+// jest warunkiem sensownego hashowania wersji cache'u w zadaniu `sw`.
+function sortByPath() {
+    const files = [];
+    return new Transform({
+        objectMode: true,
+        transform(file, encoding, callback) {
+            files.push(file);
+            callback();
+        },
+        flush(callback) {
+            files.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+            files.forEach(file => this.push(file));
+            callback();
+        }
+    });
+}
 
 function errorLog(error) {
     console.error.bind(error);
@@ -87,8 +101,8 @@ gulp.task('css', function () {
 });
 
 gulp.task('js', function () {
-    return gulp
-        .src(paths.srcJS)
+    // Wspólny moduł SEO idzie pierwszy, reszta w stałej kolejności alfabetycznej.
+    return series(gulp.src(paths.sharedSEO), gulp.src(paths.srcJS).pipe(sortByPath()))
         .on('error', errorLog)
         .pipe(concat('app.min.js'))
         .pipe(uglify())
@@ -119,72 +133,54 @@ gulp.task('images', function () {
         .pipe(gulp.dest(paths.publicIMAGES));
 });
 
-// Generuje public/sitemap.xml oraz uzupełnia public/robots.txt o dyrektywę Sitemap.
-// Konfiguracja w config.json (katalog główny projektu):
-//   siteUrl  – bezwzględny adres produkcyjny (np. https://twoja-domena.pl). Wymagany.
-//   apiUrl   – bazowy adres API do pobrania listy stron (domyślnie http://localhost:3000).
-// Task nie przerywa buildu przy braku siteUrl lub błędzie sieci – wtedy tylko ostrzega.
-gulp.task('seo', async function () {
-    const siteUrl = (config.siteUrl || '').replace(/\/+$/, '');
-    const apiUrl = (config.apiUrl || 'http://localhost:3000').replace(
-        /\/+$/,
-        ''
-    );
+// Generuje public/sw.js ze źródła src/sw.js, wstawiając w miejsce @@CACHE_VERSION@@
+// hash zawartości plików wymienionych w STATIC_FILES. Dzięki temu wersja cache'u zmienia
+// się dokładnie wtedy, gdy zmieni się to, co service worker cache'uje – przebudowa bez
+// zmian zostawia użytkownikom nietknięty cache.
+// Musi biec PO zadaniach budujących zasoby, bo hashuje ich wynik.
+gulp.task('sw', function (done) {
+    const source = fs.readFileSync(paths.srcSW, 'utf8');
 
-    if (!siteUrl) {
-        console.warn(
-            '[seo] Pominięto generowanie sitemap.xml – ustaw "siteUrl" w config.json, np. "https://twoja-domena.pl"'
+    const match = source.match(/var STATIC_FILES = \[([\s\S]*?)\];/);
+    if (!match) {
+        return done(new Error('[sw] Nie znaleziono STATIC_FILES w ' + paths.srcSW));
+    }
+    // Komentarze wycinamy przed wyłuskaniem stringów – jeden z nich zawiera '/',
+    // które inaczej trafiłoby na listę jako plik.
+    const withoutComments = match[1].replace(/\/\/[^\n]*/g, '');
+    const files = (withoutComments.match(/'[^']+'/g) || [])
+        .map(entry => entry.slice(1, -1))
+        .filter(entry => entry !== '/'); // '/' to trasa serwera, nie plik na dysku
+
+    const missing = files.filter(
+        file => !fs.existsSync(`${paths.public}/${file.replace(/^\//, '')}`)
+    );
+    if (missing.length) {
+        // addAll jest atomowe – brakujący plik zablokowałby rejestrację SW u użytkownika,
+        // więc lepiej zatrzymać build tutaj.
+        return done(
+            new Error(
+                `[sw] Brak plików ze STATIC_FILES w ${paths.public}: ${missing.join(', ')}`
+            )
         );
-        return;
     }
 
-    let pageUrls = ['/'];
-    try {
-        const res = await fetch(`${apiUrl}/api/appData/`);
-        const data = await res.json();
-        if (data && Array.isArray(data.pages)) {
-            pageUrls = data.pages
-                .map(p => p && p.pageUrl)
-                .filter(Boolean)
-                .filter((v, i, a) => a.indexOf(v) === i);
-        }
-    } catch (err) {
-        // Przy fetch prawdziwa przyczyna (np. ECONNREFUSED) siedzi w err.cause –
-        // err.message to zawsze ogólne "fetch failed".
-        const cause = (err.cause && err.cause.code) || err.message;
-        console.warn(
-            `[seo] Nie udało się pobrać listy stron z ${apiUrl}/api/appData/ – sitemap tylko ze stroną główną. (${cause})`
-        );
-        if (cause === 'ECONNREFUSED') {
-            console.warn(
-                '[seo] Nikt nie słucha pod tym adresem – uruchom serwer (node app.js) albo popraw "apiUrl" w config.json.'
-            );
-        }
-    }
+    const hash = crypto.createHash('sha1');
+    files
+        .slice()
+        .sort()
+        .forEach(file => {
+            hash.update(file);
+            hash.update(fs.readFileSync(`${paths.public}/${file.replace(/^\//, '')}`));
+        });
+    const version = hash.digest('hex').slice(0, 12);
 
-    const urls = pageUrls
-        .map(url => {
-            const loc = siteUrl + (url.charAt(0) === '/' ? url : `/${url}`);
-            return `    <url>\n        <loc>${loc}</loc>\n    </url>`;
-        })
-        .join('\n');
-
-    const sitemap =
-        '<?xml version="1.0" encoding="UTF-8"?>\n' +
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-        urls +
-        '\n</urlset>\n';
-
-    fs.mkdirSync(paths.public, { recursive: true });
-    fs.writeFileSync(`${paths.public}/sitemap.xml`, sitemap);
-
-    const robots =
-        'User-agent: *\nAllow: /\n\nSitemap: ' + `${siteUrl}/sitemap.xml\n`;
-    fs.writeFileSync(`${paths.public}/robots.txt`, robots);
-
-    console.log(
-        `[seo] Zapisano sitemap.xml (${pageUrls.length} URL) oraz robots.txt dla ${siteUrl}`
+    fs.writeFileSync(
+        paths.publicSW,
+        source.replace('@@CACHE_VERSION@@', version)
     );
+    console.log(`[sw] public/sw.js – wersja ${version} (${files.length} plików)`);
+    done();
 });
 
 gulp.task('copy', gulp.series(gulp.parallel('html', 'css', 'js')));
@@ -219,7 +215,7 @@ gulp.task(
 
 gulp.task(
     'watch',
-    gulp.series(gulp.parallel('inject'), function () {
+    gulp.series(gulp.series('inject', 'sw'), function () {
         gulp.watch([paths.srcTemplates], gulp.series('htmlWatch'));
         gulp.watch([paths.srcSCSSs], gulp.series('css'));
         gulp.watch([paths.srcJS], gulp.series('js'));
@@ -237,7 +233,7 @@ gulp.task(
 
 gulp.task(
     'default',
-    gulp.series(gulp.parallel('images', 'jsLib', 'idbLib', 'inject'), 'seo')
+    gulp.series(gulp.parallel('images', 'jsLib', 'idbLib', 'inject'), 'sw')
 );
 
 gulp.task('clean', function () {
@@ -246,6 +242,7 @@ gulp.task('clean', function () {
         paths.publicHTML,
         paths.publicCSS,
         paths.publicJS,
-        paths.publicIMAGES
+        paths.publicIMAGES,
+        paths.publicSW
     ]);
 });

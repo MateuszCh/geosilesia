@@ -1,6 +1,5 @@
 {
     "mongoUrl": "mongodb://user:password@host/dbname",
     "dbName": "dbname",
-    "siteUrl": "https://twoja-domena.pl",
-    "apiUrl": "http://localhost:3000"
+    "siteUrl": "https://twoja-domena.pl"
 }
