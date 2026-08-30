@@ -197,7 +197,12 @@
                 : fromPage;
         return {
             title: fixCase(title),
-            description: deriveDescription(page) || DEFAULT_DESCRIPTION
+            // seoDescription wpisuje redaktor, więc nie przycinamy go do MAX_DESCRIPTION –
+            // limit chroni przed przypadkowym początkiem akapitu, a nie przed świadomą decyzją.
+            description:
+                stripHtml(page && page.seoDescription) ||
+                deriveDescription(page) ||
+                DEFAULT_DESCRIPTION
         };
     }
 
@@ -205,6 +210,29 @@
         if (!rawTitle) return DEFAULT_TITLE;
         if (page && normalizePath(page.pageUrl) === '/') return rawTitle;
         return rawTitle + ' – ' + SITE_NAME;
+    }
+
+    // Finalne meta strony – jedyne miejsce, w którym zapada decyzja o sufiksie w tytule.
+    // seoTitle to gotowy <title> wpisany ręcznie: nie poprawiamy w nim wielkości liter ani
+    // nie doklejamy nazwy serwisu, bo "… – GeoSilesia" wpisane przez redaktora zdublowałoby się.
+    function buildMeta(page) {
+        var derived = deriveMeta(page);
+        var explicit = stripHtml(page && page.seoTitle);
+        return {
+            title: explicit || buildTitle(derived.title, page),
+            description: derived.description
+        };
+    }
+
+    // CMS zapisuje "updated" jako liczbę milisekund, ale pole bywa też Date (BSON) albo
+    // ciągiem cyfr po serializacji – Date rozumie liczbę, lecz nie taki ciąg. Wartości,
+    // których nie da się sparsować, pomijamy: crawler woli brak <lastmod> niż datę-śmiecia.
+    function updatedIso(page) {
+        var raw = page && page.updated;
+        if (!raw) return '';
+        if (typeof raw === 'string' && /^\d+$/.test(raw)) raw = Number(raw);
+        var date = raw instanceof Date ? raw : new Date(raw);
+        return isNaN(date.getTime()) ? '' : date.toISOString();
     }
 
     return {
@@ -222,6 +250,8 @@
         deriveTitle: deriveTitle,
         deriveDescription: deriveDescription,
         deriveMeta: deriveMeta,
-        buildTitle: buildTitle
+        buildTitle: buildTitle,
+        buildMeta: buildMeta,
+        updatedIso: updatedIso
     };
 });

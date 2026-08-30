@@ -46,6 +46,36 @@
                 el.setAttribute("content", content);
             }
 
+            // Dla pól, których część stron nie ma: przy nawigacji SPA nie wystarczy nie
+            // ustawić tagu – trzeba go usunąć, inaczej zostałby w <head> z datą poprzedniej
+            // strony.
+            function setOrRemoveMeta(selector, attrName, attrValue, content) {
+                if (content) {
+                    upsertMeta(selector, attrName, attrValue, content);
+                    return;
+                }
+                var el = head.querySelector(selector);
+                if (el) el.parentNode.removeChild(el);
+            }
+
+            // To samo dla per-stronowego JSON-LD. Selektor celuje w data-seo="webpage",
+            // żeby nie ruszyć ogólnoserwisowego bloku Organization.
+            function setOrRemoveWebPageJsonLd(data) {
+                var selector = 'script[type="application/ld+json"][data-seo="webpage"]';
+                var el = head.querySelector(selector);
+                if (!data) {
+                    if (el) el.parentNode.removeChild(el);
+                    return;
+                }
+                if (!el) {
+                    el = $document[0].createElement("script");
+                    el.setAttribute("type", "application/ld+json");
+                    el.setAttribute("data-seo", "webpage");
+                    head.appendChild(el);
+                }
+                el.textContent = JSON.stringify(data);
+            }
+
             function upsertLink(rel, href) {
                 var el = head.querySelector('link[rel="' + rel + '"]');
                 if (!el) {
@@ -82,16 +112,37 @@
                 upsertMeta('meta[name="twitter:title"]', "name", "twitter:title", data.title);
                 upsertMeta('meta[name="twitter:description"]', "name", "twitter:description", data.description);
                 upsertMeta('meta[name="twitter:image"]', "name", "twitter:image", absolute(data.image));
+
+                setOrRemoveMeta(
+                    'meta[property="og:updated_time"]',
+                    "property",
+                    "og:updated_time",
+                    data.updated
+                );
+                setOrRemoveWebPageJsonLd(
+                    data.updated
+                        ? {
+                              "@context": "https://schema.org",
+                              "@type": "WebPage",
+                              url: canonical,
+                              name: data.title,
+                              description: data.description,
+                              dateModified: data.updated
+                          }
+                        : null
+                );
             }
 
-            // Ustawia meta na podstawie danych strony (wyprowadzone z treści).
+            // Ustawia meta na podstawie danych strony (seoTitle/seoDescription, a w ich
+            // braku – wyprowadzone z treści).
             function applyForPage(page) {
-                var derived = meta.deriveMeta(page);
+                var built = meta.buildMeta(page);
                 apply({
-                    title: meta.buildTitle(derived.title, page),
-                    description: derived.description,
+                    title: built.title,
+                    description: built.description,
                     image: meta.DEFAULT_IMAGE,
-                    path: page && page.pageUrl ? meta.normalizePath(page.pageUrl) : ""
+                    path: page && page.pageUrl ? meta.normalizePath(page.pageUrl) : "",
+                    updated: meta.updatedIso(page)
                 });
             }
 
@@ -100,7 +151,8 @@
                 apply({
                     title: meta.NOT_FOUND_TITLE,
                     description: meta.DEFAULT_DESCRIPTION,
-                    image: meta.DEFAULT_IMAGE
+                    image: meta.DEFAULT_IMAGE,
+                    updated: ""
                 });
             }
 

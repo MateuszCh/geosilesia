@@ -215,29 +215,25 @@ function metaForPage(page) {
             description: seoMeta.DEFAULT_DESCRIPTION
         };
     }
-    const derived = seoMeta.deriveMeta(page);
-    return {
-        title: seoMeta.buildTitle(derived.title, page),
-        description: derived.description
-    };
+    return seoMeta.buildMeta(page);
+}
+
+// Ucieczka "<" chroni przed wyjściem ze <script> treścią z bazy.
+function jsonLdScript(data, attrs) {
+    return (
+        `<script type="application/ld+json"${attrs ? " " + attrs : ""}>` +
+        JSON.stringify(data).replace(/</g, "\\u003c") +
+        "</script>"
+    );
 }
 
 // Składa zawartość bloku <!--seo:start--> … <!--seo:end-->.
-function buildSeoBlock(meta, base, canonical) {
+// `updated` (ISO albo "") pojawia się tylko dla stron, które mają datę modyfikacji.
+function buildSeoBlock(meta, base, canonical, updated) {
     const e = seoMeta.escapeHtml;
     const title = meta.title;
     const description = meta.description;
     const image = base + seoMeta.DEFAULT_IMAGE;
-
-    // Ucieczka "<" chroni przed wyjściem ze <script> treścią z bazy.
-    const jsonLd = JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        name: seoMeta.SITE_NAME,
-        url: base,
-        description: seoMeta.DEFAULT_DESCRIPTION,
-        logo: image
-    }).replace(/</g, "\\u003c");
 
     return [
         `<title>${e(title)}</title>`,
@@ -249,12 +245,39 @@ function buildSeoBlock(meta, base, canonical) {
         `<meta property="og:description" content="${e(description)}">`,
         `<meta property="og:url" content="${e(canonical)}">`,
         `<meta property="og:image" content="${e(image)}">`,
+        updated
+            ? `<meta property="og:updated_time" content="${e(updated)}">`
+            : "",
         `<meta name="twitter:card" content="summary_large_image">`,
         `<meta name="twitter:title" content="${e(title)}">`,
         `<meta name="twitter:description" content="${e(description)}">`,
         `<meta name="twitter:image" content="${e(image)}">`,
-        `<script type="application/ld+json">${jsonLd}</script>`
-    ].join("");
+        jsonLdScript({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: seoMeta.SITE_NAME,
+            url: base,
+            description: seoMeta.DEFAULT_DESCRIPTION,
+            logo: image
+        }),
+        // Węzeł per-strona – oznaczony data-seo, żeby seo.service.js aktualizował przy
+        // nawigacji SPA właśnie jego, a nie ogólnoserwisowego Organization powyżej.
+        updated
+            ? jsonLdScript(
+                  {
+                      "@context": "https://schema.org",
+                      "@type": "WebPage",
+                      url: canonical,
+                      name: title,
+                      description: description,
+                      dateModified: updated
+                  },
+                  'data-seo="webpage"'
+              )
+            : ""
+    ]
+        .filter(Boolean)
+        .join("");
 }
 
 function injectSeo(html, block) {
@@ -269,18 +292,28 @@ app.get("/sitemap.xml", (req, res) => {
     getPages()
         .then(pages => {
             const base = siteUrl(req);
-            const urls = pages
-                .map(page => page && page.pageUrl)
-                .filter(Boolean)
-                .filter((url, i, all) => all.indexOf(url) === i)
-                .map(url => {
+            // Klucz to znormalizowana ścieżka, bo "x" i "/x" prowadzą pod ten sam adres.
+            // Przy kolizji wygrywa wpis z nowszą datą – sitemapa ma podawać ostatnią zmianę.
+            const byPath = new Map();
+            pages.forEach(page => {
+                if (!page || !page.pageUrl) return;
+                const path = seoMeta.normalizePath(page.pageUrl);
+                const updated = seoMeta.updatedIso(page);
+                const current = byPath.get(path);
+                if (!current || updated > current) byPath.set(path, updated);
+            });
+            const urls = Array.from(byPath.entries())
+                .map(([path, updated]) => {
                     // Sitemapa wymaga adresów zakodowanych procentowo ORAZ
                     // z ucieczką encji – encodeURI tylko na ścieżce, żeby nie
                     // ruszać "://" w adresie bazowym.
-                    const loc = seoMeta.escapeHtml(
-                        base + encodeURI(seoMeta.normalizePath(url))
-                    );
-                    return `    <url>\n        <loc>${loc}</loc>\n    </url>`;
+                    const loc = seoMeta.escapeHtml(base + encodeURI(path));
+                    // Sama data, bez godziny: pole "updated" bywa zapisane z dokładnością
+                    // do dnia, a pełny timestamp sugerowałby precyzję, której nie ma.
+                    const lastmod = updated
+                        ? `\n        <lastmod>${updated.slice(0, 10)}</lastmod>`
+                        : "";
+                    return `    <url>\n        <loc>${loc}</loc>${lastmod}\n    </url>`;
                 })
                 .join("\n");
             res.type("application/xml").send(
@@ -318,7 +351,8 @@ app.get("/index.html", (req, res, next) => {
                             description: seoMeta.DEFAULT_DESCRIPTION
                         },
                         base,
-                        base + "/"
+                        base + "/",
+                        "" // generyczny shell – bez daty konkretnej strony
                     )
                 )
             );
@@ -353,7 +387,12 @@ app.get(["*"], (req, res, next) => {
                         .send(
                             injectSeo(
                                 html,
-                                buildSeoBlock(metaForPage(page), base, canonical)
+                                buildSeoBlock(
+                                    metaForPage(page),
+                                    base,
+                                    canonical,
+                                    seoMeta.updatedIso(page)
+                                )
                             )
                         );
                 })
