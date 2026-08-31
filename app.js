@@ -8,9 +8,13 @@ const express = require("express"),
 
 const app = express();
 app.set("port", process.env.PORT || 3000);
-// Na hostingu Node stoi za proxy – bez tego req.protocol zawsze zwraca "http".
-// Ufamy WYŁĄCZNIE pierwszemu przeskokowi: przy `true` dowolny klient mógłby podać
-// X-Forwarded-Host i tym samym podstawić własną domenę do canonical i sitemapy.
+// Na hostingu Node stoi za proxy – bez tego req.protocol zawsze zwraca "http",
+// więc fallbackowy adres bazowy (gdy brak config.siteUrl) byłby budowany ze złym
+// schematem. Ufamy WYŁĄCZNIE pierwszemu przeskokowi, bo dalsze wpisy w
+// X-Forwarded-Proto pochodzą już od klienta.
+// Uwaga: adres bazowy z żądania jest tylko awaryjny. Ani X-Forwarded-Host, ani sam
+// nagłówek Host nie są wiarygodne – oba potrafi podstawić klient, jeśli proxy ich nie
+// nadpisuje – więc na produkcji "siteUrl" w config.json jest obowiązkowe.
 app.set("trust proxy", 1);
 
 let db;
@@ -116,9 +120,20 @@ app.get("/api/appData/", (req, res, next) => {
         .catch(next);
 });
 
+// Serwer dopasowuje stronę po znormalizowanej ścieżce, więc "/slownik/" oddaje 200
+// z kompletem meta. Gdyby API porównywało pageUrl dosłownie, ten sam adres wracałby
+// do SPA pusty i użytkownik zobaczyłby 404 na istniejącej stronie. Zamiast regexa
+// (kosztowny, bez indeksu) wyliczamy garstkę dopuszczalnych zapisów.
+function pageUrlCandidates(pageUrl) {
+    const normalized = seoMeta.normalizePath(pageUrl);
+    if (normalized === "/") return ["/", ""];
+    const bare = normalized.slice(1);
+    return [bare, normalized, `${bare}/`, `${normalized}/`];
+}
+
 app.get("/api/page/:pageUrl", (req, res, next) => {
     collections.pages
-        .find({ pageUrl: req.params.pageUrl })
+        .find({ pageUrl: { $in: pageUrlCandidates(req.params.pageUrl) } })
         .toArray()
         .then(pages => {
             processRequest(res, undefined, pages);
@@ -199,12 +214,11 @@ function decodePath(reqPath) {
     }
 }
 
+// normalizePath sprowadza obie strony porównania do tej samej postaci (wiodący
+// ukośnik, bez końcowego), więc "/slownik", "slownik" i "slownik/" to jedna strona.
 function findPage(pages, reqPath) {
-    let wanted = seoMeta.normalizePath(decodePath(reqPath));
-    if (wanted.length > 1) wanted = wanted.replace(/\/+$/, "");
-    return pages.find(
-        page => seoMeta.normalizePath(page.pageUrl) === wanted
-    );
+    const wanted = seoMeta.normalizePath(decodePath(reqPath));
+    return pages.find(page => seoMeta.normalizePath(page.pageUrl) === wanted);
 }
 
 // Wylicza tytuł i opis dla strony; brak strony oznacza 404.
@@ -280,6 +294,20 @@ function buildSeoBlock(meta, base, canonical, updated) {
         .join("");
 }
 
+// Generyczny blok meta shella: canonical wskazuje na "/", bo to ten sam dokument bez
+// treści konkretnej strony. Używa go i /index.html, i awaryjna ścieżka bez bazy.
+function defaultSeoBlock(base) {
+    return buildSeoBlock(
+        {
+            title: seoMeta.DEFAULT_TITLE,
+            description: seoMeta.DEFAULT_DESCRIPTION
+        },
+        base,
+        base + "/",
+        "" // generyczny shell – bez daty konkretnej strony
+    );
+}
+
 function injectSeo(html, block) {
     const start = html.indexOf(SEO_START);
     const end = html.indexOf(SEO_END);
@@ -297,17 +325,17 @@ app.get("/sitemap.xml", (req, res) => {
             const byPath = new Map();
             pages.forEach(page => {
                 if (!page || !page.pageUrl) return;
-                const path = seoMeta.normalizePath(page.pageUrl);
+                const pagePath = seoMeta.normalizePath(page.pageUrl);
                 const updated = seoMeta.updatedIso(page);
-                const current = byPath.get(path);
-                if (!current || updated > current) byPath.set(path, updated);
+                const current = byPath.get(pagePath);
+                if (!current || updated > current) byPath.set(pagePath, updated);
             });
             const urls = Array.from(byPath.entries())
-                .map(([path, updated]) => {
+                .map(([pagePath, updated]) => {
                     // Sitemapa wymaga adresów zakodowanych procentowo ORAZ
                     // z ucieczką encji – encodeURI tylko na ścieżce, żeby nie
                     // ruszać "://" w adresie bazowym.
-                    const loc = seoMeta.escapeHtml(base + encodeURI(path));
+                    const loc = seoMeta.escapeHtml(base + encodeURI(pagePath));
                     // Sama data, bez godziny: pole "updated" bywa zapisane z dokładnością
                     // do dnia, a pełny timestamp sugerowałby precyzję, której nie ma.
                     const lastmod = updated
@@ -342,20 +370,7 @@ app.get("/index.html", (req, res, next) => {
     getIndexHtml()
         .then(html => {
             const base = siteUrl(req);
-            res.type("html").send(
-                injectSeo(
-                    html,
-                    buildSeoBlock(
-                        {
-                            title: seoMeta.DEFAULT_TITLE,
-                            description: seoMeta.DEFAULT_DESCRIPTION
-                        },
-                        base,
-                        base + "/",
-                        "" // generyczny shell – bez daty konkretnej strony
-                    )
-                )
-            );
+            res.type("html").send(injectSeo(html, defaultSeoBlock(base)));
         })
         .catch(next);
 });
@@ -396,9 +411,20 @@ app.get(["*"], (req, res, next) => {
                             )
                         );
                 })
-                // Awaria bazy nie może zamienić serwisu w 404 dla crawlerów –
-                // oddajemy stronę z fallbackowym blokiem meta z index.html.
-                .catch(() => res.type("html").send(html));
+                // Awaria bazy nie może zamienić serwisu w 404 – nie wiemy przecież,
+                // czy strona istnieje. 503 z Retry-After mówi crawlerowi „wróć
+                // później" i zostawia adres w indeksie (tak samo jak /sitemap.xml),
+                // a użytkownik dostaje shell, który potrafi odtworzyć treść z IndexedDB.
+                // Meta wstrzykujemy generyczne: canonical na "/" nie uwiarygodni
+                // przypadkowego adresu, a bloku z index.html nie da się zbudować
+                // z adresami absolutnymi, bo domeny nie zna się na etapie buildu.
+                .catch(() =>
+                    res
+                        .status(503)
+                        .set("Retry-After", "120")
+                        .type("html")
+                        .send(injectSeo(html, defaultSeoBlock(base)))
+                );
         })
         .catch(next);
 });

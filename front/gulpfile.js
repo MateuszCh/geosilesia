@@ -18,6 +18,7 @@ const gulp = require('gulp'),
 
 const paths = {
     srcHTML: 'src/**/*.html',
+    srcIndex: 'src/index.html',
     srcTemplates: 'src/html/**/*.html',
     srcSCSS: 'src/sass/main.scss',
     srcSCSSs: 'src/sass/**/*.scss',
@@ -216,18 +217,30 @@ gulp.task(
 gulp.task(
     'watch',
     gulp.series(gulp.series('inject', 'sw'), function () {
-        gulp.watch([paths.srcTemplates], gulp.series('htmlWatch'));
-        gulp.watch([paths.srcSCSSs], gulp.series('css'));
-        gulp.watch([paths.srcJS], gulp.series('js'));
+        // Każdy watcher kończy się zadaniem `sw`: hash w CACHE_VERSION liczy się
+        // z plików ze STATIC_FILES, więc bez tego service worker trzymałby w dewie
+        // starą wersję cache'u mimo przebudowanych zasobów.
+        gulp.watch([paths.srcTemplates], gulp.series('htmlWatch', 'sw'));
+        gulp.watch([paths.srcSCSSs], gulp.series('css', 'sw'));
+        // sharedSEO leży poza src/js, a trafia do tego samego bundla.
+        gulp.watch([paths.srcJS, paths.sharedSEO], gulp.series('js', 'sw'));
+        // index.html wymaga pełnego `inject` – to on wstawia znaczniki css/js.
+        gulp.watch([paths.srcIndex], gulp.series('inject', 'sw'));
     })
 );
 
 gulp.task(
     'watch-sync',
     gulp.series(gulp.parallel('browser-sync'), function () {
-        gulp.watch([paths.srcTemplates], gulp.series('htmlWatch'));
-        gulp.watch([paths.srcSCSSs], gulp.series('css'));
-        gulp.watch([paths.srcJS], gulp.series('js'));
+        // Każdy watcher kończy się zadaniem `sw`: hash w CACHE_VERSION liczy się
+        // z plików ze STATIC_FILES, więc bez tego service worker trzymałby w dewie
+        // starą wersję cache'u mimo przebudowanych zasobów.
+        gulp.watch([paths.srcTemplates], gulp.series('htmlWatch', 'sw'));
+        gulp.watch([paths.srcSCSSs], gulp.series('css', 'sw'));
+        // sharedSEO leży poza src/js, a trafia do tego samego bundla.
+        gulp.watch([paths.srcJS, paths.sharedSEO], gulp.series('js', 'sw'));
+        // index.html wymaga pełnego `inject` – to on wstawia znaczniki css/js.
+        gulp.watch([paths.srcIndex], gulp.series('inject', 'sw'));
     })
 );
 

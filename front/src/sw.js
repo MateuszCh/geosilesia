@@ -105,7 +105,7 @@ self.addEventListener('activate', function (event) {
     return self.clients.claim();
 });
 
-var NAVIGATION_TIMEOUT = 3000;
+var NAVIGATION_TIMEOUT = 2000;
 
 // Generyczny shell z instalacji – celowo bez meta konkretnej strony, bo służy
 // każdemu adresowi offline. Gdyby cache był pusty, respondWith(undefined) rzuciłoby

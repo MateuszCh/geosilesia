@@ -46,7 +46,9 @@
                 vm.page = page;
             }
             vm.loaded = true;
-            if (vm.page && vm.page.rows && vm.page.rows.length) {
+            // O 404 decyduje istnienie strony, a nie jej zawartość – tak samo jak na
+            // serwerze. Pusta strona z CMS-a nadal ma swój adres i tytuł.
+            if (vm.page && vm.page.pageUrl) {
                 seoService.applyForPage(vm.page);
             } else {
                 seoService.applyNotFound();

@@ -15,7 +15,8 @@
     var DEFAULT_DESCRIPTION =
         'GeoSilesia to „Edukacyjno-informacyjny serwis internetowy o dziedzictwie geologicznym, geomorfologicznym i poprzemysłowym województwa śląskiego”.';
     var DEFAULT_IMAGE = '/images/icons/app-icon-512x512.png';
-    var NOT_FOUND_TITLE = 'Nie znaleziono strony – ' + SITE_NAME;
+    var TITLE_SUFFIX = ' - ' + SITE_NAME;
+    var NOT_FOUND_TITLE = 'Nie znaleziono strony' + TITLE_SUFFIX;
     var MAX_DESCRIPTION = 160;
 
     var ENTITIES = {
@@ -60,12 +61,18 @@
             });
     }
 
-    // Odpowiednik dawnego `div.innerHTML = html; div.textContent` — znaczniki znikają
-    // bez wstawiania spacji, więc sklejanie tekstu jest takie samo jak w przeglądarce.
+    // Tagi, które w renderze łamią wiersz. `textContent` skleiłby na nich wyrazy
+    // ("ma<br>kota" → "makota"), więc zamieniamy je na spację — inaczej opis meta
+    // dostaje zlepki nieistniejących słów. Nadmiar spacji i tak zbija \s+ niżej.
+    var BLOCK_TAGS =
+        /<\/?(br|p|div|li|ul|ol|dl|dt|dd|tr|td|th|table|thead|tbody|h[1-6]|hr|section|article|aside|header|footer|nav|main|figure|figcaption|blockquote|pre)\b[^>]*>/gi;
+
+    // Poza tym odpowiednik `div.innerHTML = html; div.textContent`.
     function stripHtml(html) {
         if (!html) return '';
         var text = String(html)
             .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
+            .replace(BLOCK_TAGS, ' ')
             .replace(/<[^>]*>/g, '');
         return decodeEntities(text).replace(/\s+/g, ' ').trim();
     }
@@ -116,20 +123,36 @@
         return word;
     }
 
-    // Każdy wyraz z wielkiej litery, reszta znaków małymi.
+    // Skrótowiec poznajemy po braku samogłoski ("KWK", "GZM", "PGG"). W polszczyźnie
+    // wyraz bez samogłoski praktycznie nie istnieje, więc taki warunek nie tknie
+    // zwykłych słów, a chroni nazwy, które po "Kwk Katowice" wyglądałyby na literówkę.
+    var VOWELS = /[aąeęioóuy]/i;
+
+    function isAcronym(word) {
+        var letters = word.replace(/[^\wÀ-ž]/g, '');
+        return letters.length >= 2 && letters.length <= 5 && !VOWELS.test(letters);
+    }
+
+    // Każdy wyraz z wielkiej litery, reszta znaków małymi — poza skrótowcami.
     function toTitleCase(text) {
-        return text.toLowerCase().replace(/\S+/g, capitalizeFirstLetter);
+        return text.replace(/\S+/g, function (word) {
+            return isAcronym(word) ? word : capitalizeFirstLetter(word.toLowerCase());
+        });
     }
 
     function fixCase(text) {
         return text && isShouting(text) ? toTitleCase(text) : text;
     }
 
-    // pageUrl w bazie nie ma wiodącego ukośnika (poza "/" strony głównej).
+    // Kanoniczna postać ścieżki: wiodący ukośnik, bez końcowego (poza samą "/").
+    // pageUrl w bazie nie ma wiodącego ukośnika (poza "/" strony głównej), ale bywa
+    // zapisany z końcowym ("slownik/") – bez tej normalizacji taka strona nie
+    // dopasowałaby się do żądania "/slownik" i ogłaszałaby własny canonical.
     function normalizePath(pageUrl) {
         if (!pageUrl) return '/';
         var withSlash = pageUrl.charAt(0) === '/' ? pageUrl : '/' + pageUrl;
-        return withSlash.replace(/^\/+/, '/'); // "//strona" to ten sam adres
+        var collapsed = withSlash.replace(/^\/+/, '/'); // "//strona" to ten sam adres
+        return collapsed.length > 1 ? collapsed.replace(/\/+$/, '') : collapsed;
     }
 
     // Tytuł z treści strony: 1) homepage_banner.title, 2) heading (preferuj h1),
@@ -206,20 +229,32 @@
         };
     }
 
-    function buildTitle(rawTitle, page) {
+    // Zwykłe wyszukanie podciągu, bez granicy wyrazu: "GeoSilesia" jest na tyle
+    // charakterystyczne, że nie trafi się w środku innego słowa, a brak \b obsługuje
+    // też zapisy w rodzaju "GeoSilesia:" czy "(GeoSilesia)".
+    function hasSiteName(text) {
+        return text.toLowerCase().indexOf(SITE_NAME.toLowerCase()) !== -1;
+    }
+
+    // O sufiksie decyduje to, CO jest w tytule, a nie skąd pochodzi. Jedno sprawdzenie
+    // zastępuje dwa dawne wyjątki: ręczny seoTitle z wpisaną nazwą serwisu nie zdubluje
+    // jej, a strona główna z bannerem "GeoSilesia" zostaje bez sufiksu bez osobnego
+    // warunku na ścieżkę "/". Działa niezależnie od separatora użytego przez redaktora.
+    function buildTitle(rawTitle) {
         if (!rawTitle) return DEFAULT_TITLE;
-        if (page && normalizePath(page.pageUrl) === '/') return rawTitle;
-        return rawTitle + ' – ' + SITE_NAME;
+        return hasSiteName(rawTitle) ? rawTitle : rawTitle + TITLE_SUFFIX;
     }
 
     // Finalne meta strony – jedyne miejsce, w którym zapada decyzja o sufiksie w tytule.
-    // seoTitle to gotowy <title> wpisany ręcznie: nie poprawiamy w nim wielkości liter ani
-    // nie doklejamy nazwy serwisu, bo "… – GeoSilesia" wpisane przez redaktora zdublowałoby się.
+    // seoTitle ma pierwszeństwo przed tytułem z treści i idzie przez tę samą regułę co on:
+    // nazwę serwisu dostanie tylko wtedy, gdy redaktor sam jej nie wpisał. Nie przechodzi
+    // za to przez fixCase – korekta wersalików siedzi w deriveMeta i dotyczy wyłącznie
+    // tytułu wyprowadzonego z treści, bo ręczny wpis jest świadomą decyzją redaktora.
     function buildMeta(page) {
         var derived = deriveMeta(page);
         var explicit = stripHtml(page && page.seoTitle);
         return {
-            title: explicit || buildTitle(derived.title, page),
+            title: buildTitle(explicit || derived.title),
             description: derived.description
         };
     }
