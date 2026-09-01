@@ -1,5 +1,6 @@
 {
     "mongoUrl": "mongodb://user:password@host/dbname",
     "dbName": "dbname",
-    "siteUrl": "https://twoja-domena.pl"
+    "siteUrl": "https://twoja-domena.pl",
+    "allowIndexing": true
 }

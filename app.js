@@ -17,6 +17,19 @@ app.set("port", process.env.PORT || 3000);
 // nadpisuje – więc na produkcji "siteUrl" w config.json jest obowiązkowe.
 app.set("trust proxy", 1);
 
+// Globalny przełącznik indeksowania – jedna flaga na cały serwis, bez ustawień
+// per-strona. Świadomie domyślnie WYŁĄCZONY: świeży klon albo staging bez wpisu
+// w config.json nie ma prawa trafić do Google. Porównanie do `true`, a nie truthy –
+// "false" zapisane jako string też ma blokować.
+const allowIndexing = config.allowIndexing === true;
+
+if (!allowIndexing) {
+    console.warn(
+        '[seo] "allowIndexing" nie jest ustawione na true – serwis wysyła noindex' +
+            " i blokuje roboty w robots.txt. Na produkcji ustaw je w config.json."
+    );
+}
+
 let db;
 const collections = {};
 let databaseError = false;
@@ -39,6 +52,16 @@ client.connect()
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
+// Nagłówek, a nie samo <meta>: obejmuje też pliki z /uploads (obrazki, PDF-y), dla
+// których nie ma gdzie wstawić meta, a które Google indeksuje osobno. Musi stać przed
+// wszystkimi trasami i przed express.static, inaczej ominą go odpowiedzi ze statyku.
+if (!allowIndexing) {
+    app.use((req, res, next) => {
+        res.set("X-Robots-Tag", "noindex, nofollow");
+        next();
+    });
+}
 
 app.get("/api*", (req, res, next) => {
     if (databaseError) {
@@ -250,6 +273,7 @@ function buildSeoBlock(meta, base, canonical, updated) {
     const image = base + seoMeta.DEFAULT_IMAGE;
 
     return [
+        allowIndexing ? "" : `<meta name="robots" content="noindex, nofollow">`,
         `<title>${e(title)}</title>`,
         `<meta name="description" content="${e(description)}">`,
         `<link rel="canonical" href="${e(canonical)}">`,
@@ -317,6 +341,12 @@ function injectSeo(html, block) {
 
 // Trasy muszą wyprzedzać express.static, inaczej wygrałby plik z dysku.
 app.get("/sitemap.xml", (req, res) => {
+    // 404, a nie pusty <urlset>: pusta sitemapa mówi "serwis bez treści", a chodzi
+    // o "sitemapy tu nie ma". Przy okazji oszczędza zapytanie do bazy.
+    if (!allowIndexing) {
+        res.status(404).type("text/plain").send("Not found");
+        return;
+    }
     getPages()
         .then(pages => {
             const base = siteUrl(req);
@@ -356,6 +386,11 @@ app.get("/sitemap.xml", (req, res) => {
 });
 
 app.get("/robots.txt", (req, res) => {
+    if (!allowIndexing) {
+        // Bez linii Sitemap – wskazywałaby adres, który i tak zwraca 404.
+        res.type("text/plain").send("User-agent: *\nDisallow: /\n");
+        return;
+    }
     res.type("text/plain").send(
         `User-agent: *\nAllow: /\n\nSitemap: ${siteUrl(req)}/sitemap.xml\n`
     );
