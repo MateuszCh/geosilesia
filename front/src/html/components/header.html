@@ -1,16 +1,17 @@
 <div class="header"
-    id="header"
-    ng-class="{'header--hidden' : vm.hideHeader}">
+     id="header"
+     ng-class="{'header--hidden' : vm.hideHeader}">
     <div class="hamburger"
-        ng-click="vm.toggleAsideNav()"
-        ng-class="{'hamburger--open' : vm.asideOpen}">
+         ng-click="vm.toggleAsideNav()"
+         ng-class="{'hamburger--open' : vm.asideOpen}">
         <span class="hamburger__menu"></span>
         <span class="hamburger__menu"></span>
         <span class="hamburger__menu"></span>
         <span class="hamburger__menu"></span>
     </div>
     <a class="header__logo"
-        href="/">
+       href="/"
+       aria-label="GeoSilesia — strona główna">
         <h1 class="header__logo__heading">GeoSilesia</h1>
     </a>
     <nav ng-if="vm.nav && vm.nav.length">
@@ -21,12 +22,12 @@
                 ng-mouseleave="vm.hoverNavItem = false"
                 ng-class="{'nav__item--active' : item.link ? vm.isActive(item.link) : vm.isActive(undefined, item.subnav)}">
                 <a class="nav__item__link"
-                    ng-if="::item.link"
-                    ng-href="{{::item.link}}"
-                    ng-bind="::item.title"></a>
+                   ng-if="::item.link"
+                   ng-href="{{::item.link}}"
+                   ng-bind="::item.title"></a>
                 <span class="nav__item__link"
-                    ng-bind="::item.title"
-                    ng-if="::item.subnav.length"></span>
+                      ng-bind="::item.title"
+                      ng-if="::item.subnav.length"></span>
                 <ul ng-if="::item.subnav"
                     class="subnav"
                     ng-class="{'subnav--active' : vm.hoverNavItem === $index}">
@@ -34,10 +35,10 @@
                         ng-repeat="sub in ::item.subnav"
                         ng-class="{'subnav__item--active' : sub.link && vm.isActive(sub.link)}">
                         <a class="subnav__item__link"
-                            ng-href="{{::sub.link}}"
-                            ng-bind="::sub.subtitle"
-                            ng-click="vm.activeGeo = item"
-                            ng-click="vm.openHam(sub); vm.hoverNavItem = false"></a>
+                           ng-href="{{::sub.link}}"
+                           ng-bind="::sub.subtitle"
+                           ng-click="vm.activeGeo = item"
+                           ng-click="vm.openHam(sub); vm.hoverNavItem = false"></a>
                     </li>
                 </ul>
             </li>
@@ -52,16 +53,16 @@
             <li class="aside-menu__list__item"
                 ng-repeat="item in vm.nav track by $index">
                 <a class="aside-menu__list__item__text"
-                    ng-if="::item.link"
-                    ng-bind="::item.title"
-                    ng-href="{{::item.link}}"></a>
+                   ng-if="::item.link"
+                   ng-bind="::item.title"
+                   ng-href="{{::item.link}}"></a>
                 <span class="aside-menu__list__item__text"
-                    ng-click="vm.subnav = item.subnav; vm.showSubNav = true;"
-                    ng-if="::!item.link"
-                    ng-bind="::item.title"></span>
+                      ng-click="vm.subnav = item.subnav; vm.showSubNav = true;"
+                      ng-if="::!item.link"
+                      ng-bind="::item.title"></span>
                 <span ng-click="vm.subnav = item.subnav; vm.showSubNav = true;"
-                    class="aside-menu__list__item__arrow"
-                    ng-if="::item.subnav.length"></span>
+                      class="aside-menu__list__item__arrow"
+                      ng-if="::item.subnav.length"></span>
             </li>
         </ul>
         <ul class="aside-menu__sub-list"
@@ -70,20 +71,20 @@
                 ng-click="vm.showSubNav = false">
                 <span class="aside-menu__sub-list__item__arrow"></span>
                 <span class="aside-menu__sub-list__item__text"
-                    style="padding-left: 1.5em">Wróć</span>
+                      style="padding-left: 1.5em">Wróć</span>
             </li>
             <li class="aside-menu__sub-list__item"
                 ng-repeat="subitem in vm.subnav track by $index">
                 <a ng-if="subitem.link"
-                    class="aside-menu__sub-list__item__text"
-                    ng-bind="subitem.subtitle"
-                    ng-href="{{subitem.link}}"></a>
+                   class="aside-menu__sub-list__item__text"
+                   ng-bind="subitem.subtitle"
+                   ng-href="{{subitem.link}}"></a>
                 <span class="aside-menu__sub-list__item__text"
-                    ng-if="!subitem.link"
-                    ng-bind="subitem.subtitle"></span>
+                      ng-if="!subitem.link"
+                      ng-bind="subitem.subtitle"></span>
             </li>
         </ul>
     </nav>
 </div>
 <div class="aside-menu-overlay"
-    ng-click="vm.toggleAsideNav()"></div>
+     ng-click="vm.toggleAsideNav()"></div>

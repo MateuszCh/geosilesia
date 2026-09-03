@@ -8,9 +8,9 @@
         }
     });
 
-    PageViewController.$inject = ["$location", "pwaService", "resourceService"];
+    PageViewController.$inject = ["$location", "pwaService", "resourceService", "seoService"];
 
-    function PageViewController($location, pwaService, resourceService) {
+    function PageViewController($location, pwaService, resourceService, seoService) {
         var vm = this;
         vm.$onInit = onInit;
         vm.pwaIsAvailable = pwaService.isAvailable();
@@ -46,6 +46,13 @@
                 vm.page = page;
             }
             vm.loaded = true;
+            // O 404 decyduje istnienie strony, a nie jej zawartość – tak samo jak na
+            // serwerze. Pusta strona z CMS-a nadal ma swój adres i tytuł.
+            if (vm.page && vm.page.pageUrl) {
+                seoService.applyForPage(vm.page);
+            } else {
+                seoService.applyNotFound();
+            }
         }
     }
 })();

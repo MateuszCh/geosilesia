@@ -10,16 +10,24 @@ const gulp = require('gulp'),
     htmlmin = require('gulp-htmlmin'),
     cleancss = require('gulp-clean-css'),
     series = require('stream-series'),
+    fs = require('fs'),
+    crypto = require('crypto'),
+    Transform = require('stream').Transform,
     // nodemon = require('gulp-nodemon'),
     del = require('del');
 
 const paths = {
     srcHTML: 'src/**/*.html',
+    srcIndex: 'src/index.html',
     srcTemplates: 'src/html/**/*.html',
     srcSCSS: 'src/sass/main.scss',
     srcSCSSs: 'src/sass/**/*.scss',
     srcJS: 'src/js/**/*.js',
+    // Wspólny z serwerem moduł SEO – musi trafić do bundla przed seo.service.js.
+    sharedSEO: '../shared/seo-meta.js',
     srcIMAGES: 'src/images/**/*',
+    srcSW: 'src/sw.js',
+    publicSW: 'public/sw.js',
     idb: './node_modules/idb/lib/idb.js',
 
     public: 'public',
@@ -37,6 +45,26 @@ const vendor = require('./vendor');
 //     hashLength: 40,
 //     template: "<%= name %><%= ext %>?hash=<%= hash %>"
 // };
+
+// gulp.src('src/js/**/*.js') zwraca katalogi rodzeństwa w niestabilnej kolejności,
+// przez co app.min.js potrafił różnić się bajtowo między buildami przy identycznych
+// źródłach. Dla Angulara kolejność rejestracji nie ma znaczenia, ale powtarzalny build
+// jest warunkiem sensownego hashowania wersji cache'u w zadaniu `sw`.
+function sortByPath() {
+    const files = [];
+    return new Transform({
+        objectMode: true,
+        transform(file, encoding, callback) {
+            files.push(file);
+            callback();
+        },
+        flush(callback) {
+            files.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+            files.forEach(file => this.push(file));
+            callback();
+        }
+    });
+}
 
 function errorLog(error) {
     console.error.bind(error);
@@ -74,8 +102,8 @@ gulp.task('css', function () {
 });
 
 gulp.task('js', function () {
-    return gulp
-        .src(paths.srcJS)
+    // Wspólny moduł SEO idzie pierwszy, reszta w stałej kolejności alfabetycznej.
+    return series(gulp.src(paths.sharedSEO), gulp.src(paths.srcJS).pipe(sortByPath()))
         .on('error', errorLog)
         .pipe(concat('app.min.js'))
         .pipe(uglify())
@@ -104,6 +132,56 @@ gulp.task('images', function () {
         .src(paths.srcIMAGES)
         .pipe(imagemin())
         .pipe(gulp.dest(paths.publicIMAGES));
+});
+
+// Generuje public/sw.js ze źródła src/sw.js, wstawiając w miejsce @@CACHE_VERSION@@
+// hash zawartości plików wymienionych w STATIC_FILES. Dzięki temu wersja cache'u zmienia
+// się dokładnie wtedy, gdy zmieni się to, co service worker cache'uje – przebudowa bez
+// zmian zostawia użytkownikom nietknięty cache.
+// Musi biec PO zadaniach budujących zasoby, bo hashuje ich wynik.
+gulp.task('sw', function (done) {
+    const source = fs.readFileSync(paths.srcSW, 'utf8');
+
+    const match = source.match(/var STATIC_FILES = \[([\s\S]*?)\];/);
+    if (!match) {
+        return done(new Error('[sw] Nie znaleziono STATIC_FILES w ' + paths.srcSW));
+    }
+    // Komentarze wycinamy przed wyłuskaniem stringów – jeden z nich zawiera '/',
+    // które inaczej trafiłoby na listę jako plik.
+    const withoutComments = match[1].replace(/\/\/[^\n]*/g, '');
+    const files = (withoutComments.match(/'[^']+'/g) || [])
+        .map(entry => entry.slice(1, -1))
+        .filter(entry => entry !== '/'); // '/' to trasa serwera, nie plik na dysku
+
+    const missing = files.filter(
+        file => !fs.existsSync(`${paths.public}/${file.replace(/^\//, '')}`)
+    );
+    if (missing.length) {
+        // addAll jest atomowe – brakujący plik zablokowałby rejestrację SW u użytkownika,
+        // więc lepiej zatrzymać build tutaj.
+        return done(
+            new Error(
+                `[sw] Brak plików ze STATIC_FILES w ${paths.public}: ${missing.join(', ')}`
+            )
+        );
+    }
+
+    const hash = crypto.createHash('sha1');
+    files
+        .slice()
+        .sort()
+        .forEach(file => {
+            hash.update(file);
+            hash.update(fs.readFileSync(`${paths.public}/${file.replace(/^\//, '')}`));
+        });
+    const version = hash.digest('hex').slice(0, 12);
+
+    fs.writeFileSync(
+        paths.publicSW,
+        source.replace('@@CACHE_VERSION@@', version)
+    );
+    console.log(`[sw] public/sw.js – wersja ${version} (${files.length} plików)`);
+    done();
 });
 
 gulp.task('copy', gulp.series(gulp.parallel('html', 'css', 'js')));
@@ -138,25 +216,37 @@ gulp.task(
 
 gulp.task(
     'watch',
-    gulp.series(gulp.parallel('inject'), function () {
-        gulp.watch([paths.srcTemplates], gulp.series('htmlWatch'));
-        gulp.watch([paths.srcSCSSs], gulp.series('css'));
-        gulp.watch([paths.srcJS], gulp.series('js'));
+    gulp.series(gulp.series('inject', 'sw'), function () {
+        // Każdy watcher kończy się zadaniem `sw`: hash w CACHE_VERSION liczy się
+        // z plików ze STATIC_FILES, więc bez tego service worker trzymałby w dewie
+        // starą wersję cache'u mimo przebudowanych zasobów.
+        gulp.watch([paths.srcTemplates], gulp.series('htmlWatch', 'sw'));
+        gulp.watch([paths.srcSCSSs], gulp.series('css', 'sw'));
+        // sharedSEO leży poza src/js, a trafia do tego samego bundla.
+        gulp.watch([paths.srcJS, paths.sharedSEO], gulp.series('js', 'sw'));
+        // index.html wymaga pełnego `inject` – to on wstawia znaczniki css/js.
+        gulp.watch([paths.srcIndex], gulp.series('inject', 'sw'));
     })
 );
 
 gulp.task(
     'watch-sync',
     gulp.series(gulp.parallel('browser-sync'), function () {
-        gulp.watch([paths.srcTemplates], gulp.series('htmlWatch'));
-        gulp.watch([paths.srcSCSSs], gulp.series('css'));
-        gulp.watch([paths.srcJS], gulp.series('js'));
+        // Każdy watcher kończy się zadaniem `sw`: hash w CACHE_VERSION liczy się
+        // z plików ze STATIC_FILES, więc bez tego service worker trzymałby w dewie
+        // starą wersję cache'u mimo przebudowanych zasobów.
+        gulp.watch([paths.srcTemplates], gulp.series('htmlWatch', 'sw'));
+        gulp.watch([paths.srcSCSSs], gulp.series('css', 'sw'));
+        // sharedSEO leży poza src/js, a trafia do tego samego bundla.
+        gulp.watch([paths.srcJS, paths.sharedSEO], gulp.series('js', 'sw'));
+        // index.html wymaga pełnego `inject` – to on wstawia znaczniki css/js.
+        gulp.watch([paths.srcIndex], gulp.series('inject', 'sw'));
     })
 );
 
 gulp.task(
     'default',
-    gulp.series(gulp.parallel('images', 'jsLib', 'idbLib', 'inject'))
+    gulp.series(gulp.parallel('images', 'jsLib', 'idbLib', 'inject'), 'sw')
 );
 
 gulp.task('clean', function () {
@@ -165,6 +255,7 @@ gulp.task('clean', function () {
         paths.publicHTML,
         paths.publicCSS,
         paths.publicJS,
-        paths.publicIMAGES
+        paths.publicIMAGES,
+        paths.publicSW
     ]);
 });
