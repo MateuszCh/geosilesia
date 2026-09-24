@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:server": "CI=1 NG_CLI_ANALYTICS=false NG_BUILD_MAX_WORKERS=1 NG_BUILD_PARALLEL_TS=0 NG_BUILD_TYPE_CHECK=0 ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
