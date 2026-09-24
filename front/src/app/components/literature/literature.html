@@ -1,0 +1,16 @@
+<div class="literature">
+    <h2 class="literature__heading">{{ component().title }}</h2>
+</div>
+@if (component().items?.length) {
+    <!-- Kolejność jak w CMS-ie. Stary szablon miał tu `orderBy: item.author`, ale
+         wyrażenie odwoływało się do zmiennej spoza pętli i było zawsze puste, więc
+         lista i tak nigdy nie była sortowana. -->
+    <ul class="literature__sources">
+        @for (item of component().items; track $index) {
+            <li>
+                <span>{{ item.author }}</span>
+                <span>{{ item.item }}</span>
+            </li>
+        }
+    </ul>
+}

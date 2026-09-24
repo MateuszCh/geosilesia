@@ -1,0 +1,129 @@
+@use 'sass:color';
+@use '../general/variables' as *;
+@use '../general/mixins' as *;
+
+.photos {
+    @include landscape {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    @include tablet {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    &__categories {
+        width: 100%;
+        display: flex;
+        margin: 0 auto;
+        flex-wrap: wrap;
+        justify-content: center;
+        font-size: 1rem;
+        font-family: $text-font;
+        &__category {
+            padding: 0.125rem 0.3125rem;
+            margin: 0.25rem;
+            text-align: center;
+            color: $header-color;
+            cursor: pointer;
+            transition: all 0.5s ease-in-out;
+            &:hover {
+                background-color: color.adjust($header-color, $lightness: -10%);
+                color: #fff;
+            }
+            &.markedCategory {
+                background-color: color.adjust($header-color, $lightness: -10%);
+                color: #fff;
+            }
+        }
+    }
+
+    &__list {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+
+        &__item {
+            display: block;
+            position: relative;
+            margin: 1.25rem 0.625rem;
+            overflow: hidden;
+            padding: 0.3125rem;
+            box-shadow: 0 0 3px 3px color.adjust(white, $lightness: -20%);
+            background-color: color.adjust(white, $lightness: -5%);
+            transform: scale(0);
+            transition: transform 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            // Faza wygaszania – element zostaje w układzie, żeby zdążył się zwinąć.
+            &--collapsed {
+                transform: scale(0) !important;
+            }
+            // Po animacji znika z układu, inaczej odfiltrowane kafelki zostawiałyby dziury.
+            &--hidden {
+                display: none;
+            }
+            &.figury-up {
+                transform: scale(1);
+            }
+            @include landscape {
+                width: 40%;
+            }
+            @include tablet {
+                margin: 0.625rem;
+                width: 28%;
+                background-color: color.adjust(white, $lightness: -5%);
+                box-shadow: 0 0 4px 4px color.adjust(white, $lightness: -20%);
+            }
+            @include laptop {
+                width: 21%;
+                &:hover .photos__list__item__figure__text {
+                    opacity: 0.9;
+                }
+                &:hover .photos__list__item__figure__image {
+                    transform: scale(1.4);
+                }
+            }
+            &.hidden {
+                display: none;
+            }
+            &__figure {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+                &__image {
+                    width: 100%;
+                    height: 100%;
+                    transition: all 0.2s ease-in-out;
+                }
+                &__text {
+                    padding: 0.625rem 0.3125rem;
+                    display: flex;
+                    position: absolute;
+                    color: white;
+                    background-color: rgba(color.adjust($header-color, $lightness: 10%), 0.9);
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    text-align: center;
+                    font-family: $headers-font;
+                    font-size: 1rem;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s ease-in-out;
+                    opacity: 1;
+                    @include tablet {
+                        font-size: 0.9rem;
+                        min-height: 3.5rem;
+                    }
+                    @include laptop {
+                        background-color: color.adjust($header-color, $lightness: 10%);
+                        opacity: 0;
+                        font-size: 1rem;
+                    }
+                }
+            }
+        }
+    }
+}

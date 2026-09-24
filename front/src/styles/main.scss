@@ -1,0 +1,25 @@
+// general
+@use 'general/variables' as *;
+@use 'general/mixins' as *;
+@use 'general/animation';
+@use 'general/general';
+
+// views
+@use 'views/geosilesia';
+@use 'views/about';
+@use 'views/attractions';
+@use 'views/terrain-table';
+@use 'views/info-div';
+@use 'views/main-page';
+
+// components
+@use 'components/header';
+@use 'components/nav';
+@use 'components/button-up';
+@use 'components/full-screen-mode';
+@use 'components/search-map';
+@use 'components/gallery';
+@use 'components/news';
+@use 'components/main-gallery';
+@use 'components/carousel';
+@use 'components/aside-menu';

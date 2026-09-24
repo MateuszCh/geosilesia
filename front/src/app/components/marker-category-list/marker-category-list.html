@@ -1,0 +1,15 @@
+@if (component().text) {
+    <p>{{ component().text }}</p>
+}
+@if (component().categories?.length) {
+    <ul class="markers">
+        @for (category of component().categories; track $index) {
+            <li class="markers__item">
+                <img [src]="category.icon"
+                     alt="ikona kategorii atrakcji geoturystycznych">
+                <p class="markers__item__text"
+                   [innerHTML]="category.text"></p>
+            </li>
+        }
+    </ul>
+}

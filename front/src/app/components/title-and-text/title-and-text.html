@@ -1,0 +1,18 @@
+@if (component().title) {
+    <h2>{{ component().title }}</h2>
+}
+@for (row of component().text ?? []; track $index) {
+    <div>
+        @if (row.paragraph) {
+            <p [innerHTML]="row.paragraph | trusted"
+               [class]="row.paragraph_class ?? ''"></p>
+        }
+        @if (row.list?.length) {
+            <ul class="default-list">
+                @for (item of row.list; track $index) {
+                    <li [innerHTML]="item.item | trusted"></li>
+                }
+            </ul>
+        }
+    </div>
+}

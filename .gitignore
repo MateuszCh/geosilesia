@@ -1,13 +1,13 @@
 .idea/
 .DS_Store
 front/node_modules/
-front/public/css
-front/public/html
-front/public/js
-front/public/index.html
-front/public/sw.js
-front/public/images
-front/package-lock.json
+front/dist/
+front/.angular/
+# Poprzedni front (AngularJS) zachowany do wglądu – śledzone są same źródła,
+# nie zależności gulpa ani jego wynik buildu.
+front-old/node_modules/
+front-old/public/
+front-old/package-lock.json
 node_modules/
 package-lock.json
 config.json

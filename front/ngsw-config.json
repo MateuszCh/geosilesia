@@ -1,0 +1,40 @@
+{
+    "$comment": "Brak dataGroups jest celowy: odpowiedzi /api/** aplikacja sama zapisuje do IndexedDB (resource.service.ts) i stamtąd je czyta w trybie offline. Cache'owanie ich jeszcze raz przez ngsw trzymałoby te same kilka megabajtów podwójnie.",
+    "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+    "index": "/index.html",
+    "navigationRequestStrategy": "freshness",
+    "navigationUrls": [
+        "/**",
+        "!/**/*.*",
+        "!/**/*__*",
+        "!/**/*__*/**",
+        "!/api/**",
+        "!/uploads/**"
+    ],
+    "assetGroups": [
+        {
+            "name": "app",
+            "installMode": "prefetch",
+            "resources": {
+                "files": [
+                    "/favicon.ico",
+                    "/index.html",
+                    "/manifest.json",
+                    "/*.css",
+                    "/*.js"
+                ]
+            }
+        },
+        {
+            "name": "assets",
+            "installMode": "lazy",
+            "updateMode": "prefetch",
+            "resources": {
+                "files": [
+                    "/media/**",
+                    "/images/**"
+                ]
+            }
+        }
+    ]
+}

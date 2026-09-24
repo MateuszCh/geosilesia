@@ -1,0 +1,93 @@
+<div class="header"
+     id="header">
+    <div class="hamburger"
+         (click)="toggleAsideNav()"
+         [class.hamburger--open]="asideOpen()">
+        <span class="hamburger__menu"></span>
+        <span class="hamburger__menu"></span>
+        <span class="hamburger__menu"></span>
+        <span class="hamburger__menu"></span>
+    </div>
+    <a class="header__logo"
+       routerLink="/"
+       aria-label="GeoSilesia — strona główna">
+        <h1 class="header__logo__heading">GeoSilesia</h1>
+    </a>
+    @if (nav().length) {
+        <nav>
+            <ul class="nav">
+                @for (item of nav(); track $index) {
+                    <li class="nav__item"
+                        (mouseenter)="hoverNavItem.set($index)"
+                        (mouseleave)="hoverNavItem.set(false)"
+                        [class.nav__item--active]="item.link ? isActive(item.link) : isActive(undefined, item.subnav)">
+                        @if (item.link) {
+                            <a class="nav__item__link"
+                               [routerLink]="internalLink(item.link)">{{ item.title }}</a>
+                        }
+                        @if (item.subnav?.length) {
+                            <span class="nav__item__link">{{ item.title }}</span>
+                        }
+                        @if (item.subnav) {
+                            <ul class="subnav"
+                                [class.subnav--active]="hoverNavItem() === $index">
+                                @for (sub of item.subnav; track $index) {
+                                    <li class="subnav__item"
+                                        [class.subnav__item--active]="!!sub.link && isActive(sub.link)">
+                                        <a class="subnav__item__link"
+                                           [routerLink]="internalLink(sub.link)"
+                                           (click)="hoverNavItem.set(false)">{{ sub.subtitle }}</a>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+
+<div class="aside-menu">
+    <nav>
+        <ul class="aside-menu__list"
+            [class.aside-menu__list--hide]="showSubNav()">
+            @for (item of nav(); track $index) {
+                <li class="aside-menu__list__item">
+                    @if (item.link) {
+                        <a class="aside-menu__list__item__text"
+                           [routerLink]="internalLink(item.link)">{{ item.title }}</a>
+                    } @else {
+                        <span class="aside-menu__list__item__text"
+                              (click)="openSubnav(item)">{{ item.title }}</span>
+                    }
+                    @if (item.subnav?.length) {
+                        <span class="aside-menu__list__item__arrow"
+                              (click)="openSubnav(item)"></span>
+                    }
+                </li>
+            }
+        </ul>
+        <ul class="aside-menu__sub-list"
+            [class.aside-menu__sub-list--show]="showSubNav()">
+            <li class="aside-menu__sub-list__item"
+                (click)="showSubNav.set(false)">
+                <span class="aside-menu__sub-list__item__arrow"></span>
+                <span class="aside-menu__sub-list__item__text"
+                      style="padding-left: 1.5em">Wróć</span>
+            </li>
+            @for (subitem of subnav() ?? []; track $index) {
+                <li class="aside-menu__sub-list__item">
+                    @if (subitem.link) {
+                        <a class="aside-menu__sub-list__item__text"
+                           [routerLink]="internalLink(subitem.link)">{{ subitem.subtitle }}</a>
+                    } @else {
+                        <span class="aside-menu__sub-list__item__text">{{ subitem.subtitle }}</span>
+                    }
+                </li>
+            }
+        </ul>
+    </nav>
+</div>
+<div class="aside-menu-overlay"
+     (click)="toggleAsideNav()"></div>

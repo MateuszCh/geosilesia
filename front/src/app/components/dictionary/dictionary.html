@@ -1,0 +1,21 @@
+@if (component().items) {
+    <dl>
+        @for (item of component().items; track $index) {
+            <div>
+                <dt>{{ item.title }}</dt>
+                @for (row of item.rows ?? []; track $index) {
+                    <dd>
+                        <span>{{ row.text }}</span>
+                        @if (row.list_item?.length) {
+                            <ul class="default-list">
+                                @for (listItem of row.list_item; track $index) {
+                                    <li>{{ listItem.text }}</li>
+                                }
+                            </ul>
+                        }
+                    </dd>
+                }
+            </div>
+        }
+    </dl>
+}

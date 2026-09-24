@@ -1,0 +1,124 @@
+@use '../general/variables' as *;
+@use '../general/mixins' as *;
+
+$transitionTime: 0.3s;
+
+.aside-menu {
+    position: fixed;
+    top: 72px;
+    right: 0;
+    bottom: 0;
+    z-index: 9;
+    width: 60vw;
+    background-color: white;
+    transition: transform $transitionTime ease-in-out;
+    transform: translateX(100%);
+    font-family: $text-font;
+    color: $color1;
+    text-decoration: none;
+    overflow: hidden;
+
+    @include tablet {
+        width: 40vw;
+    }
+
+    @include laptop {
+        display: none;
+    }
+
+    &__list {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        padding: 1em 2em 1em 1em;
+        transition: transform $transitionTime ease-in-out;
+        overflow-y: auto;
+        &--hide {
+            transform: translateX(-100%);
+        }
+        &__item {
+            padding: 0.5em 0;
+            display: flex;
+            position: relative;
+            &__text {
+                width: 100%;
+                text-decoration: none;
+            }
+            &__arrow {
+                position: absolute;
+                left: 100%;
+                top: 50%;
+                width: 0.7em;
+                height: 0.7em;
+                background: transparent;
+                border-top: 0.1em solid $header-color;
+                border-right: 0.1em solid $header-color;
+                transform: translate3d(0, -50%, 0) rotate(45deg);
+            }
+        }
+    }
+
+    &__sub-list {
+        padding: 1em;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        transition: transform $transitionTime ease-in-out;
+        transform: translateX(100%);
+
+        &__item {
+            @extend .aside-menu__list__item;
+            &__text {
+                @extend .aside-menu__list__item__text;
+            }
+            &__arrow {
+                @extend .aside-menu__list__item__arrow;
+                left: 3px;
+                transform: translate3d(0, -50%, 0) rotate(-135deg);
+            }
+        }
+
+        &--show {
+            transform: translateX(0%);
+        }
+    }
+
+    body.aside-nav-open & {
+        transform: translateX(0%);
+    }
+
+    &-overlay {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: -1;
+        background-color: black;
+        opacity: 0;
+        transition: z-index 0s ease $transitionTime,
+            opacity $transitionTime ease-in-out;
+
+        @include laptop {
+            display: none;
+        }
+
+        body.aside-nav-open & {
+            z-index: 8;
+            opacity: 0.3;
+            transition: z-index 0s ease, opacity $transitionTime ease-in-out;
+        }
+    }
+}
+
+body.aside-nav-open {
+    max-height: 100vh;
+    overflow: visible;
+    position: fixed;
+    right: 0;
+    left: 0;
+}

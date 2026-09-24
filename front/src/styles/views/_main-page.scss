@@ -1,0 +1,93 @@
+@use '../general/variables' as *;
+@use '../general/mixins' as *;
+
+.homepage-banner {
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    position: relative;
+    &__image {
+        position: absolute;
+        height: 100vh;
+        width: 100%;
+        object-fit: cover;
+        object-position: 10%;
+        @include tablet {
+            object-position: center;
+        }
+    }
+    &__heading {
+        cursor: pointer;
+        font-family: $text-font;
+        color: white;
+        padding: 1.5rem 3.125rem 0.625rem 3.125rem;
+        background-color: $color3;
+        position: relative;
+        font-weight: normal;
+        font-size: 1.3rem;
+        z-index: 5;
+        @include tablet {
+            width: auto;
+            padding: 2rem 1.25rem 0.625rem 1.25rem;
+            font-size: 1.5rem;
+        }
+        @include laptop {
+            font-size: 2rem;
+        }
+
+        &:before {
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: 0;
+            left: calc(50% - 1rem);
+            border-left: 1rem solid transparent;
+            border-right: 1rem solid transparent;
+            border-top: 1.5rem solid white;
+            content: "";
+            @include tablet {
+                left: calc(50% - 1.25rem);
+                border-left: 1.25rem solid transparent;
+                border-right: 1.25rem solid transparent;
+                border-top: 1.875rem solid white;
+            }
+        }
+        &__right,
+        &__left {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            //background-color: $color3;
+            width: 85px;
+            border-bottom: 85px solid $color3;
+        }
+
+        &__right {
+            left: 100%;
+            border-right: 85px solid transparent;
+        }
+        &__left {
+            right: 100%;
+            border-left: 85px solid transparent;
+        }
+    }
+    &__bar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        background-color: $color3;
+        bottom: 0;
+        height: 25px;
+    }
+}
+
+.homepage-map {
+    width: 100%;
+    display: block;
+    position: relative;
+    @include tablet {
+        height: 100vh;
+    }
+}

@@ -168,7 +168,9 @@ app.get("/api/page/:pageUrl", (req, res, next) => {
 // SEO (sitemap, meta) //
 //////////////////////
 
-const INDEX_PATH = path.resolve(`${__dirname}/front/public/index.html`);
+// Katalog wyjściowy `ng build` (builder @angular/build:application).
+const FRONT_DIR = path.resolve(`${__dirname}/front/dist/geosilesia/browser`);
+const INDEX_PATH = path.resolve(`${FRONT_DIR}/index.html`);
 const SEO_START = "<!--seo:start-->";
 const SEO_END = "<!--seo:end-->";
 const PAGES_TTL = 10 * 60 * 1000;
@@ -199,7 +201,7 @@ function getPages() {
 let indexCache = null;
 let indexMtime = 0;
 
-// Zbudowany index.html zmienia się przy każdym `gulp watch`, więc pilnujemy mtime
+// Zbudowany index.html zmienia się przy każdym `ng build`, więc pilnujemy mtime
 // zamiast wczytywać plik raz na starcie procesu.
 function getIndexHtml() {
     return fs.promises.stat(INDEX_PATH).then(stat => {
@@ -319,7 +321,8 @@ function buildSeoBlock(meta, base, canonical, updated) {
 }
 
 // Generyczny blok meta shella: canonical wskazuje na "/", bo to ten sam dokument bez
-// treści konkretnej strony. Używa go i /index.html, i awaryjna ścieżka bez bazy.
+// treści konkretnej strony. Zostaje przy awaryjnej ścieżce bez bazy — /index.html
+// oddajemy dziś nietknięte, żeby zgadzał się hash w manifeście service workera.
 function defaultSeoBlock(base) {
     return buildSeoBlock(
         {
@@ -396,16 +399,17 @@ app.get("/robots.txt", (req, res) => {
     );
 });
 
-// /index.html to ten sam dokument co "/", więc bez tego byłby indeksowany osobno
-// jako duplikat. Nie przekierowujemy: ten adres jest w STATIC_FILES service workera,
-// a przekierowanie sprawiłoby, że cache.addAll zapisałby pod nim stronę główną wraz
-// z jej meta i zatruł generyczny shell offline. Zamiast tego oddajemy shell
-// z domyślnymi meta i canonical wskazującym na "/".
+// /index.html to ten sam dokument co "/", więc bez tego byłby indeksowany osobno jako
+// duplikat. Nie przekierowujemy ani nie wstrzykujemy tu meta: ten plik jest wpisany
+// w manifest service workera (ngsw.json) razem ze swoim hashem i pobierany dokładnie
+// pod tym adresem. Każda zmiana bajtu rozjechałaby hash, a ngsw uznałby zasób za
+// uszkodzony i przeszedł w tryb awaryjny. Kanoniczność załatwia więc nagłówek HTTP
+// Link — Google traktuje go równorzędnie z <link rel="canonical"> w treści.
 app.get("/index.html", (req, res, next) => {
     getIndexHtml()
         .then(html => {
-            const base = siteUrl(req);
-            res.type("html").send(injectSeo(html, defaultSeoBlock(base)));
+            res.set("Link", `<${siteUrl(req)}/>; rel="canonical"`);
+            res.type("html").send(html);
         })
         .catch(next);
 });
@@ -413,7 +417,7 @@ app.get("/index.html", (req, res, next) => {
 app.use("/uploads", express.static(`${__dirname}/uploads`));
 // index: false – bez tego serve-static sam obsłużyłby "/" plikiem index.html
 // i strona główna jako jedyna nie dostałaby meta z serwera.
-app.use("/", express.static(`${__dirname}/front/public`, { index: false }));
+app.use("/", express.static(FRONT_DIR, { index: false }));
 
 app.get(["*"], (req, res, next) => {
     getIndexHtml()

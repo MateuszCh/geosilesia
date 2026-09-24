@@ -1,0 +1,72 @@
+<div class="geosilesia">
+    @if (component().tabs?.length) {
+        <ul class="geosilesia__tabs">
+            @for (tabHeading of component().tabs; track $index) {
+                <li class="geosilesia__tabs__item"
+                    (click)="activeTab.set($index)"
+                    [class.geosilesia__tabs__item--selected]="activeTab() === $index">{{ tabHeading.title }}</li>
+            }
+        </ul>
+        <div class="geosilesia__field">
+            @for (tab of component().tabs; track $index) {
+                <div class="geosilesia__field__structure"
+                     [class.geosilesia__field__structure--active]="activeTab() === $index">
+                    @for (row of tab.rows ?? []; track $index) {
+                        <div>
+                            @if (row.heading) {
+                                <h3 class="geosilesia__field__structure__heading">{{ row.heading }}</h3>
+                            }
+                            @for (paragraph of row.paragraphs ?? []; track $index) {
+                                <p>{{ paragraph.paragraph }}</p>
+                            }
+                            @if (row.list?.length) {
+                                <ul class="default-list">
+                                    @for (item of row.list; track $index) {
+                                        <li>{{ item.item }}</li>
+                                    }
+                                </ul>
+                            }
+                            @if (row.image) {
+                                <div [class.geosilesia__field__structure__segment]="!!row.image_footnotes?.length">
+                                    <figure class="geosilesia__field__structure__figure">
+                                        <img class="geosilesia__field__structure__figure__image"
+                                             alt=""
+                                             [src]="row.image">
+                                    </figure>
+                                    @if (row.image_footnotes) {
+                                        <ol class="geosilesia__field__structure__list">
+                                            @for (footnote of row.image_footnotes; track $index) {
+                                                <li>{{ footnote.footnote }}</li>
+                                            }
+                                        </ol>
+                                    }
+                                </div>
+                            }
+                            @for (table of row.table ?? []; track $index) {
+                                <table class="terrain-table">
+                                    @for (colgroup of table.colgroups ?? []; track $index) {
+                                        <colgroup [attr.span]="colgroup.colgroup_span"></colgroup>
+                                    }
+                                    @for (tableRow of table.rows ?? []; track $index) {
+                                        <tr>
+                                            @for (header of tableRow.header ?? []; track $index) {
+                                                <th class="terrain-table__header"
+                                                    [attr.rowspan]="header.rowspan"
+                                                    [attr.colspan]="header.colspan"
+                                                    [attr.scope]="header.scope">{{ header.text }}</th>
+                                            }
+                                            @for (cell of tableRow.data ?? []; track $index) {
+                                                <td class="terrain-table__data"
+                                                    [class.terrain-table__data--right]="$last">{{ cell.text }}</td>
+                                            }
+                                        </tr>
+                                    }
+                                </table>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>

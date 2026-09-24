@@ -1,0 +1,65 @@
+@use 'sass:color';
+@use '../general/variables' as *;
+
+.news {
+    padding: 0.625rem;
+    background-color: #ddd;
+    margin: 0.625rem;
+    transition: all 0.3s ease-in-out;
+    font-family: $text-font;
+    color: #666;
+
+    &__info {
+        text-align: center;
+    }
+
+    &--active {
+        background-color: $color3;
+        color: white;
+        .news__head__title,
+        .news__head__date,
+        .news__body__text,
+        .news__body__links {
+            color: white;
+        }
+    }
+    &__head {
+        cursor: pointer;
+        &__title {
+            color: color.adjust($text-color, $lightness: -10%);
+            font-size: 1.2rem;
+            transition: all 0.3s ease-in-out;
+        }
+        &__date {
+            font-size: 1rem;
+            line-height: normal;
+            margin: 0;
+            padding: 0;
+            transition: all 0.3s ease-in-out;
+        }
+    }
+
+    &__body {
+        max-height: 0;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        padding: 0 0.625rem;
+
+        &--active {
+            max-height: 1500px !important;
+            padding: 0.625rem;
+        }
+        &__text {
+            transition: all 0.3s ease-in-out;
+        }
+        &__links {
+            margin-bottom: 0;
+            margin-top: 0;
+            transition: all 0.5s ease-in-out;
+            &__item {
+                color: inherit;
+                padding: 0 0.625rem;
+            }
+        }
+    }
+}

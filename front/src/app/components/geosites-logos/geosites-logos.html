@@ -1,0 +1,16 @@
+@if (component().logos) {
+    <ul class="geosites">
+        @for (logo of component().logos; track $index) {
+            <li>
+                <a class="geosites__link"
+                   target="_blank"
+                   rel="noreferrer"
+                   [href]="logo.link">
+                    <img class="geosites__image"
+                         [src]="logo.image"
+                         [alt]="'przejdź na stronę ' + logo.link">
+                </a>
+            </li>
+        }
+    </ul>
+}

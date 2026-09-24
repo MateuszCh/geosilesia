@@ -1,0 +1,15 @@
+<app-header />
+<div #page
+     class="fade"
+     id="page">
+    <router-outlet />
+</div>
+<button class="button-up"
+        id="scroll"
+        aria-label="przewiń do góry"
+        [class.scrolled]="scrolled()"
+        (click)="scrollToTop()">
+    <img class="button-up__image"
+         alt="przewiń do góry"
+         src="/images/arrow.svg">
+</button>
