@@ -10,6 +10,9 @@ front-old/public/
 front-old/package-lock.json
 node_modules/
 package-lock.json
+# Lockfile frontu musi być w repo: bez niego serwer dobiera najnowsze wersje
+# (np. @angular/build 22.2 z sass-embedded), które na nim zawieszają build.
+!front/package-lock.json
 config.json
 tmp/
 uploads/
