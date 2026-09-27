@@ -13,20 +13,24 @@ import { GalleryData, GalleryImage } from '../../models/row.model';
 import { ImageLoadedDirective } from '../../shared/image-loaded.directive';
 import { SwipeDirective } from '../../shared/swipe.directive';
 
-/** Musi zgadzać się z czasem przejścia podglądu w _full-screen-mode.scss. */
+/** Must match the preview transition duration in _full-screen-mode.scss. */
 const SLIDE_MS = 100;
 const CLOSE_MS = 500;
 
 @Component({
     selector: 'app-gallery',
     templateUrl: './gallery.html',
+    // CMS HTML in <p [innerHTML]>: if an editor puts a block element in it (<p>, <div>,
+    // <ul>), the browser rearranges the server-sent DOM and hydration breaks. So the
+    // component re-renders in the browser; the content is in the HTML for robots anyway.
+    host: { ngSkipHydration: 'true' },
     imports: [ImageLoadedDirective, SwipeDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Gallery implements OnInit {
     readonly component = input.required<GalleryData>();
 
-    /** Kolejność z CMS-a; ten sam porządek obowiązuje w miniaturach i w podglądzie. */
+    /** Order from the CMS; the same order applies to thumbnails and the preview. */
     readonly images = computed<GalleryImage[]>(() =>
         [...(this.component().catalogue ?? [])].sort(
             (a, b) => (a.position ?? 0) - (b.position ?? 0)
@@ -37,9 +41,9 @@ export class Gallery implements OnInit {
     readonly currentImage = signal<number | undefined>(undefined);
     readonly nextImage = signal<number | undefined>(undefined);
     readonly prevImage = signal<number | undefined>(undefined);
-    /** Kierunek przejścia – decyduje, z której strony wjeżdża kolejne zdjęcie. */
+    /** Transition direction – decides from which side the next photo slides in. */
     readonly back = signal(false);
-    /** Blokuje animację na czas ustawiania pozycji startowej. */
+    /** Disables the animation while the starting position is being set. */
     readonly noMove = signal(false);
 
     private readonly doc = inject(DOCUMENT);
@@ -66,8 +70,8 @@ export class Gallery implements OnInit {
         this.destroyRef.onDestroy(() => {
             this.doc.defaultView?.removeEventListener('keydown', this.onKeyDown);
             this.timers.forEach(clearTimeout);
-            // Wyjście ze strony przy otwartym podglądzie nie może zostawić
-            // zablokowanego przewijania na <body>.
+            // Leaving the page with the preview open must not leave scrolling locked
+            // on <body>.
             this.doc.body.classList.remove('closedScroll');
         });
     }
@@ -94,8 +98,8 @@ export class Gallery implements OnInit {
         this.doc.defaultView?.removeEventListener('keydown', this.onKeyDown);
         this.doc.body.classList.remove('closedScroll');
         this.visible.set(false);
-        // Indeksy czyścimy dopiero po wygaszeniu podglądu – wcześniej zdjęcie
-        // zniknęłoby w trakcie animacji zamykania.
+        // Indexes are cleared only after the preview fades out – otherwise the photo
+        // would disappear during the closing animation.
         this.later(() => {
             this.currentImage.set(undefined);
             this.nextImage.set(undefined);
@@ -126,7 +130,7 @@ export class Gallery implements OnInit {
         }, SLIDE_MS);
     }
 
-    /** Sąsiedzi zawijają się na końcach, żeby przewijanie było w kółko. */
+    /** Neighbours wrap around at the ends so browsing goes round in a loop. */
     private setIndexes(current: number): void {
         this.currentImage.set(current);
         this.nextImage.set((current + 1) % this.count);

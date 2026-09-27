@@ -14,7 +14,7 @@ export class HomepageBanner {
 
     private readonly scroll = inject(ScrollService);
 
-    /** Kliknięcie w nagłówek zjeżdża do pierwszej sekcji pod banerem. */
+    /** Clicking the heading scrolls down to the first section below the banner. */
     scrollToFirstSection(): void {
         this.scroll.scrollToId('section-1');
     }

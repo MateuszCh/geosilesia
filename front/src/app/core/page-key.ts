@@ -1,10 +1,10 @@
 /**
- * Klucz strony używany i w adresie API, i jako klucz w IndexedDB. Musi być liczony
- * identycznie w resolverze i w komponencie – inaczej resolver czytałby z bazy pod jednym
- * kluczem, a komponent odświeżał pod innym.
+ * Page key used both in the API URL and as the IndexedDB key. It must be computed the
+ * same way in the resolver and in the component – otherwise the resolver would read from
+ * the database under one key and the component would refresh under another.
  *
- * "/" → "/", "/slownik" → "slownik", "/index.html" → "/" (ten adres to ta sama strona
- * główna, a service worker trzyma go w cache'u pod własną nazwą).
+ * "/" → "/", "/slownik" → "slownik", "/index.html" → "/" (that address is the same home
+ * page, which the service worker cached under its own name).
  */
 export function pageKeyFromUrl(url: string): string {
     const path = url.split('?')[0].split('#')[0];
@@ -12,7 +12,7 @@ export function pageKeyFromUrl(url: string): string {
     try {
         decoded = decodeURIComponent(path);
     } catch {
-        decoded = path; // uszkodzona sekwencja %-owa – bierzemy jak leci
+        decoded = path; // malformed %-sequence – take it as is
     }
     const key = decoded.replace(/^\/+/, '');
     return !key || key === 'index.html' ? '/' : key;

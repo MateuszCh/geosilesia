@@ -4,27 +4,28 @@ import { GOOGLE_MAPS_URL } from './map.config';
 import { MapCategory, MapMarker, MapStyleDefinition } from './map.types';
 import { IconPost, MarkerPost } from '../models/post.model';
 
-/** Promień Ziemi w km – do liczenia odległości wzorem haversine. */
+/** Earth's radius in km – for computing distances with the haversine formula. */
 const EARTH_RADIUS_KM = 6371;
 
 /**
- * Port map.service.js. Logika (kategorie, odległości, markery, InfoWindow) została bez
- * zmian; różnice to leniwe ładowanie skryptu Google przez Promise zamiast odpytywania
- * co pół sekundy oraz InfoWindow budowane z węzłów DOM, nie ze sklejonego stringa.
+ * Port of map.service.js. The logic (categories, distances, markers, InfoWindow) is
+ * unchanged; the differences are lazy loading of the Google script via a Promise instead
+ * of polling every half second, and an InfoWindow built from DOM nodes rather than from
+ * a concatenated string.
  */
 @Injectable({ providedIn: 'root' })
 export class MapService {
     private readonly doc = inject(DOCUMENT);
     private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-    /** Sterują widocznością mapy i pola wyszukiwania w szablonie search-map. */
+    /** Controls the visibility of the map and the search field in the search-map template. */
     readonly ready = signal(false);
 
     private loading: Promise<boolean> | null = null;
 
     /**
-     * Skrypt Google ładujemy dopiero, gdy strona faktycznie zawiera mapę – to kilkaset
-     * kilobajtów, których większość podstron nie potrzebuje.
+     * The Google script is loaded only when the page actually contains a map – it is
+     * several hundred kilobytes that most pages do not need.
      */
     loadGoogleMaps(): Promise<boolean> {
         if (!this.isBrowser) return Promise.resolve(false);
@@ -41,8 +42,8 @@ export class MapService {
                 resolve(true);
             };
             script.onerror = () => {
-                // Bez mapy strona ma nadal działać: lista wyników renderuje się z danych
-                // z API, tylko bez podglądu i bez wyszukiwania po adresie.
+                // The page must keep working without the map: the result list renders from
+                // the API data, just without the preview and without address search.
                 this.loading = null;
                 resolve(false);
             };
@@ -84,7 +85,7 @@ export class MapService {
         });
     }
 
-    /** Wyszukana lokalizacja wchodzi na listę wyników jako pseudo-marker typu "home". */
+    /** The searched location joins the result list as a pseudo-marker of type "home". */
     getLocationDetails(result: google.maps.GeocoderResult): MapMarker {
         return {
             position: {
@@ -115,7 +116,7 @@ export class MapService {
             .sort((a, b) => a.distance - b.distance);
     }
 
-    /** Odległość po wielkim okręgu (haversine) w kilometrach. */
+    /** Great-circle distance (haversine) in kilometres. */
     private getDistance(
         lat1: number,
         lng1: number,
@@ -143,8 +144,8 @@ export class MapService {
             if (position) bounds.extend(position);
         });
         map.fitBounds(bounds);
-        // Przy jednym wyniku fitBounds przybliżyłby maksymalnie – wtedy widać sam punkt
-        // i nic wokół niego.
+        // With a single result fitBounds would zoom in all the way – showing just the
+        // point and nothing around it.
         if (markers.length === 1) {
             map.setZoom(16);
         }
@@ -200,8 +201,8 @@ export class MapService {
     }
 
     /**
-     * Dymek budowany z węzłów DOM, a nie ze sklejonego HTML-a: tytuły i odnośniki
-     * pochodzą z CMS-a, więc wstawiane jako tekst nie mogą wykonać się jako znaczniki.
+     * The info bubble is built from DOM nodes, not from concatenated HTML: titles and
+     * links come from the CMS, so inserted as text they cannot execute as markup.
      */
     private infoWindowContent(model: MapMarker): HTMLElement {
         const container = this.doc.createElement('div');
@@ -234,8 +235,8 @@ export class MapService {
     }
 
     /**
-     * Kategorie bierzemy z postów typu "icon", ale zostawiamy tylko te, które ma
-     * przynajmniej jeden marker – inaczej filtr pokazywałby puste pozycje.
+     * Categories come from "icon" posts, but only those used by at least one marker are
+     * kept – otherwise the filter would show empty entries.
      */
     getCategories(markers: MarkerPost[], icons: IconPost[]): MapCategory[] {
         if (!markers?.length || !icons?.length) return [];
@@ -258,7 +259,7 @@ export class MapService {
             }));
     }
 
-    /** Spłaszcza posty typu "marker" do postaci używanej przez mapę i listę wyników. */
+    /** Flattens "marker" posts into the shape used by the map and the result list. */
     getFormattedMarkers(markers: MarkerPost[]): MapMarker[] {
         if (!markers?.length) return [];
         return markers

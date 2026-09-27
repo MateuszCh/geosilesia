@@ -14,7 +14,7 @@ import { GalleryListData } from '../../models/row.model';
 import { ImageLoadedDirective } from '../../shared/image-loaded.directive';
 
 const ALL_CATEGORIES = 'wszystkie';
-/** Musi zgadzać się z `transition: transform 0.3s` na .photos__list__item. */
+/** Must match `transition: transform 0.3s` on .photos__list__item. */
 const COLLAPSE_MS = 300;
 
 @Component({
@@ -30,9 +30,9 @@ export class GalleryList {
     protected readonly isExternalLink = isExternalLink;
 
     /**
-     * Krótko po zmianie kategorii jest `undefined` – wtedy nic nie pasuje, więc wszystkie
-     * kafelki zjeżdżają do zera. Dopiero po zakończeniu tej animacji ustawiamy nową
-     * kategorię i pasujące kafelki wjeżdżają z powrotem.
+     * Briefly `undefined` after a category change – nothing matches then, so all tiles
+     * shrink to zero. Only after that animation ends is the new category set, and the
+     * matching tiles slide back in.
      */
     readonly selectedCategory = signal<string | undefined>(ALL_CATEGORIES);
 
@@ -60,7 +60,7 @@ export class GalleryList {
         return selected === ALL_CATEGORIES || selected === category;
     }
 
-    /** Poza fazą zwijania odfiltrowany kafelek znika z układu, żeby nie zostawiał dziury. */
+    /** Outside the collapse phase a filtered-out tile leaves the layout so it leaves no gap. */
     isHidden(category: string | undefined): boolean {
         return this.selectedCategory() !== undefined && !this.matches(category);
     }

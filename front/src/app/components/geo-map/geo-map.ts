@@ -18,8 +18,8 @@ import { MAP_STYLE } from '../../core/map-style';
 import { MapCategory, MapMarker } from '../../core/map.types';
 
 /**
- * Nazwa `GeoMap`, a nie `Map` – ta druga przesłoniłaby wbudowany typ Map w każdym pliku,
- * który by ją zaimportował.
+ * Named `GeoMap`, not `Map` – the latter would shadow the built-in Map type in every file
+ * that imported it.
  */
 @Component({
     selector: 'app-geo-map',
@@ -31,7 +31,7 @@ export class GeoMap {
     readonly categories = input<MapCategory[]>([]);
     readonly activeCategory = input<string | undefined>();
     readonly markerCluster = input(false);
-    /** Id markera, na którym mapa ma się wyśrodkować; undefined = brak wyboru. */
+    /** Id of the marker the map should centre on; undefined = no selection. */
     readonly currentResult = input<string | number | undefined>();
 
     private readonly mapService = inject(MapService);
@@ -57,8 +57,8 @@ export class GeoMap {
     }
 
     private initMap(): void {
-        // Komponent jest renderowany dopiero po załadowaniu skryptu Google, ale strażnik
-        // zostaje: bez niego błąd sieci zamieniłby brak mapy w wyjątek.
+        // The component is rendered only after the Google script has loaded, but the guard
+        // stays: without it a network error would turn a missing map into an exception.
         if (!this.mapService.isLoaded()) return;
 
         const container = this.host.firstElementChild as HTMLElement;
@@ -142,7 +142,7 @@ export class GeoMap {
         this.mapService.setBounds(this.markers, this.map);
     }
 
-    /** Wielkość klastra sygnalizuje inna grafika – progi 10 / 100 / 1000. */
+    /** Cluster size is signalled by a different graphic – thresholds 10 / 100 / 1000. */
     private clusterImage(count: number): string {
         if (count < 10) return '/images/markers/1.png';
         if (count < 100) return '/images/markers/2.png';
@@ -152,7 +152,8 @@ export class GeoMap {
 
     private focusMarker(id: string | number | undefined): void {
         if (!this.map || id === undefined || !this.markers.length) return;
-        // Luźne porównanie: id markera z Mongo bywa liczbą, a z listy wyników stringiem.
+        // Loose comparison: a marker id from Mongo is sometimes a number, and from the
+        // result list a string.
         const marker = this.markers.find(item => item.get('id') == id);
         if (!marker) return;
 

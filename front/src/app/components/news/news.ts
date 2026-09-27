@@ -25,7 +25,7 @@ export class News implements OnInit {
 
     private readonly resource = inject(ResourceService);
     private readonly destroyRef = inject(DestroyRef);
-    /** Dane z sieci są nadrzędne – gdy już przyszły, wynik z IndexedDB ich nie nadpisze. */
+    /** Network data takes precedence – once it has arrived, the IndexedDB result will not overwrite it. */
     private loadedFromNetwork = false;
 
     ngOnInit(): void {
@@ -53,7 +53,7 @@ export class News implements OnInit {
         this.active.update(active => (active === index ? null : index));
     }
 
-    /** Wydarzenia z datą publikacji w przyszłości są ukryte; reszta od najnowszego. */
+    /** Events with a publication date in the future are hidden; the rest newest first. */
     private setEvents(events: EventPost[]): void {
         const now = Date.now();
         this.events.set(

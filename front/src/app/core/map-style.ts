@@ -1,8 +1,8 @@
 import { MapStyleDefinition } from './map.types';
 
 /**
- * Styl mapy skopiowany bez zmian z dawnego google-map-style.value.js. Rejestrowany jako
- * StyledMapType pod nazwą "styled_map" – jeden z wyborów w kontrolce typu mapy.
+ * Map style copied unchanged from the former google-map-style.value.js. Registered as
+ * a StyledMapType named "styled_map" – one of the options in the map type control.
  */
 export const MAP_STYLE: MapStyleDefinition = {
     style: [

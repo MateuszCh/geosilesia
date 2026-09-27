@@ -15,9 +15,9 @@
             @for (link of event.data.links ?? []; track $index) {
                 <p class="news__body__links">
                     <a class="news__body__links__item"
-                       [href]="link.link"
+                       [href]="link?.link"
                        target="_blank"
-                       rel="noreferrer">{{ link.text }}</a>
+                       rel="noreferrer">{{ link?.text }}</a>
                 </p>
             }
         </div>

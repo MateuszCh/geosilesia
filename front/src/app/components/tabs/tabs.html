@@ -17,7 +17,7 @@
                                 <h3 class="geosilesia__field__structure__heading">{{ row.heading }}</h3>
                             }
                             @for (paragraph of row.paragraphs ?? []; track $index) {
-                                <p>{{ paragraph.paragraph }}</p>
+                                <p>{{ paragraph?.paragraph }}</p>
                             }
                             @if (row.list?.length) {
                                 <ul class="default-list">
@@ -47,20 +47,25 @@
                                     @for (colgroup of table.colgroups ?? []; track $index) {
                                         <colgroup [attr.span]="colgroup.colgroup_span"></colgroup>
                                     }
-                                    @for (tableRow of table.rows ?? []; track $index) {
-                                        <tr>
-                                            @for (header of tableRow.header ?? []; track $index) {
-                                                <th class="terrain-table__header"
-                                                    [attr.rowspan]="header.rowspan"
-                                                    [attr.colspan]="header.colspan"
-                                                    [attr.scope]="header.scope">{{ header.text }}</th>
-                                            }
-                                            @for (cell of tableRow.data ?? []; track $index) {
-                                                <td class="terrain-table__data"
-                                                    [class.terrain-table__data--right]="$last">{{ cell.text }}</td>
-                                            }
-                                        </tr>
-                                    }
+                                    <!-- Explicit <tbody>: the browser's parser would add it to the
+                                         server HTML anyway, and then the DOM would not match the
+                                         client render. -->
+                                    <tbody>
+                                        @for (tableRow of table.rows ?? []; track $index) {
+                                            <tr>
+                                                @for (header of tableRow.header ?? []; track $index) {
+                                                    <th class="terrain-table__header"
+                                                        [attr.rowspan]="header.rowspan"
+                                                        [attr.colspan]="header.colspan"
+                                                        [attr.scope]="header.scope">{{ header.text }}</th>
+                                                }
+                                                @for (cell of tableRow.data ?? []; track $index) {
+                                                    <td class="terrain-table__data"
+                                                        [class.terrain-table__data--right]="$last">{{ cell.text }}</td>
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
                                 </table>
                             }
                         </div>

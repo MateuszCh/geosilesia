@@ -2,9 +2,9 @@ import { DOCUMENT, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 /**
- * Zastępuje bibliotekę angular-scroll (duScroll), która istniała tylko dla AngularJS.
- * Płynne przewijanie robi dziś sama przeglądarka, więc cała zależność sprowadza się
- * do kilku wywołań scrollIntoView.
+ * Replaces the angular-scroll library (duScroll), which only existed for AngularJS.
+ * Browsers do smooth scrolling natively today, so the whole dependency comes down to
+ * a few scrollIntoView calls.
  */
 @Injectable({ providedIn: 'root' })
 export class ScrollService {

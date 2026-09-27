@@ -1,7 +1,7 @@
 @use 'sass:color';
 @use '../general/variables' as *;
 @use '../general/mixins' as *;
-@use '../general/general'; // dla @extend p
+@use '../general/general'; // for @extend p
 
 .fullscreen-mode {
     z-index: 120;
@@ -14,8 +14,8 @@
     visibility: hidden;
     transition: opacity 0.2s ease, visibility 0s linear 0.2s;
 
-    // Nazwa "--hidden" była myląca: ten modyfikator POKAZUJE podgląd. Przemianowany,
-    // bo szablon czytał się dokładnie odwrotnie do tego, co robi.
+    // The name "--hidden" was misleading: this modifier SHOWS the preview. Renamed,
+    // because the template read exactly the opposite of what it does.
     &--visible {
         opacity: 1;
         visibility: visible;

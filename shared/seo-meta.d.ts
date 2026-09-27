@@ -1,9 +1,9 @@
-// Typy dla shared/seo-meta.js – ten plik opisuje wyłącznie API modułu, samej logiki
-// nie duplikuje. Aplikacja Angulara importuje moduł wprost (CommonJS), serwer przez
-// require(); .d.ts wygrywa w rozstrzyganiu modułów, więc TypeScript widzi sygnatury,
-// a bundler i tak sięga po .js.
+// Types for shared/seo-meta.js – this file only describes the module's API and does not
+// duplicate its logic. The Angular app imports the module directly (CommonJS), the server
+// via require(); .d.ts wins in module resolution, so TypeScript sees the signatures while
+// the bundler still picks up the .js.
 
-/** Strona z kolekcji `pages`; pola opcjonalne, bo pochodzą z CMS-a. */
+/** A page from the `pages` collection; fields are optional because they come from the CMS. */
 export interface SeoPage {
     pageUrl?: string;
     seoTitle?: string;
@@ -28,13 +28,13 @@ export declare function stripHtml(html: unknown): string;
 export declare function truncate(text: string, max: number): string;
 export declare function fixCase(text: string): string;
 export declare function escapeHtml(text: unknown): string;
-/** "slownik", "/slownik/" i "//slownik" sprowadza do "/slownik". */
+/** Turns "slownik", "/slownik/" and "//slownik" into "/slownik". */
 export declare function normalizePath(pageUrl?: string): string;
 export declare function deriveTitle(page?: SeoPage): string;
 export declare function deriveDescription(page?: SeoPage): string;
 export declare function deriveMeta(page?: SeoPage): SeoMetaResult;
 export declare function buildTitle(title?: string): string;
-/** seoTitle/seoDescription z CMS-a mają pierwszeństwo przed derywacją z treści. */
+/** seoTitle/seoDescription from the CMS take precedence over values derived from the content. */
 export declare function buildMeta(page?: SeoPage): SeoMetaResult;
-/** "" gdy `updated` jest puste albo nieparsowalne. */
+/** "" when `updated` is empty or unparsable. */
 export declare function updatedIso(page?: SeoPage): string;

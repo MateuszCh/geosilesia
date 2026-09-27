@@ -5,10 +5,10 @@ import { Page } from '../models/page.model';
 import { Post } from '../models/post.model';
 
 /**
- * Schemat MUSI zostać taki, jak zakładał dawny pwa.service.js i sw.js: baza
- * "geosilesia" w wersji 1, store "pages" z kluczem pageUrl oraz "posts" z kluczem id
- * i indeksem type. Użytkownicy mają te bazy na dyskach – zmiana nazwy albo wersji
- * kasowałaby ich dane offline przy pierwszym wejściu po wdrożeniu.
+ * The schema MUST stay as the former pwa.service.js and sw.js assumed: database
+ * "geosilesia" version 1, store "pages" keyed by pageUrl and "posts" keyed by id with
+ * a type index. Users have these databases on disk – changing the name or version
+ * would wipe their offline data on the first visit after deployment.
  */
 interface GeoSilesiaDB extends DBSchema {
     pages: { key: string; value: Page };
@@ -21,8 +21,8 @@ export class IdbService {
     private db: Promise<IDBPDatabase<GeoSilesiaDB>> | null = null;
 
     /**
-     * Warunek przepisany 1:1 z pwa.service.js – o trybie offline decyduje obecność
-     * service workera ORAZ IndexedDB, bo bez pierwszego nikt tej bazy nie zapełni.
+     * Condition copied 1:1 from pwa.service.js – offline mode requires a service worker
+     * AND IndexedDB, because without the former nobody would fill this database.
      */
     isAvailable(): boolean {
         return (
@@ -33,9 +33,9 @@ export class IdbService {
     }
 
     private open(): Promise<IDBPDatabase<GeoSilesiaDB>> {
-        // Otwieramy leniwie, nie w konstruktorze: serwis jest w root injectorze, więc
-        // inaczej każde odpalenie aplikacji dotykałoby IndexedDB, także tam, gdzie
-        // offline w ogóle nie wchodzi w grę.
+        // Opened lazily, not in the constructor: the service lives in the root injector,
+        // so otherwise every app start would touch IndexedDB, even where offline mode is
+        // not an option at all.
         this.db ??= openDB<GeoSilesiaDB>('geosilesia', 1, {
             upgrade(db) {
                 if (!db.objectStoreNames.contains('pages')) {
@@ -66,8 +66,8 @@ export class IdbService {
         if (!this.isAvailable()) return;
         const db = await this.open();
         const tx = db.transaction('pages', 'readwrite');
-        // Strony bez pageUrl odpadają – to klucz store'a, put rzuciłby błędem
-        // i przerwał całą transakcję razem z poprawnymi rekordami.
+        // Pages without pageUrl are skipped – it is the store key, put would throw and
+        // abort the whole transaction together with the valid records.
         await Promise.all(
             pages.filter(page => page?.pageUrl).map(page => tx.store.put(page))
         );
@@ -84,7 +84,7 @@ export class IdbService {
         await tx.done;
     }
 
-    /** Wymiana kompletu postów danego typu – dokładnie to robił clearPostsByType w sw.js. */
+    /** Replaces all posts of a given type – exactly what clearPostsByType did in sw.js. */
     async replacePostsOfType(type: string, posts: Post[]): Promise<void> {
         if (!this.isAvailable()) return;
         const db = await this.open();
@@ -100,7 +100,7 @@ export class IdbService {
         await tx.done;
     }
 
-    /** Pełna wymiana zawartości po prefetchu /api/appData. */
+    /** Full replacement of the contents after the /api/appData prefetch. */
     async replaceAll(pages: Page[], posts: Post[]): Promise<void> {
         if (!this.isAvailable()) return;
         const db = await this.open();

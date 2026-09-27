@@ -51,14 +51,14 @@ import { TitleAndText } from '../title-and-text/title-and-text';
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PageView {
-    /** Wynik resolvera, wiązany przez withComponentInputBinding(). */
+    /** Resolver result, bound via withComponentInputBinding(). */
     readonly page = input<Page | undefined>();
 
     readonly displayed = signal<Page | undefined>(undefined);
     readonly loaded = signal(false);
 
-    /** Zmienia treść komunikatu 404: tylko w trybie offline brak strony może
-        oznaczać, że po prostu nie zdążyła trafić do cache'u. */
+    /** Changes the 404 message: only in offline mode can a missing page mean
+        that it simply has not made it into the cache yet. */
     readonly offlineAvailable = inject(ResourceService).isOfflineAvailable();
 
     private readonly resource = inject(ResourceService);
@@ -75,18 +75,18 @@ export class PageView {
     }
 
     private load(resolved: Page | undefined): void {
-        // Komponent nie jest odtwarzany między podstronami (jedna trasa "**"), więc
-        // spóźniona odpowiedź dla poprzedniego adresu podmieniłaby treść i meta
-        // bieżącego. Zapytanie poprzedniej strony musi zostać anulowane.
+        // The component is not recreated between pages (a single "**" route), so a late
+        // response for the previous address would replace the content and meta of the
+        // current one. The previous page's request has to be cancelled.
         this.pending?.unsubscribe();
         this.pending = undefined;
 
         this.displayed.set(resolved);
         this.loaded.set(false);
 
-        // Resolver oddał treść z IndexedDB, żeby strona pojawiła się natychmiast – teraz
-        // dociągamy wersję z sieci. Bez trybu offline resolver już poszedł do sieci
-        // i drugie zapytanie byłoby zbędne.
+        // The resolver returned content from IndexedDB so the page appears immediately –
+        // now the network version is fetched. Without offline mode the resolver already
+        // went to the network and a second request would be redundant.
         if (!this.resource.isOfflineAvailable()) {
             this.onLoad(resolved);
             return;
@@ -103,8 +103,8 @@ export class PageView {
         }
         this.loaded.set(true);
 
-        // O 404 decyduje istnienie strony, a nie jej zawartość – tak samo jak na serwerze.
-        // Pusta strona z CMS-a nadal ma swój adres i tytuł.
+        // A 404 depends on whether the page exists, not on its content – same as on the
+        // server. An empty CMS page still has its address and title.
         const current = this.displayed();
         if (current?.pageUrl) {
             this.seo.applyForPage(current);

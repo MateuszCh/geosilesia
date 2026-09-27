@@ -13,8 +13,8 @@ interface SeoData {
 }
 
 /**
- * Port seo.service.js. Derywacja tytułu i opisu została w shared/seo-meta.js – to ten
- * sam moduł, z którego korzysta serwer, więc obie strony muszą dawać identyczny wynik.
+ * Port of seo.service.js. Title and description derivation stays in shared/seo-meta.js –
+ * the same module the server uses, so both sides must produce identical results.
  */
 @Injectable({ providedIn: 'root' })
 export class SeoService {
@@ -27,11 +27,11 @@ export class SeoService {
         return this.doc.head;
     }
 
-    // Serwer wstrzykuje canonical zbudowany z config.siteUrl. Gdybyśmy liczyli origin
-    // z window.location, przy wejściu przez inny host (www vs bez, http vs https) klient
-    // zamazałby go adresem, którego akurat użył odwiedzający — czyli dokładnie tym
-    // duplikatem treści, przed którym siteUrl chroni. Czytamy więc origin raz,
-    // z canonical wstawionego przez serwer.
+    // The server injects a canonical built from config.siteUrl. If we computed the origin
+    // from window.location, a visit through another host (www or not, http vs https) would
+    // make the client overwrite it with whatever address the visitor used — exactly the
+    // duplicate content siteUrl protects against. So the origin is read once, from the
+    // canonical inserted by the server.
     private cachedOrigin: string | null = null;
 
     private serverOrigin(): string {
@@ -42,8 +42,8 @@ export class SeoService {
 
     private origin(): string {
         if (this.cachedOrigin === null) {
-            // Fallback dotyczy sytuacji bez wstrzyknięcia – np. gdy shell przyszedł
-            // z cache'u service workera.
+            // The fallback covers the case without injection – e.g. when the shell came
+            // from the service worker cache.
             this.cachedOrigin =
                 this.serverOrigin() ||
                 (this.isBrowser ? this.doc.defaultView!.location.origin : '');
@@ -52,8 +52,9 @@ export class SeoService {
     }
 
     /**
-     * Dla pól, których część stron nie ma: przy nawigacji SPA nie wystarczy nie ustawić
-     * tagu – trzeba go usunąć, inaczej zostałby w <head> z danymi poprzedniej strony.
+     * For fields some pages lack: on SPA navigation it is not enough to skip setting the
+     * tag – it has to be removed, otherwise it would stay in <head> with the previous
+     * page's data.
      */
     private setOrRemoveMeta(
         selector: string,
@@ -68,8 +69,8 @@ export class SeoService {
     }
 
     /**
-     * To samo dla per-stronowego JSON-LD. Selektor celuje w data-seo="webpage", żeby nie
-     * ruszyć ogólnoserwisowego bloku Organization.
+     * The same for the per-page JSON-LD. The selector targets data-seo="webpage" so as not
+     * to touch the site-wide Organization block.
      */
     private setOrRemoveWebPageJsonLd(data: object | null): void {
         const selector = 'script[type="application/ld+json"][data-seo="webpage"]';
@@ -104,8 +105,13 @@ export class SeoService {
     }
 
     private apply(data: SeoData): void {
-        // Ścieżkę bierzemy z pageUrl strony, nie z bieżącego adresu – inaczej wejście
-        // na "/slownik/" ogłosiłoby się kanonicznym osobno od "/slownik".
+        // On the server <head> is assembled by app.js (injectSeo) from the same
+        // shared/seo-meta.js. The origin is unknown here, so we would add a second
+        // canonical and og:url with a relative path outside the seo:start/end block.
+        if (!this.isBrowser) return;
+
+        // The path comes from the page's pageUrl, not from the current address – otherwise
+        // a visit to "/slownik/" would claim to be canonical separately from "/slownik".
         const canonical = this.origin() + encodeURI(data.path ?? '');
         const image = this.absolute(data.image);
 
@@ -145,8 +151,8 @@ export class SeoService {
     }
 
     /**
-     * Meta na podstawie danych strony (seoTitle/seoDescription, a w ich braku –
-     * wyprowadzone z treści).
+     * Meta based on the page data (seoTitle/seoDescription, or values derived from the
+     * content when they are missing).
      */
     applyForPage(page: Page): void {
         const built = seoMeta.buildMeta(page);
@@ -160,8 +166,8 @@ export class SeoService {
     }
 
     /**
-     * Neutralne meta dla strony 404 (soft-404). Canonical wskazuje na sam adres, tak jak
-     * robi to serwer – bez ścieżki ogłosiłby się nim adres strony głównej.
+     * Neutral meta for the 404 page (soft 404). The canonical points to the address itself,
+     * as the server does – without the path the home page URL would claim it.
      */
     applyNotFound(url: string): void {
         this.apply({
@@ -173,13 +179,13 @@ export class SeoService {
         });
     }
 
-    /** Ścieżka bez query i hasha, zdekodowana – apply() koduje ją ponownie przez encodeURI. */
+    /** Path without query and hash, decoded – apply() encodes it again with encodeURI. */
     private decodedPath(url: string): string {
         const path = url.split('?')[0].split('#')[0];
         try {
             return decodeURIComponent(path);
         } catch {
-            return path; // uszkodzona sekwencja %-owa – bierzemy jak leci
+            return path; // malformed %-sequence – take it as is
         }
     }
 }

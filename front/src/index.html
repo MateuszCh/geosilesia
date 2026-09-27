@@ -6,12 +6,12 @@
     <meta charset="UTF-8">
     <base href="/">
 
-    <!-- Blok podmieniany per-stronę przez serwer (app.js) – to on wstawia canonical,
-         og:url i adresy absolutne. Treść poniżej to fallback na wypadek, gdy plik trafi
-         do przeglądarki z pominięciem serwera (cache service workera). Świadomie nie ma
-         tu og:image ani logo: OG i schema.org wymagają adresów absolutnych, a domeny nie
-         zna się na etapie buildu – scraper i tak zignorowałby ścieżkę względną.
-         Markerów seo:start / seo:end nie ruszać. -->
+    <!-- Block replaced per page by the server (app.js) – it inserts the canonical, og:url
+         and absolute URLs. The content below is a fallback for when the file reaches the
+         browser bypassing the server (service worker cache). There is deliberately no
+         og:image or logo here: OG and schema.org require absolute URLs, and the domain is
+         unknown at build time – a scraper would ignore a relative path anyway.
+         Do not touch the seo:start / seo:end markers. -->
     <!--seo:start-->
     <title>GeoSilesia</title>
     <meta name="description"
@@ -62,9 +62,10 @@
 
 <body>
     <app-root></app-root>
+    <!-- Page content arrives rendered by the server, so it can be read without JavaScript –
+         the message is a bar, not an overlay. No <h1>: the header renders the "GeoSilesia" heading. -->
     <noscript class="noscript">
-        <h1 class="header__logo__heading">GeoSilesia</h1>
-        <p>Strona wymaga JavaScriptu do prawidłowego działania</p>
+        <p class="noscript__text">Część funkcji serwisu działa tylko z włączonym JavaScriptem.</p>
     </noscript>
 </body>
 

@@ -16,8 +16,8 @@ import { Header } from './components/header/header';
 import { ResourceService } from './core/resource.service';
 import { ScrollService } from './core/scroll.service';
 
-/** Opóźnienie prefetchu /api/appData – najcięższe zapytanie serwisu nie ma prawa
-    konkurować o łącze z treścią, którą użytkownik właśnie otworzył. */
+/** Delay of the /api/appData prefetch – the heaviest request of the site must not
+    compete for bandwidth with the content the user has just opened. */
 const PREFETCH_DELAY_MS = 2000;
 
 @Component({
@@ -27,7 +27,7 @@ const PREFETCH_DELAY_MS = 2000;
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class App {
-    /** Sterowanie przyciskiem „do góry" – widoczny dopiero po odjechaniu od szczytu. */
+    /** Controls the "back to top" button – visible only after scrolling away from the top. */
     readonly scrolled = signal(false);
 
     private readonly page = viewChild.required<ElementRef<HTMLElement>>('page');
@@ -36,6 +36,7 @@ export class App {
     private readonly scroll = inject(ScrollService);
     private readonly resource = inject(ResourceService);
     private readonly destroyRef = inject(DestroyRef);
+    private firstNavigation = true;
 
     constructor() {
         this.router.events
@@ -71,14 +72,22 @@ export class App {
     }
 
     private onNavigated(): void {
-        // Podgląd zdjęcia mógł zablokować przewijanie strony; wyjście z galerii przez
-        // link musi je odblokować.
+        // The photo preview may have locked page scrolling; leaving the gallery through
+        // a link has to unlock it.
         this.doc.body.classList.remove('closedScroll');
+
+        // The first navigation is the page load: server-rendered content is already
+        // visible, so the enter animation would hide it and show it again. As a bonus,
+        // on the server we do not touch the view before it exists.
+        if (this.firstNavigation) {
+            this.firstNavigation = false;
+            return;
+        }
         this.restartFade();
     }
 
-    /** Odtwarza dawny crossfade z ngAnimate: zdjęcie i ponowne dołożenie klasy
-        restartuje animację CSS, samo ustawienie jej nie wznawia. */
+    /** Recreates the former ngAnimate crossfade: removing and re-adding the class
+        restarts the CSS animation, merely setting it does not. */
     private restartFade(): void {
         const element = this.page().nativeElement;
         element.classList.remove('fade--in');
@@ -87,9 +96,9 @@ export class App {
     }
 
     /**
-     * Rejestracja ngsw-worker.js zastępuje dawnego service workera, ale jego cache'e
-     * ("static-…", "dynamic-…") zostają na dysku użytkownika – ngsw ich nie zna, więc
-     * nigdy by ich nie posprzątał. Kasujemy wszystko, co nie należy do ngsw.
+     * Registering ngsw-worker.js replaces the former service worker, but its caches
+     * ("static-…", "dynamic-…") stay on the user's disk – ngsw does not know them, so it
+     * would never clean them up. We delete everything that does not belong to ngsw.
      */
     private cleanLegacyCaches(): void {
         if (!('caches' in globalThis)) return;
@@ -103,8 +112,8 @@ export class App {
                 )
             )
             .catch(() => {
-                // Brak dostępu do Cache API (np. tryb prywatny) nie jest błędem –
-                // po prostu nie ma czego sprzątać.
+                // No access to the Cache API (e.g. private mode) is not an error –
+                // there is simply nothing to clean up.
             });
     }
 }

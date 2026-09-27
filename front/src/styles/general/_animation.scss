@@ -19,9 +19,9 @@
     height: 100%;
     opacity: 1;
 }
-// Dawniej crossfade widoków robił ngAnimate klasami ng-enter/ng-leave. Angular niczego
-// takiego nie dokłada, więc zostaje samo wejście: komponent App zdejmuje i ponownie
-// dokłada klasę --in po każdej nawigacji, co restartuje animację.
+// The view crossfade used to be done by ngAnimate with ng-enter/ng-leave classes. Angular
+// adds nothing like that, so only the enter part remains: the App component removes and
+// re-adds the --in class after each navigation, which restarts the animation.
 @keyframes fade-in {
     from {
         opacity: 0;

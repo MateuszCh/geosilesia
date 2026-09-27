@@ -54,7 +54,17 @@
             "styles": [
               "src/styles/main.scss"
             ],
-            "serviceWorker": "ngsw-config.json"
+            "serviceWorker": "ngsw-config.json",
+            "server": "src/main.server.ts",
+            "outputMode": "server",
+            "security": {
+              "allowedHosts": [
+                "localhost"
+              ]
+            },
+            "ssr": {
+              "entry": "src/server.ts"
+            }
           },
           "configurations": {
             "production": {

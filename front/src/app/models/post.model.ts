@@ -1,4 +1,4 @@
-/** Typy postów używane przez front. `wydarzenie` zasila komponent `news`. */
+/** Post types used by the front end. `wydarzenie` (event) feeds the `news` component. */
 export type PostType = 'marker' | 'icon' | 'navigation' | 'wydarzenie';
 
 export interface MarkerPostData {
@@ -29,10 +29,11 @@ export interface EventPostData {
     date_and_place?: string;
     date_of_publication?: string | number;
     paragraphs?: { item?: string }[];
-    links?: { link?: string; text?: string }[];
+    /** The CMS can store `null` here (an empty link) – AngularJS silently ignored it. */
+    links?: ({ link?: string; text?: string } | null)[];
 }
 
-/** Dokument z kolekcji `posts`. `id` jest kluczem w IndexedDB, `type` – indeksem. */
+/** A document from the `posts` collection. `id` is the IndexedDB key, `type` an index. */
 export interface Post<TData = unknown> {
     id: string | number;
     type: PostType | string;
@@ -46,7 +47,7 @@ export type IconPost = Post<IconPostData>;
 export type NavigationPost = Post<NavigationPostData>;
 export type EventPost = Post<EventPostData>;
 
-/** Odpowiedź /api/appData – zbiorczy prefetch pod tryb offline. */
+/** Response of /api/appData – the bulk prefetch for offline mode. */
 export interface AppData {
     pages?: import('./page.model').Page[];
     posts?: Post[];

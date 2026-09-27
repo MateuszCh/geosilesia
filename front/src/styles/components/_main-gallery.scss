@@ -55,11 +55,12 @@
             background-color: color.adjust(white, $lightness: -5%);
             transform: scale(0);
             transition: transform 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
-            // Faza wygaszania – element zostaje w układzie, żeby zdążył się zwinąć.
+            // Fade-out phase – the element stays in the layout so it has time to collapse.
             &--collapsed {
                 transform: scale(0) !important;
             }
-            // Po animacji znika z układu, inaczej odfiltrowane kafelki zostawiałyby dziury.
+            // After the animation it leaves the layout, otherwise filtered-out tiles would
+            // leave gaps.
             &--hidden {
                 display: none;
             }

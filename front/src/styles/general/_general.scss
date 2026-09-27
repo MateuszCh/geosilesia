@@ -144,11 +144,24 @@ a {
     align-items: center;
 }
 
+// A bar at the bottom instead of a full-screen overlay: the page arrives rendered by the
+// server, and without JavaScript only interactive elements stop working. Above the "back
+// to top" button (which does not work without JS anyway), below the photo preview.
 .noscript {
-    @extend .center-content;
-    flex-direction: column;
-    background-color: white;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 110;
+    padding: 0.5rem 1rem;
+    background-color: $header-color;
     text-align: center;
+
+    &__text {
+        margin: 0;
+        padding: 0;
+        color: white;
+    }
 }
 
 .nopage {

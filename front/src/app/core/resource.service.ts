@@ -7,13 +7,14 @@ import { Page, PagesResponse } from '../models/page.model';
 import { AppData, Post } from '../models/post.model';
 
 /**
- * Jedno miejsce, przez które przechodzą dane z API.
+ * The single place all API data passes through.
  *
- * Względem resource.service.js dochodzi tu odpowiedzialność, którą wcześniej pełnił
- * ręczny service worker (sw.js): zapis odpowiedzi do IndexedDB. ngsw cache'uje odpowiedzi
- * w Cache API, ale nie zna naszej bazy, a to z niej resolver i komponenty czytają dane
- * zanim sieć odpowie. Reguły zapisu przeniesione bez zmian: posty danego typu wymieniane
- * w całości, strony dopisywane, /api/appData zastępuje komplet.
+ * Compared with resource.service.js it takes over a responsibility previously handled by
+ * the hand-written service worker (sw.js): storing responses in IndexedDB. ngsw caches
+ * responses in the Cache API, but it does not know our database, and that is where the
+ * resolver and components read data from before the network responds. The storage rules
+ * are unchanged: posts of a type are replaced as a whole, pages are added, /api/appData
+ * replaces everything.
  */
 @Injectable({ providedIn: 'root' })
 export class ResourceService {
@@ -25,9 +26,9 @@ export class ResourceService {
     }
 
     /**
-     * Klucz strony trafia do ścieżki adresu, więc ukośniki trzeba zakodować – inaczej
-     * "galeria/skaly" rozpadłoby się na dwa segmenty i nie trafiło w trasę
-     * /api/page/:pageUrl. Znaki spoza ASCII koduje sama przeglądarka.
+     * The page key goes into the URL path, so slashes have to be encoded – otherwise
+     * "galeria/skaly" would split into two segments and miss the /api/page/:pageUrl
+     * route. The browser encodes non-ASCII characters by itself.
      */
     private pageUrlSegment(pageKey: string): string {
         return pageKey.replace(/\//g, '%2F');
@@ -55,8 +56,8 @@ export class ResourceService {
         return this.api.get<Post<T>[]>(`/api/posts/${type}`).pipe(
             map(posts => posts ?? []),
             tap(posts => {
-                // Pusta odpowiedź też jest informacją, ale nie kasujemy nią cache'u:
-                // przy chwilowej awarii backendu użytkownik straciłby dane offline.
+                // An empty response is information too, but it does not wipe the cache:
+                // during a brief backend outage the user would lose their offline data.
                 if (posts.length) {
                     void this.idb.replacePostsOfType(type, posts as Post[]);
                 }
@@ -70,9 +71,9 @@ export class ResourceService {
     }
 
     /**
-     * Zbiorczy prefetch pod tryb offline – odpowiednik pwa.run.js. Odpalany raz, po
-     * starcie aplikacji, i celowo z opóźnieniem: to najcięższe zapytanie serwisu,
-     * a nie ma prawa konkurować o łącze z treścią, którą użytkownik właśnie ogląda.
+     * Bulk prefetch for offline mode – the counterpart of pwa.run.js. Fired once after the
+     * app starts, and deliberately delayed: it is the heaviest request of the site and
+     * must not compete for bandwidth with the content the user is looking at.
      */
     prefetchAppData(): void {
         if (!this.idb.isAvailable()) return;

@@ -1,4 +1,4 @@
-/** Typy wspólne dla serwisu mapy i komponentów, które z niej korzystają. */
+/** Types shared by the map service and the components that use it. */
 
 export interface MapStyleDefinition {
     style: google.maps.MapTypeStyle[];
@@ -10,7 +10,7 @@ export interface MapPosition {
     lng: number;
 }
 
-/** Marker w postaci, w jakiej używa go widok – po spłaszczeniu posta z API. */
+/** A marker in the shape the view uses – after flattening the post from the API. */
 export interface MapMarker {
     id: string | number;
     title?: string;
@@ -18,9 +18,9 @@ export interface MapMarker {
     place?: string;
     categories?: string[];
     position: MapPosition;
-    /** Wypełniane po wyszukaniu lokalizacji, w kilometrach. */
+    /** Filled in after a location search, in kilometres. */
     distance?: number;
-    /** "home" oznacza wskazany przez użytkownika punkt wyszukiwania, nie atrakcję. */
+    /** "home" marks the search point chosen by the user, not an attraction. */
     type?: 'home';
     address?: string;
 }
@@ -30,6 +30,6 @@ export interface MapCategory {
     category: string;
     name?: string;
     icon?: string;
-    /** Ile markerów należy do kategorii – pokazywane przy nazwie na liście filtrów. */
+    /** How many markers belong to the category – shown next to its name in the filter list. */
     count: number;
 }

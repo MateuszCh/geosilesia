@@ -2,7 +2,7 @@ import {
     ChangeDetectionStrategy,
     Component,
     DestroyRef,
-    OnInit,
+    afterNextRender,
     computed,
     inject,
     input,
@@ -17,12 +17,12 @@ import { SwipeDirective } from '../../shared/swipe.directive';
     imports: [SwipeDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class Carousel implements OnInit {
+export class Carousel {
     readonly slides = input.required<Slide[]>();
     readonly custom = input.required<HomepageBannerData>();
     readonly interval = input<number | string | undefined>();
 
-    /** Przesunięcie taśmy slajdów w procentach; 0 to pierwszy slajd, -100 drugi itd. */
+    /** Offset of the slide strip in percent; 0 is the first slide, -100 the second, etc. */
     readonly left = signal(0);
     readonly currentSlide = computed(() => -this.left() / 100);
     private readonly maxLeft = computed(() => (this.slides().length - 1) * -100);
@@ -31,10 +31,9 @@ export class Carousel implements OnInit {
 
     constructor() {
         inject(DestroyRef).onDestroy(() => this.cancelInt());
-    }
-
-    ngOnInit(): void {
-        this.setInt();
+        // Only after rendering in the browser – on the server the timer would just keep
+        // ticking in the background until the app is destroyed.
+        afterNextRender(() => this.setInt());
     }
 
     next(): void {
@@ -49,7 +48,7 @@ export class Carousel implements OnInit {
         this.left.set(index * -100);
     }
 
-    /** Przewinięcie gestem zawija się na końcach taśmy. */
+    /** Swiping wraps around at the ends of the strip. */
     swipeTo(index: number): void {
         this.cancelInt();
         const count = this.slides().length;
@@ -59,8 +58,8 @@ export class Carousel implements OnInit {
     }
 
     setInt(): void {
-        // Zawsze po skasowaniu poprzedniego: setInt() woła też mouseleave na paginacji,
-        // więc bez tego kilka najechań myszą zostawiłoby kilka równoległych liczników.
+        // Always after clearing the previous one: setInt() is also called on mouseleave of
+        // the pagination, so without this several hovers would leave several parallel timers.
         this.cancelInt();
         const seconds = Number.parseInt(String(this.interval() ?? ''), 10);
         if (this.slides().length > 1 && seconds) {
@@ -75,7 +74,7 @@ export class Carousel implements OnInit {
         }
     }
 
-    /** Kadrowanie slajdu ustawiane przez redaktora w CMS-ie; brak wartości = środek. */
+    /** Slide framing set by the editor in the CMS; no value = centre. */
     objectPosition(slide: Slide): string | null {
         if (!slide.left_position && !slide.top_position) return null;
         const x = slide.left_position ? `${slide.left_position}%` : 'center';

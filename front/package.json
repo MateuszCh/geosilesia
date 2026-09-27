@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:deploy": "npm ci && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -16,8 +17,10 @@
     "@angular/core": "^22.1.0",
     "@angular/forms": "^22.1.0",
     "@angular/platform-browser": "^22.1.0",
+    "@angular/platform-server": "^22.1.0",
     "@angular/router": "^22.1.0",
     "@angular/service-worker": "^22.1.5",
+    "@angular/ssr": "^22.1.7",
     "@googlemaps/markerclusterer": "^2.6.2",
     "idb": "^8.0.3",
     "rxjs": "~7.8.0",

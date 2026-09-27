@@ -14,7 +14,7 @@ import { ResourceService } from '../../core/resource.service';
 import { internalLink } from '../../core/cms-link';
 import { NavItem, NavigationPost } from '../../models/post.model';
 
-/** Odstęp na animację wysunięcia panelu bocznego (_aside-menu.scss). */
+/** Time reserved for the side panel slide animation (_aside-menu.scss). */
 const SUBNAV_RESET_MS = 500;
 
 @Component({
@@ -28,7 +28,7 @@ export class Header implements OnInit {
     readonly asideOpen = signal(false);
     readonly showSubNav = signal(false);
     readonly subnav = signal<NavItem['subnav']>([]);
-    /** Indeks pozycji menu, nad którą stoi kursor; false = żadna. */
+    /** Index of the menu item under the cursor; false = none. */
     readonly hoverNavItem = signal<number | false>(false);
     readonly currentPath = signal('/');
 
@@ -53,9 +53,9 @@ export class Header implements OnInit {
                 this.hoverNavItem.set(false);
             });
 
-        // Aktywną pozycję liczymy dopiero po NavigationEnd: przy NavigationStart
-        // router.url wskazuje jeszcze poprzednią stronę (router zatwierdza adres
-        // po resolverach), a przy pierwszym wejściu – "/".
+        // The active item is computed only after NavigationEnd: on NavigationStart
+        // router.url still points to the previous page (the router commits the URL
+        // after the resolvers), and on the first visit – to "/".
         this.router.events
             .pipe(
                 filter(event => event instanceof NavigationEnd),
@@ -65,9 +65,9 @@ export class Header implements OnInit {
                 this.currentPath.set(this.pathOf(event.urlAfterRedirects))
             );
 
-        // Tu odwrotnie niż na innych ekranach: najpierw sieć, a IndexedDB dopiero gdy
-        // zawiedzie. Nawigacja jest jedna dla całego serwisu i zmienia się rzadko,
-        // więc nie ma po co migać starą wersją, zanim przyjdzie nowa.
+        // The reverse of other screens: network first, IndexedDB only when it fails.
+        // There is one navigation for the whole site and it rarely changes, so there is
+        // no point in flashing an old version before the new one arrives.
         this.resource
             .loadPostsFromNetwork<NavigationPost['data']>('navigation')
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -103,8 +103,8 @@ export class Header implements OnInit {
     }
 
     /**
-     * Pozycja jest aktywna dla własnego adresu i dla wszystkiego pod nim, żeby podstrona
-     * galerii podświetlała pozycję „Galerie". Dla pozycji bez adresu decyduje podmenu.
+     * An item is active for its own address and everything below it, so that a gallery
+     * subpage highlights the "Galerie" item. For items without an address the submenu decides.
      */
     isActive(link?: string, group?: NavItem['subnav']): boolean {
         const path = this.currentPath();
@@ -120,8 +120,8 @@ export class Header implements OnInit {
         this.doc.body.classList.toggle('aside-nav-open', state);
         this.asideOpen.set(state);
         if (!state) {
-            // Podmenu chowamy dopiero po zjechaniu panelu – inaczej przeskoczyłoby
-            // do pierwszego poziomu na oczach użytkownika.
+            // The submenu is hidden only after the panel has slid out – otherwise it would
+            // jump back to the first level in front of the user.
             clearTimeout(this.subnavTimer);
             this.subnavTimer = setTimeout(
                 () => this.showSubNav.set(false),

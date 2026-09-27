@@ -1,7 +1,7 @@
 {
-    "$comment": "Brak dataGroups jest celowy: odpowiedzi /api/** aplikacja sama zapisuje do IndexedDB (resource.service.ts) i stamtąd je czyta w trybie offline. Cache'owanie ich jeszcze raz przez ngsw trzymałoby te same kilka megabajtów podwójnie.",
+    "$comment": "No dataGroups on purpose: the app stores /api/** responses in IndexedDB itself (resource.service.ts) and reads them from there in offline mode. Caching them again in ngsw would keep the same few megabytes twice. With SSR (outputMode: server) the CSR shell is named index.csr.html – the name index.html is reserved for prerendered pages. It is the offline navigation fallback, so it must be in assetGroups.",
     "$schema": "./node_modules/@angular/service-worker/config/schema.json",
-    "index": "/index.html",
+    "index": "/index.csr.html",
     "navigationRequestStrategy": "freshness",
     "navigationUrls": [
         "/**",
@@ -18,7 +18,7 @@
             "resources": {
                 "files": [
                     "/favicon.ico",
-                    "/index.html",
+                    "/index.csr.html",
                     "/manifest.json",
                     "/*.css",
                     "/*.js"

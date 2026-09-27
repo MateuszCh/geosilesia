@@ -1,14 +1,14 @@
 import { Directive, ElementRef, inject, output } from '@angular/core';
 
-// Progi przepisane z ngTouch: gest musi być wyraźnie poziomy, inaczej zwykłe
-// przewijanie strony palcem wyzwalałoby zmianę slajdu.
+// Thresholds copied from ngTouch: the gesture has to be clearly horizontal, otherwise
+// ordinary scrolling with a finger would trigger a slide change.
 const MIN_DISTANCE = 30;
 const MAX_VERTICAL = 75;
 const MAX_VERTICAL_RATIO = 0.3;
 
 /**
- * Zastępuje ng-swipe-left / ng-swipe-right z modułu ngTouch (karuzela i galeria).
- * Pointer Events obsługują dotyk, mysz i rysik jednym zestawem zdarzeń.
+ * Replaces ng-swipe-left / ng-swipe-right from the ngTouch module (carousel and gallery).
+ * Pointer Events handle touch, mouse and pen with a single set of events.
  */
 @Directive({
     selector: '[appSwipe]',

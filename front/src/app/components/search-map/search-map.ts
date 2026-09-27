@@ -20,7 +20,7 @@ import { ResourceService } from '../../core/resource.service';
 import { ScrollService } from '../../core/scroll.service';
 import { GeoMap } from '../geo-map/geo-map';
 
-/** Poniżej tej szerokości panel wyszukiwania stoi nad mapą i trzeba do niej dojechać. */
+/** Below this width the search panel sits above the map and the page has to scroll to it. */
 const NARROW_BREAKPOINT = 850;
 const DEFAULT_RESULTS = 10;
 const MESSAGE_MS = 5000;
@@ -46,7 +46,7 @@ export class SearchMap implements OnInit {
     readonly searchBusy = signal(false);
     readonly searchMessage = signal('');
 
-    /** Skrypt Google jeszcze się nie wczytał – mapa i wyszukiwarka są wtedy ukryte. */
+    /** The Google script has not loaded yet – the map and the search box are hidden then. */
     readonly mapsReady = inject(MapService).ready;
 
     private readonly mapService = inject(MapService);
@@ -72,7 +72,8 @@ export class SearchMap implements OnInit {
                 this.resource.loadPostsFromCache<MarkerPost['data']>('marker'),
                 this.resource.loadPostsFromCache<IconPost['data']>('icon')
             ]).then(([markers, icons]) => {
-                // Dane z sieci są nadrzędne – jeśli zdążyły przyjść, cache ich nie cofa.
+                // Network data takes precedence – if it has already arrived, the cache
+                // does not roll it back.
                 if (!this.dataLoaded && markers.length && icons.length) {
                     this.onLoad(markers, icons);
                 }
@@ -99,7 +100,7 @@ export class SearchMap implements OnInit {
         this.selectedMarkers.set(this.sortedByLatitude(this.allMarkers));
     }
 
-    /** Domyślny porządek listy: z północy na południe. */
+    /** Default list order: north to south. */
     private sortedByLatitude(markers: MapMarker[]): MapMarker[] {
         return [...markers].sort((a, b) => b.position.lat - a.position.lat);
     }
@@ -108,7 +109,7 @@ export class SearchMap implements OnInit {
         return (this.doc.defaultView?.innerWidth ?? 0) < NARROW_BREAKPOINT;
     }
 
-    /** Na wąskim ekranie panel i mapa nie mieszczą się obok siebie – trzeba dojechać. */
+    /** On a narrow screen the panel and the map do not fit side by side – scroll to the map. */
     private scrollToMapIfNarrow(): void {
         if (this.isNarrow && this.mapsReady()) {
             this.scroll.scrollToElement(this.host);
@@ -151,8 +152,8 @@ export class SearchMap implements OnInit {
         this.mapService
             .getCoordinates(query)
             .then(result => {
-                // +1 na pseudo-marker samej wyszukanej lokalizacji, który staje na czele
-                // listy i nie powinien zjadać miejsca prawdziwym wynikom.
+                // +1 for the pseudo-marker of the searched location itself, which heads the
+                // list and should not take a slot from the real results.
                 this.searchQty = this.resultsQty + 1;
                 this.category.set('');
                 this.scrollToMapIfNarrow();
@@ -206,7 +207,7 @@ export class SearchMap implements OnInit {
         this.scrollToMapIfNarrow();
     }
 
-    /** Ponowne kliknięcie w ten sam wynik odznacza go. */
+    /** Clicking the same result again deselects it. */
     setCurrentResult(id: string | number): void {
         this.currentResult.update(current => (current === id ? undefined : id));
         this.scrollToMapIfNarrow();

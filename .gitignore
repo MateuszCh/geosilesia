@@ -3,15 +3,15 @@
 front/node_modules/
 front/dist/
 front/.angular/
-# Poprzedni front (AngularJS) zachowany do wglądu – śledzone są same źródła,
-# nie zależności gulpa ani jego wynik buildu.
+# Previous front end (AngularJS) kept for reference – only the sources are tracked,
+# not gulp's dependencies or its build output.
 front-old/node_modules/
 front-old/public/
 front-old/package-lock.json
 node_modules/
 package-lock.json
-# Lockfile frontu musi być w repo: bez niego serwer dobiera najnowsze wersje
-# (np. @angular/build 22.2 z sass-embedded), które na nim zawieszają build.
+# The front-end lockfile must be in the repo: without it the server picks the newest
+# versions (e.g. @angular/build 22.2 with sass-embedded), which hang the build there.
 !front/package-lock.json
 config.json
 tmp/

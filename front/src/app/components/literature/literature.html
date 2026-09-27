@@ -2,9 +2,9 @@
     <h2 class="literature__heading">{{ component().title }}</h2>
 </div>
 @if (component().items?.length) {
-    <!-- Kolejność jak w CMS-ie. Stary szablon miał tu `orderBy: item.author`, ale
-         wyrażenie odwoływało się do zmiennej spoza pętli i było zawsze puste, więc
-         lista i tak nigdy nie była sortowana. -->
+    <!-- Order as in the CMS. The old template had `orderBy: item.author` here, but the
+         expression referred to a variable outside the loop and was always empty, so the
+         list was never actually sorted. -->
     <ul class="literature__sources">
         @for (item of component().items; track $index) {
             <li>

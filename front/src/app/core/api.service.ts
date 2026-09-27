@@ -3,10 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 /**
- * Następca request.service.js. Stary serwis przyjmował metodę i body, ale front nigdy
- * nie wysyłał nic poza GET-ami – zostaje więc samo GET. `withCredentials` zachowane:
- * serwer stoi pod tą samą domeną, lecz w dewie front chodzi przez proxy i ciasteczka
- * sesji muszą przejść.
+ * Successor of request.service.js. The old service accepted a method and a body, but the
+ * front end never sent anything other than GETs – so only GET remains. `withCredentials`
+ * is kept: the server lives on the same domain, but in development the front end goes
+ * through a proxy and session cookies have to get through.
  */
 @Injectable({ providedIn: 'root' })
 export class ApiService {

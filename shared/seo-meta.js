@@ -1,5 +1,5 @@
-// Wspólna logika SEO dla serwera (app.js) i przeglądarki (seo.service.js).
-// Bez DOM i bez Angulara — te same reguły muszą dać ten sam wynik po obu stronach.
+// SEO logic shared by the server (app.js) and the browser (seo.service.ts).
+// No DOM and no Angular — the same rules must give the same result on both sides.
 (function (root, factory) {
     var api = factory();
     if (typeof module !== 'undefined' && module.exports) {
@@ -37,9 +37,9 @@
         hellip: '…'
     };
 
-    // fromCharCode obcina do 16 bitów, więc gubiłoby znaki spoza BMP (np. emoji
-    // wstawione w CMS-ie jako &#128512;). Zachowujemy oryginalną encję, gdy liczba
-    // wykracza poza zakres Unicode.
+    // fromCharCode truncates to 16 bits, so it would lose characters outside the BMP
+    // (e.g. emoji entered in the CMS as &#128512;). The original entity is kept when the
+    // number is outside the Unicode range.
     function fromCodePoint(number, original) {
         if (!isFinite(number) || number < 0 || number > 0x10ffff) return original;
         return String.fromCodePoint
@@ -61,13 +61,14 @@
             });
     }
 
-    // Tagi, które w renderze łamią wiersz. `textContent` skleiłby na nich wyrazy
-    // ("ma<br>kota" → "makota"), więc zamieniamy je na spację — inaczej opis meta
-    // dostaje zlepki nieistniejących słów. Nadmiar spacji i tak zbija \s+ niżej.
+    // Tags that break the line when rendered. `textContent` would glue words together
+    // across them ("ma<br>kota" → "makota"), so they are replaced with a space — otherwise
+    // the meta description gets made-up compound words. Extra spaces are collapsed by
+    // \s+ below anyway.
     var BLOCK_TAGS =
         /<\/?(br|p|div|li|ul|ol|dl|dt|dd|tr|td|th|table|thead|tbody|h[1-6]|hr|section|article|aside|header|footer|nav|main|figure|figcaption|blockquote|pre)\b[^>]*>/gi;
 
-    // Poza tym odpowiednik `div.innerHTML = html; div.textContent`.
+    // Otherwise the equivalent of `div.innerHTML = html; div.textContent`.
     function stripHtml(html) {
         if (!html) return '';
         var text = String(html)
@@ -95,24 +96,24 @@
             .replace(/'/g, '&#39;');
     }
 
-    // Tytuły bywają wpisane w CMS-ie WERSALIKAMI, bo tak wyglądają w bannerze na stronie.
-    // W <title> i w OG czyta się to jak krzyk, a wyszukiwarki i tak takie tytuły przepisują.
-    // Warunek celowo dotyczy CAŁEGO tytułu – dzięki temu skróty w normalnym zdaniu
-    // ("KWK Katowice", "TOP 50") zostają nietknięte.
+    // Titles are sometimes entered in the CMS in ALL CAPS, because that is how they look
+    // in the page banner. In <title> and OG it reads like shouting, and search engines
+    // rewrite such titles anyway. The check deliberately applies to the WHOLE title – this
+    // way abbreviations in a normal sentence ("KWK Katowice", "TOP 50") stay untouched.
     function isShouting(text) {
         var letters = 0;
         var upper = 0;
         for (var i = 0; i < text.length; i++) {
             var ch = text.charAt(i);
-            if (ch.toLowerCase() === ch.toUpperCase()) continue; // nie-litera
+            if (ch.toLowerCase() === ch.toUpperCase()) continue; // not a letter
             letters++;
             if (ch === ch.toUpperCase()) upper++;
         }
         return letters >= 4 && upper / letters > 0.8;
     }
 
-    // Podnosi pierwszą LITERĘ, nie pierwszy znak – dzięki temu wyraz zaczynający się
-    // cudzysłowem czy nawiasem („cuda) też wychodzi poprawnie.
+    // Capitalizes the first LETTER, not the first character – so a word starting with
+    // a quotation mark or a parenthesis („cuda) also comes out right.
     function capitalizeFirstLetter(word) {
         for (var i = 0; i < word.length; i++) {
             var ch = word.charAt(i);
@@ -123,9 +124,9 @@
         return word;
     }
 
-    // Skrótowiec poznajemy po braku samogłoski ("KWK", "GZM", "PGG"). W polszczyźnie
-    // wyraz bez samogłoski praktycznie nie istnieje, więc taki warunek nie tknie
-    // zwykłych słów, a chroni nazwy, które po "Kwk Katowice" wyglądałyby na literówkę.
+    // An acronym is recognized by the lack of vowels ("KWK", "GZM", "PGG"). In Polish
+    // a word without a vowel practically does not exist, so this check does not touch
+    // ordinary words, while it protects names that as "Kwk Katowice" would look like a typo.
     var VOWELS = /[aąeęioóuy]/i;
 
     function isAcronym(word) {
@@ -133,7 +134,7 @@
         return letters.length >= 2 && letters.length <= 5 && !VOWELS.test(letters);
     }
 
-    // Każdy wyraz z wielkiej litery, reszta znaków małymi — poza skrótowcami.
+    // Every word capitalized, the rest lowercase — except acronyms.
     function toTitleCase(text) {
         return text.replace(/\S+/g, function (word) {
             return isAcronym(word) ? word : capitalizeFirstLetter(word.toLowerCase());
@@ -144,18 +145,18 @@
         return text && isShouting(text) ? toTitleCase(text) : text;
     }
 
-    // Kanoniczna postać ścieżki: wiodący ukośnik, bez końcowego (poza samą "/").
-    // pageUrl w bazie nie ma wiodącego ukośnika (poza "/" strony głównej), ale bywa
-    // zapisany z końcowym ("slownik/") – bez tej normalizacji taka strona nie
-    // dopasowałaby się do żądania "/slownik" i ogłaszałaby własny canonical.
+    // Canonical form of a path: leading slash, no trailing one (except "/" itself).
+    // pageUrl in the database has no leading slash (except "/" of the home page), but is
+    // sometimes stored with a trailing one ("slownik/") – without this normalization such
+    // a page would not match the request "/slownik" and would announce its own canonical.
     function normalizePath(pageUrl) {
         if (!pageUrl) return '/';
         var withSlash = pageUrl.charAt(0) === '/' ? pageUrl : '/' + pageUrl;
-        var collapsed = withSlash.replace(/^\/+/, '/'); // "//strona" to ten sam adres
+        var collapsed = withSlash.replace(/^\/+/, '/'); // "//slownik" is the same address
         return collapsed.length > 1 ? collapsed.replace(/\/+$/, '') : collapsed;
     }
 
-    // Tytuł z treści strony: 1) homepage_banner.title, 2) heading (preferuj h1),
+    // Title from the page content: 1) homepage_banner.title, 2) heading (prefer h1),
     // 3) title_and_text.title.
     function deriveTitle(page) {
         if (!page || !page.rows || !page.rows.length) return '';
@@ -182,7 +183,7 @@
         return '';
     }
 
-    // Opis z pierwszego akapitu treści.
+    // Description from the first paragraph of the content.
     function deriveDescription(page) {
         if (!page || !page.rows || !page.rows.length) return '';
         var rows = page.rows;
@@ -205,10 +206,10 @@
         return '';
     }
 
-    // page.title to etykieta z CMS-a i domyślne źródło tytułu. Wyjątki:
-    // - strona główna ma tam wewnętrzne "Homepage", więc liczy się wyłącznie treść;
-    // - poza nią tytuł wyprowadzony z treści wygrywa, gdy jest dłuższy, bo krótka
-    //   etykieta menu ("Budowa") gubi frazę, po której ludzie szukają.
+    // page.title is the CMS label and the default source of the title. Exceptions:
+    // - the home page has an internal "Homepage" there, so only the content counts;
+    // - elsewhere the title derived from the content wins when it is longer, because
+    //   a short menu label ("Budowa") loses the phrase people search for.
     function deriveMeta(page) {
         var fromContent = deriveTitle(page) || '';
         var fromPage = (page && page.title) || '';
@@ -220,8 +221,9 @@
                 : fromPage;
         return {
             title: fixCase(title),
-            // seoDescription wpisuje redaktor, więc nie przycinamy go do MAX_DESCRIPTION –
-            // limit chroni przed przypadkowym początkiem akapitu, a nie przed świadomą decyzją.
+            // seoDescription is written by an editor, so it is not truncated to
+            // MAX_DESCRIPTION – the limit guards against an arbitrary paragraph opening,
+            // not against a deliberate decision.
             description:
                 stripHtml(page && page.seoDescription) ||
                 deriveDescription(page) ||
@@ -229,27 +231,29 @@
         };
     }
 
-    // Zwykłe wyszukanie podciągu, bez granicy wyrazu: "GeoSilesia" jest na tyle
-    // charakterystyczne, że nie trafi się w środku innego słowa, a brak \b obsługuje
-    // też zapisy w rodzaju "GeoSilesia:" czy "(GeoSilesia)".
+    // Plain substring search, no word boundary: "GeoSilesia" is distinctive enough not to
+    // appear inside another word, and without \b spellings like "GeoSilesia:" or
+    // "(GeoSilesia)" are handled too.
     function hasSiteName(text) {
         return text.toLowerCase().indexOf(SITE_NAME.toLowerCase()) !== -1;
     }
 
-    // O sufiksie decyduje to, CO jest w tytule, a nie skąd pochodzi. Jedno sprawdzenie
-    // zastępuje dwa dawne wyjątki: ręczny seoTitle z wpisaną nazwą serwisu nie zdubluje
-    // jej, a strona główna z bannerem "GeoSilesia" zostaje bez sufiksu bez osobnego
-    // warunku na ścieżkę "/". Działa niezależnie od separatora użytego przez redaktora.
+    // The suffix depends on WHAT is in the title, not where it comes from. One check
+    // replaces two former exceptions: a manual seoTitle that already contains the site
+    // name does not get it twice, and the home page with the "GeoSilesia" banner stays
+    // without a suffix without a separate condition on the "/" path. It works regardless
+    // of the separator the editor used.
     function buildTitle(rawTitle) {
         if (!rawTitle) return DEFAULT_TITLE;
         return hasSiteName(rawTitle) ? rawTitle : rawTitle + TITLE_SUFFIX;
     }
 
-    // Finalne meta strony – jedyne miejsce, w którym zapada decyzja o sufiksie w tytule.
-    // seoTitle ma pierwszeństwo przed tytułem z treści i idzie przez tę samą regułę co on:
-    // nazwę serwisu dostanie tylko wtedy, gdy redaktor sam jej nie wpisał. Nie przechodzi
-    // za to przez fixCase – korekta wersalików siedzi w deriveMeta i dotyczy wyłącznie
-    // tytułu wyprowadzonego z treści, bo ręczny wpis jest świadomą decyzją redaktora.
+    // Final page meta – the only place where the title suffix is decided.
+    // seoTitle takes precedence over the content title and goes through the same rule:
+    // it gets the site name only if the editor did not type it. It does not go through
+    // fixCase, though – the all-caps correction lives in deriveMeta and applies only to
+    // the title derived from the content, because a manual entry is the editor's
+    // deliberate decision.
     function buildMeta(page) {
         var derived = deriveMeta(page);
         var explicit = stripHtml(page && page.seoTitle);
@@ -259,9 +263,10 @@
         };
     }
 
-    // CMS zapisuje "updated" jako liczbę milisekund, ale pole bywa też Date (BSON) albo
-    // ciągiem cyfr po serializacji – Date rozumie liczbę, lecz nie taki ciąg. Wartości,
-    // których nie da się sparsować, pomijamy: crawler woli brak <lastmod> niż datę-śmiecia.
+    // The CMS stores "updated" as a number of milliseconds, but the field is sometimes
+    // a Date (BSON) or a string of digits after serialization – Date understands the
+    // number but not such a string. Unparsable values are skipped: a crawler prefers no
+    // <lastmod> to a garbage date.
     function updatedIso(page) {
         var raw = page && page.updated;
         if (!raw) return '';

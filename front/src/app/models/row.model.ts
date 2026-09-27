@@ -1,6 +1,6 @@
-// Kształty wierszy strony, tak jak zapisuje je CMS. Prawie wszystko jest opcjonalne –
-// redaktor może zostawić puste pole, a szablony i tak muszą to znieść. Union `Row`
-// zastępuje dawne `ng-switch="row.type"` w page-view.html.
+// Shapes of page rows as the CMS stores them. Almost everything is optional – an editor
+// can leave a field empty and the templates still have to cope. The `Row` union replaces
+// the former `ng-switch="row.type"` in page-view.html.
 
 export interface Slide {
     image?: string;
@@ -64,7 +64,7 @@ export interface FootnotesData {
 }
 
 export interface HeadingData {
-    /** h1…h6 – decyduje, który znacznik wyrenderować. */
+    /** h1…h6 – decides which tag to render. */
     type?: string;
     text?: string;
     class?: string;
@@ -88,7 +88,8 @@ export interface TableData {
 
 export interface TabRow {
     heading?: string;
-    paragraphs?: { paragraph?: string }[];
+    /** The CMS can store `null` here (an empty paragraph) – AngularJS silently ignored it. */
+    paragraphs?: ({ paragraph?: string } | null)[];
     list?: { item?: string }[];
     image?: string;
     image_footnotes?: { footnote?: string }[];
@@ -108,7 +109,7 @@ export interface GalleryListData {
     }[];
 }
 
-/** Wpis z kolekcji `files`; serwer podmienia `catalogue` z nazwy katalogu na listę plików. */
+/** An entry from the `files` collection; the server replaces `catalogue` (a catalogue name) with the file list. */
 export interface GalleryImage {
     id: string | number;
     src?: string;
