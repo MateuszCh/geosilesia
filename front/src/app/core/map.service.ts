@@ -248,7 +248,9 @@ export class MapService {
             });
         });
 
-        return icons
+        // Icons without a numeric position go last.
+        return [...icons]
+            .sort((a, b) => getIconPosition(a) - getIconPosition(b))
             .filter(icon => icon.data?.category && counts.has(icon.data.category))
             .map(icon => ({
                 id: icon.id,
@@ -276,4 +278,9 @@ export class MapService {
                 }
             }));
     }
+}
+
+function getIconPosition(icon: IconPost): number {
+    const position = icon.data?.position;
+    return typeof position === 'number' && Number.isFinite(position) ? position : Infinity;
 }

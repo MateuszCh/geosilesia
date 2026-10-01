@@ -13,6 +13,7 @@ export interface IconPostData {
     category?: string;
     name?: string;
     icon?: string;
+    position?: number;
 }
 
 export interface NavItem {
