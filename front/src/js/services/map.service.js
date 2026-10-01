@@ -277,8 +277,15 @@
                     }
                 });
 
+                // Object keys keep insertion order, so sorting the icons here
+                // determines the order in which ng-repeat renders categories.
+                // Icons without a numeric position go last.
+                var sortedIconModels = iconModels.slice().sort(function (a, b) {
+                    return getIconPosition(a) - getIconPosition(b);
+                });
+
                 var categories = {};
-                iconModels.forEach(function (iconModel) {
+                sortedIconModels.forEach(function (iconModel) {
                     if (
                         iconModel.data &&
                         iconModel.data.category &&
@@ -292,6 +299,13 @@
                     }
                 });
                 return categories;
+            }
+
+            function getIconPosition(iconModel) {
+                var position = iconModel.data && iconModel.data.position;
+                return typeof position === 'number' && isFinite(position)
+                    ? position
+                    : Infinity;
             }
 
             function getFormattedMarkers(markerModels) {
