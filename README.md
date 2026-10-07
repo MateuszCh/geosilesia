@@ -13,7 +13,7 @@ site visitors.
 | Path | What it is |
 |---|---|
 | `app.js` | HTTP server (Express + MongoDB): API, static files, SEO meta injection, sitemap, robots, SSR orchestration |
-| `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 10 minutes |
+| `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 1 hour |
 | `shared/seo-meta.js` | SEO rules (title, description, paths) shared by the server and the browser |
 | `front/` | Angular 22 application with server-side rendering and hydration |
 | `config.json` | Local configuration, not in git — copy `config.example.json` |
@@ -30,6 +30,7 @@ collection, and the API decides whether it exists.
 |---|---|
 | `mongoUrl`, `dbName` | MongoDB connection |
 | `siteUrl` | Public base URL used for canonical, Open Graph and sitemap URLs. **Mandatory in production** — without it URLs are built from request headers, which a client can forge |
+| `deployDomain` | Domain of the app on MyDevil, as shown by `devil www list`. Used only by `npm run deploy` for `devil www restart`; it may differ from the host in `siteUrl` (e.g. without `www`) |
 | `allowIndexing` | Must be exactly `true` for search engines to index the site. Missing or anything else means `noindex` everywhere (meta, `X-Robots-Tag`), `Disallow: /` in robots.txt and a 404 for the sitemap — so a fresh clone or staging never ends up in Google |
 
 ## Requirements
@@ -64,7 +65,7 @@ Open `http://localhost:4200`. `proxy.conf.json` forwards `/api` and `/uploads` t
 3000. `ng serve` renders pages on the server by itself — without the context from
 `app.js` data goes through plain `fetch` via the proxy, so the backend has to be running.
 
-What `ng serve` does **not** give you: the SEO meta injected by `app.js`, the 10-minute
+What `ng serve` does **not** give you: the SEO meta injected by `app.js`, the 1-hour
 HTML cache and the service worker. Use the production-like check for those.
 
 ### Production-like check
@@ -83,12 +84,14 @@ through `app.js`, injected meta, cache, and the `X-Render` response header.
 ### Debugging hydration
 
 Replace `npm run build` with `cd front && npm run watch`. It keeps rebuilding a
-development build into `front/dist`, `app.js` picks up every new build without a restart,
+development build into `front/dist`, `npm run watch` in the root restarts the backend after
+every build,
 and the browser console shows hydration statistics and hydration errors (NG05xx).
 
 ### When to restart the backend
 
-After any change to `app.js`, `ssr.js` or `shared/`. `npm run watch` in the root does it
+After any change to `app.js`, `ssr.js` or `shared/`, and after every front-end build — the
+server bundle is loaded once per process. `npm run watch` in the root does it
 automatically (nodemon). A change in `shared/` also needs a front-end rebuild, because
 the front end bundles `shared/seo-meta.js`.
 
@@ -98,13 +101,14 @@ On the server:
 
 ```bash
 git pull
-cd front && npm run build:deploy   # npm ci + ng build → front/dist/geosilesia/{browser,server}
+npm run deploy   # front: npm ci + ng build, then devil www restart <deployDomain>
 ```
 
-Then, **only if `app.js`, `ssr.js` or `shared/` changed**, restart the Node process (on
-mydevil e.g. `devil www restart <domain>`). Build first, restart second — the new
-server expects the new build. If the root `package.json` changed, also run
-`npm install --omit=dev` in the root.
+Every deployment restarts the Node process, always after the build — the new server
+expects the new build. The restart is also what clears all in-memory caches (rendered
+HTML, page list, CSR shell). The domain is taken from `deployDomain` in `config.json`;
+without it the script stops before building. If the root `package.json` changed, run
+`npm install --omit=dev` in the root first.
 
 - `front/dist/` is in `.gitignore`, so every deployment has to build.
 - `npm ci` deletes `node_modules` and installs exactly the versions pinned in
@@ -112,9 +116,9 @@ server expects the new build. If the root `package.json` changed, also run
   the server: it may pick newer versions within the ranges — `@angular/build` 22.2 pulls
   `sass-embedded`, which hangs the build on the server's platform. That is also why
   `front/package-lock.json` must stay in the repository.
-- A front-end-only change needs no restart: `ssr.js` detects a new build by the mtime of
-  `server.mjs`, imports its copy from `front/dist/geosilesia/ssr-runtime/` and clears the
-  cache.
+- A front-end-only change needs the restart too: `ssr.js` imports the server bundle once
+  per process (Node never unloads ES modules), so without a restart the old bundle keeps
+  rendering pages.
 
 ## SSR
 
@@ -122,8 +126,11 @@ server expects the new build. If the root `package.json` changed, also run
 (`front/src/server.ts`), which `ssr.js` calls.
 
 - **Only existing pages are rendered**, under their normalized `pageUrl`. The result
-  lives in memory for 10 minutes (the same as the page list used for meta and the
-  sitemap). A 404, a database outage, a missing build, an error or a render longer than
+  lives in memory for 1 hour (the same as the page list used for meta and the
+  sitemap). After every saved page, post, post type or file the CMS (frodo) increments
+  `version` in the `meta` collection (`{ _id: "content" }`, same database). Each Node
+  process checks it at most every 5 s and clears both caches when it changes, so changes
+  show up within seconds in every process and the TTL is only a safety net. A 404, a database outage, a missing build, an error or a render longer than
   5 s → the CSR shell (`index.csr.html`), as before SSR. The
   `X-Render: ssr-hit | ssr-miss | csr` header tells which path was taken.
 - **Render data does not go over the network.** `SsrApiBackend`

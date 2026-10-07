@@ -43,6 +43,7 @@ client.connect()
         collections.posts = db.collection("posts");
         collections.pages = db.collection("pages");
         collections.files = db.collection("files");
+        collections.meta = db.collection("meta");
         app.listen(app.get("port"), () => console.log("Running on port 3000"));
     })
     .catch(err => {
@@ -163,29 +164,77 @@ const FRONT_DIR = path.resolve(`${__dirname}/front/dist/geosilesia/browser`);
 const INDEX_PATH = path.resolve(`${FRONT_DIR}/index.csr.html`);
 const SEO_START = "<!--seo:start-->";
 const SEO_END = "<!--seo:end-->";
-const PAGES_TTL = 10 * 60 * 1000;
+const PAGES_TTL = 60 * 60 * 1000;
+
+// How often each process asks Mongo whether the content changed.
+const CONTENT_VERSION_INTERVAL = 5000;
 
 let pagesCache = null;
 let pagesCacheAt = 0;
 
+// The CMS (frodo) increments meta { _id: "content" }.version after every saved page, post,
+// post type or file. Every process polls it on its own, so the caches of all of them are
+// cleared – unlike a webhook, which reaches only one. PAGES_TTL stays as a safety net.
+let contentVersion = null;
+let contentVersionAt = 0;
+let contentVersionCheck = null;
+// Incremented on every clear, so that a query started before it does not put old data
+// back into the cache.
+let cacheGeneration = 0;
+
+function clearContentCaches() {
+    cacheGeneration++;
+    pagesCache = null;
+    renderer.clear();
+    console.log(new Date(), "[ssr] content changed, cache cleared");
+}
+
+// Never rejects – when the check fails the caches stay as they are until the next one.
+function syncContentVersion() {
+    if (contentVersionCheck) return contentVersionCheck;
+    if (!collections.meta || Date.now() - contentVersionAt < CONTENT_VERSION_INTERVAL) {
+        return Promise.resolve();
+    }
+    contentVersionCheck = collections.meta
+        .findOne({ _id: "content" })
+        .then(doc => {
+            const version = doc ? doc.version : 0;
+            if (contentVersion !== null && version !== contentVersion) {
+                clearContentCaches();
+            }
+            contentVersion = version;
+        })
+        .catch(err => console.log(new Date(), "[ssr] content version check failed:", err.message))
+        .finally(() => {
+            contentVersionAt = Date.now();
+            contentVersionCheck = null;
+        });
+    return contentVersionCheck;
+}
+
 // In-memory list of pages – used by both the sitemap and the meta injection.
-// Pages are edited by an external application writing straight to Mongo, so changes
-// show up after the TTL at the latest, without a restart or a front-end rebuild.
+// Pages are edited by an external application writing straight to Mongo; changes show up
+// within CONTENT_VERSION_INTERVAL, without a restart or a front-end rebuild.
 function getPages() {
     if (databaseError || !collections.pages) {
         return Promise.reject(new Error("Database unavailable"));
     }
-    if (pagesCache && Date.now() - pagesCacheAt < PAGES_TTL) {
-        return Promise.resolve(pagesCache);
-    }
-    return collections.pages
-        .find({})
-        .toArray()
-        .then(pages => {
-            pagesCache = pages;
-            pagesCacheAt = Date.now();
-            return pages;
-        });
+    return syncContentVersion().then(() => {
+        if (pagesCache && Date.now() - pagesCacheAt < PAGES_TTL) {
+            return pagesCache;
+        }
+        const generation = cacheGeneration;
+        return collections.pages
+            .find({})
+            .toArray()
+            .then(pages => {
+                if (generation === cacheGeneration) {
+                    pagesCache = pages;
+                    pagesCacheAt = Date.now();
+                }
+                return pages;
+            });
+    });
 }
 
 let indexCache = null;
@@ -355,8 +404,9 @@ function ssrApi(apiPath) {
     return data.then(result => JSON.parse(JSON.stringify(result)));
 }
 
-// Rendered HTML lives as long as the page list (PAGES_TTL): a CMS change shows up in the
-// content no later than in the meta and the sitemap. The SEO block is injected only when
+// Rendered HTML lives as long as the page list (PAGES_TTL) and is cleared together with it
+// (clearContentCaches): a CMS change shows up in the content no later than in the meta and
+// the sitemap. The SEO block is injected only when
 // sending, because it depends on the request's base URL while the cache is shared.
 const renderer = createRenderer({
     api: ssrApi,
