@@ -3,11 +3,6 @@
 front/node_modules/
 front/dist/
 front/.angular/
-# Previous front end (AngularJS) kept for reference – only the sources are tracked,
-# not gulp's dependencies or its build output.
-front-old/node_modules/
-front-old/public/
-front-old/package-lock.json
 node_modules/
 package-lock.json
 # The front-end lockfile must be in the repo: without it the server picks the newest

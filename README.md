@@ -16,7 +16,6 @@ site visitors.
 | `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 10 minutes |
 | `shared/seo-meta.js` | SEO rules (title, description, paths) shared by the server and the browser |
 | `front/` | Angular 22 application with server-side rendering and hydration |
-| `front-old/` | Archived AngularJS front end, kept for reference only |
 | `config.json` | Local configuration, not in git — copy `config.example.json` |
 | `uploads/` | Files uploaded through the CMS, not in git |
 
