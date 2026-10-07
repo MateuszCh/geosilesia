@@ -3,6 +3,5 @@
     "dbName": "dbname",
     "siteUrl": "https://your-domain.example",
     "allowIndexing": true,
-    "deployDomain": "your-domain.example",
-    "cacheClearSecret": "CHANGE_ME_long_random_string"
+    "deployDomain": "your-domain.example"
 }

@@ -13,7 +13,7 @@ site visitors.
 | Path | What it is |
 |---|---|
 | `app.js` | HTTP server (Express + MongoDB): API, static files, SEO meta injection, sitemap, robots, SSR orchestration |
-| `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 30 minutes |
+| `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 1 hour |
 | `shared/seo-meta.js` | SEO rules (title, description, paths) shared by the server and the browser |
 | `front/` | Angular 22 application with server-side rendering and hydration |
 | `front-old/` | Archived AngularJS front end, kept for reference only |
@@ -32,7 +32,6 @@ collection, and the API decides whether it exists.
 | `mongoUrl`, `dbName` | MongoDB connection |
 | `siteUrl` | Public base URL used for canonical, Open Graph and sitemap URLs. **Mandatory in production** — without it URLs are built from request headers, which a client can forge |
 | `deployDomain` | Domain of the app on MyDevil, as shown by `devil www list`. Used only by `npm run deploy` for `devil www restart`; it may differ from the host in `siteUrl` (e.g. without `www`) |
-| `cacheClearSecret` | Secret the CMS (frodo) sends in the `X-Cache-Secret` header to `POST /internal/cache/clear` after saving a page, post or file. Missing means the endpoint answers 404 and changes show up only after the cache TTL |
 | `allowIndexing` | Must be exactly `true` for search engines to index the site. Missing or anything else means `noindex` everywhere (meta, `X-Robots-Tag`), `Disallow: /` in robots.txt and a 404 for the sitemap — so a fresh clone or staging never ends up in Google |
 
 ## Requirements
@@ -67,7 +66,7 @@ Open `http://localhost:4200`. `proxy.conf.json` forwards `/api` and `/uploads` t
 3000. `ng serve` renders pages on the server by itself — without the context from
 `app.js` data goes through plain `fetch` via the proxy, so the backend has to be running.
 
-What `ng serve` does **not** give you: the SEO meta injected by `app.js`, the 30-minute
+What `ng serve` does **not** give you: the SEO meta injected by `app.js`, the 1-hour
 HTML cache and the service worker. Use the production-like check for those.
 
 ### Production-like check
@@ -128,11 +127,11 @@ without it the script stops before building. If the root `package.json` changed,
 (`front/src/server.ts`), which `ssr.js` calls.
 
 - **Only existing pages are rendered**, under their normalized `pageUrl`. The result
-  lives in memory for 30 minutes (the same as the page list used for meta and the
-  sitemap). The CMS clears both right after every save through
-  `POST /internal/cache/clear` (`cacheClearSecret`), so the TTL is only a safety net. The
-  webhook reaches one Node process – with several application processes the others keep
-  their cache until the TTL. A 404, a database outage, a missing build, an error or a render longer than
+  lives in memory for 1 hour (the same as the page list used for meta and the
+  sitemap). After every saved page, post, post type or file the CMS (frodo) increments
+  `version` in the `meta` collection (`{ _id: "content" }`, same database). Each Node
+  process checks it at most every 5 s and clears both caches when it changes, so changes
+  show up within seconds in every process and the TTL is only a safety net. A 404, a database outage, a missing build, an error or a render longer than
   5 s → the CSR shell (`index.csr.html`), as before SSR. The
   `X-Render: ssr-hit | ssr-miss | csr` header tells which path was taken.
 - **Render data does not go over the network.** `SsrApiBackend`

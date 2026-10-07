@@ -116,7 +116,7 @@ function createRenderer({ api, ttl, accept }) {
     }
 
     /**
-     * Drops every rendered page (the CMS webhook in app.js). A render still in progress
+     * Drops every rendered page (clearContentCaches in app.js). A render still in progress
      * no longer lands in the cache – its entry is gone – so the next request renders anew.
      */
     function clear() {
