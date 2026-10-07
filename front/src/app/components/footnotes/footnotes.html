@@ -1,0 +1,14 @@
+@if (component().items?.length) {
+    <div>
+        <h3 class="footnotes__heading">{{ component().title }}</h3>
+        <ul class="footnotes">
+            @for (footnote of component().items; track $index) {
+                <li>
+                    <sup>{{ footnote.position }}</sup>
+                    -
+                    <span>{{ footnote.text }}</span>
+                </li>
+            }
+        </ul>
+    </div>
+}

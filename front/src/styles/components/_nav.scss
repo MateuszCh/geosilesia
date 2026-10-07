@@ -1,0 +1,90 @@
+@use 'sass:color';
+@use '../general/variables' as *;
+@use '../general/mixins' as *;
+
+.nav {
+    transition: all 0.2s ease;
+    max-height: 500px;
+    overflow: visible;
+    justify-content: space-around;
+    position: relative;
+    padding-bottom: 0;
+    display: none;
+    @include laptop {
+        display: flex;
+    }
+    &__item {
+        transition: all 0.4s ease-in-out;
+        background-color: color.adjust($header-color, $lightness: 10%);
+        flex-grow: 1;
+        text-align: center;
+        &:hover {
+            background-color: white;
+            color: color.adjust($header-color, $lightness: -10%);
+        }
+        &--active {
+            background-color: color.adjust($header-color, $lightness: 20%);
+            .subnav__item {
+                background-color: color.adjust($header-color, $lightness: 10%);
+                &--active {
+                    background-color: color.adjust($header-color, $lightness: 20%);
+                    &:hover {
+                        background-color: white;
+                        color: color.adjust($header-color, $lightness: -10%);
+                    }
+                }
+            }
+        }
+        &__link {
+            cursor: pointer;
+            display: block;
+            text-decoration: none;
+            font-family: $text-font;
+            color: inherit;
+            font-size: 1rem;
+            padding: 2.625rem 1rem;
+            @include full {
+                font-size: 1rem;
+                padding: 2.625rem 1.75rem;
+            }
+        }
+    }
+    .subnav {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.5s ease;
+        z-index: -1;
+        position: absolute;
+        color: white;
+        width: 100%;
+        left: 0;
+        &--active {
+            max-height: 500px;
+            transition: max-height 0.5s ease;
+            z-index: 1010;
+        }
+        &__item {
+            transition: all 0.2s ease-in-out;
+            background-color: color.adjust($header-color, $lightness: 10%);
+            padding: 0.3125rem 0;
+            width: 100%;
+            &:hover {
+                background-color: white;
+                color: color.adjust($header-color, $lightness: -10%);
+            }
+            &--active {
+                background-color: color.adjust($header-color, $lightness: 20%);
+            }
+            &__link {
+                cursor: pointer;
+                display: block;
+                text-decoration: none;
+                font-family: $text-font;
+                color: inherit;
+                padding-left: 0;
+                width: 100%;
+                font-size: 1rem;
+            }
+        }
+    }
+}

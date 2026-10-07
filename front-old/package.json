@@ -1,0 +1,38 @@
+{
+    "name": "Geosilesia",
+    "version": "1.0.0",
+    "description": "",
+    "scripts": {
+        "start": "gulp",
+        "watch": "gulp watch",
+        "watch-sync": "gulp watch-sync",
+        "clean": "gulp clean"
+    },
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "browser-sync": "^2.26.7",
+        "del": "^3.0.0",
+        "gulp": "^4.0.2",
+        "gulp-autoprefixer": "^3.1.1",
+        "gulp-clean-css": "^3.9.0",
+        "gulp-concat": "^2.6.1",
+        "gulp-hash": "^4.1.1",
+        "gulp-htmlmin": "^3.0.0",
+        "gulp-imagemin": "^5.0.3",
+        "gulp-inject": "^5.0.4",
+        "gulp-sass": "^5.1.0",
+        "gulp-uglify": "^2.1.2",
+        "sass": "^1.89.0"
+    },
+    "dependencies": {
+        "angular": "^1.7.8",
+        "angular-animate": "^1.7.8",
+        "angular-route": "^1.7.8",
+        "angular-sanitize": "^1.7.8",
+        "angular-scroll": "^1.0.2",
+        "angular-touch": "^1.7.8",
+        "idb": "^2.1.3",
+        "stream-series": "^0.1.1"
+    }
+}

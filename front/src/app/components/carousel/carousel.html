@@ -1,0 +1,66 @@
+<div class="fill carousel">
+    <!-- slides -->
+    <div class="fill">
+        @for (slide of slides(); track $index) {
+            <div class="carousel__slide"
+                 appSwipe
+                 (swipeLeft)="swipeTo($index + 1)"
+                 (swipeRight)="swipeTo($index - 1)"
+                 [style.left.%]="$index * 100 + left()">
+                <img [src]="slide.image"
+                     [alt]="slide.text ?? ''"
+                     draggable="false"
+                     [style.object-position]="objectPosition(slide)"
+                     class="carousel__slide__image">
+            </div>
+        }
+    </div>
+    <!-- pagination -->
+    @if (slides().length > 1) {
+        <div class="carousel__pagination">
+            <div class="carousel__pagination__inner"
+                 (mouseenter)="cancelInt()"
+                 (mouseleave)="setInt()">
+                @for (slide of slides(); track $index) {
+                    <div class="carousel__pagination__item"
+                         (click)="goTo($index)"
+                         [class.carousel__pagination__item--active]="left() === $index * -100"></div>
+                }
+            </div>
+        </div>
+    }
+    <!-- top info -->
+    <div class="info info--top"
+         [class.info--hidden]="!((slides()[currentSlide()]?.text || slides()[currentSlide()]?.text_english) && custom().pin_icon)">
+        <div class="info__figure">
+            <img class="info__figure__image"
+                 alt="pokaż tekst po najechaniu"
+                 [src]="custom().pin_icon">
+        </div>
+        <div class="info__text">
+            @if (slides()[currentSlide()]?.text) {
+                <p class="info__text__paragraph">{{ slides()[currentSlide()]?.text }}</p>
+            }
+            @if (slides()[currentSlide()]?.text_english) {
+                <p class="info__text__paragraph">{{ slides()[currentSlide()]?.text_english }}</p>
+            }
+        </div>
+    </div>
+    <!-- bottom info -->
+    <div class="info info--bottom"
+         [class.info--hidden]="!((custom().info_text || custom().info_text_english) && custom().info_icon)">
+        <div class="info__figure">
+            <img class="info__figure__image"
+                 alt="pokaż tekst po najechaniu"
+                 [src]="custom().info_icon">
+        </div>
+        <div class="info__text">
+            @if (custom().info_text) {
+                <p class="info__text__paragraph">{{ custom().info_text }}</p>
+            }
+            @if (custom().info_text_english) {
+                <p class="info__text__paragraph">{{ custom().info_text_english }}</p>
+            }
+        </div>
+    </div>
+</div>

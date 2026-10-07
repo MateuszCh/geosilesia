@@ -1,0 +1,38 @@
+<div class="photos">
+    <ul class="photos__categories">
+        @for (category of categories(); track category) {
+        <li class="photos__categories__category"
+            [class.markedCategory]="selectedCategory() === category"
+            (click)="changeCategory(category)">{{ category }}</li>
+        }
+    </ul>
+    <ul class="photos__list">
+        @for (gallery of component().galleries ?? []; track $index) {
+        <li class="photos__list__item"
+            appImageLoaded="figury-up"
+            [class.photos__list__item--collapsed]="!matches(gallery.category)"
+            [class.photos__list__item--hidden]="isHidden(gallery.category)">
+            @if (isExternalLink(gallery.link)) {
+            <a [href]="gallery.link">
+                <ng-container *ngTemplateOutlet="figure; context: { $implicit: gallery }" />
+            </a>
+            } @else {
+            <a [routerLink]="internalLink(gallery.link)">
+                <ng-container *ngTemplateOutlet="figure; context: { $implicit: gallery }" />
+            </a>
+            }
+        </li>
+        }
+    </ul>
+</div>
+
+<ng-template #figure
+             let-gallery>
+    <figure class="photos__list__item__figure">
+        <img class="photos__list__item__figure__image"
+             loading="lazy"
+             [src]="gallery.image"
+             [alt]="'przejdź do galerii ' + gallery.title">
+        <figcaption class="photos__list__item__figure__text">{{ gallery.title }}</figcaption>
+    </figure>
+</ng-template>

@@ -1,0 +1,14 @@
+<div class="homepage-banner">
+    <app-carousel [interval]="component().interval"
+                  [slides]="component().slides ?? []"
+                  [custom]="component()"></app-carousel>
+    <div>
+        <h2 class="homepage-banner__heading"
+            (click)="scrollToFirstSection()">
+            <span>{{ component().title }}</span>
+            <span class="homepage-banner__heading__left"></span>
+            <span class="homepage-banner__heading__right"></span>
+        </h2>
+        <span class="homepage-banner__bar"></span>
+    </div>
+</div>

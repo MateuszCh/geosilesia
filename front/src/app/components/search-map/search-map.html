@@ -1,0 +1,120 @@
+<div class="homepage-map">
+    <div id="search"
+         class="search">
+        <div id="search-form"
+             class="search__form"
+             [class.search__form--active]="showSearch() || !mapsReady()">
+            <h3 class="search__form__heading">{{ component().title }}</h3>
+            <form (submit)="search($event)">
+                @if (mapsReady()) {
+                    <div class="search__form__search">
+                        <input class="search__form__search__input"
+                               type="text"
+                               aria-label="Lokalizacja"
+                               placeholder="Wpisz szukaną lokalizację"
+                               [value]="searchInput()"
+                               (input)="onSearchInput($event)">
+                        <button class="search__form__search__button"
+                                [class.busy]="searchBusy()"
+                                type="submit"
+                                aria-label="Szukaj atrakcji geoturystycznych"></button>
+                        @if (searchMessage()) {
+                            <p class="search__form__search__message">{{ searchMessage() }}</p>
+                        }
+                    </div>
+                }
+                <div class="search__form__category">
+                    <h3 class="search__form__category__heading">Kategorie</h3>
+                    @for (cat of categories(); track cat.id) {
+                        <div class="search__form__category__container">
+                            <input class="search__form__category__radio"
+                                   type="radio"
+                                   name="category"
+                                   [id]="cat.category"
+                                   [checked]="category() === cat.category"
+                                   (change)="pickCategory(cat.category)">
+                            <label class="search__form__category__label"
+                                   [attr.for]="cat.category">
+                                <span class="search__form__category__label__icon"></span>
+                                <span class="search__form__category__label__text">{{ cat.name }} ({{ cat.count }})</span>
+                                <img class="search__form__category__label__image"
+                                     [alt]="cat.name ?? ''"
+                                     style="height:27px; width: 24px;"
+                                     [src]="cat.icon">
+                            </label>
+                        </div>
+                    }
+                    <div class="search__form__category__container">
+                        <input class="search__form__category__radio"
+                               type="radio"
+                               name="category"
+                               id="all"
+                               [checked]="category() === 'all'"
+                               (change)="pickCategory('all')">
+                        <label class="search__form__category__label"
+                               for="all">
+                            <span class="search__form__category__label__icon"></span>
+                            <span class="search__form__category__label__text">Wszystkie ({{ markersCount() }})</span>
+                        </label>
+                    </div>
+                </div>
+            </form>
+            <div class="search__form__results">
+                <h3 class="search__form__results__heading">Obiekty/Atrakcje</h3>
+                <div class="search__form__results__container">
+                    @for (result of selectedMarkers(); track result.id) {
+                        @if (!result.type) {
+                            <div class="result"
+                                 [class.cursor-pointer]="mapsReady()"
+                                 (click)="mapsReady() ? setCurrentResult(result.id) : null">
+                                <h4 class="result__heading">{{ result.title }}</h4>
+                                <div class="result__container">
+                                    <div class="result__container__left">
+                                        @if (result.place) {
+                                            <p class="result__container__left__address">{{ result.place }}</p>
+                                        }
+                                    </div>
+                                    <div class="result__container__right">
+                                        <a class="result__container__right__directions"
+                                           [href]="'https://www.google.com/maps/dir/Current+Location/' + result.position.lat + ',' + result.position.lng"
+                                           target="_blank"
+                                           rel="noreferrer"
+                                           (click)="$event.stopPropagation()">Dojazd</a>
+                                    </div>
+                                </div>
+                                @if (result.distance) {
+                                    <p class="result__distance">Odległość:
+                                        <span>{{ result.distance | number: '1.2-2' }}</span> km
+                                    </p>
+                                }
+                            </div>
+                        }
+                    }
+                    <div class="search__form__results__container__show-more">
+                        @if (showMore()) {
+                            <button class="search__form__results__container__show-more__button"
+                                    (click)="increaseSearchQty()">Pokaż więcej</button>
+                        }
+                    </div>
+                </div>
+            </div>
+            @if (mapsReady()) {
+                <div class="search__form__activate"
+                     (click)="toggleSearchPanel()">
+                    <img class="search__form__activate__image"
+                         alt="otwórz panel wyszukiwania atrakcji geoturystycznych"
+                         src="/images/search-icon.png">
+                </div>
+            }
+        </div>
+        @if (mapsReady()) {
+            <app-geo-map class="search__container"
+                         [class.search__container--smaller]="showSearch()"
+                         [markersModels]="selectedMarkers()"
+                         [categories]="categories()"
+                         [activeCategory]="category()"
+                         [currentResult]="currentResult()"
+                         [markerCluster]="!!component().marker_cluster"></app-geo-map>
+        }
+    </div>
+</div>

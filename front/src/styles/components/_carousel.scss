@@ -1,0 +1,53 @@
+@use '../general/variables' as *;
+
+.carousel {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    &__slide {
+        width: 100%;
+        display: inline-block;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        transition: left 0.5s linear;
+        &--no-transition {
+            transition: none !important;
+        }
+        &__image {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            object-fit: cover;
+        }
+    }
+    &__next {
+        position: absolute;
+        right: 50px;
+        top: 50%;
+    }
+    &__prev {
+        position: absolute;
+        left: 50px;
+        top: 50%;
+    }
+    &__pagination {
+        margin-bottom: 100px;
+        display: flex;
+        position: relative;
+        &__inner {
+            display: flex;
+        }
+        &__item {
+            width: 24px;
+            cursor: pointer;
+            height: 10px;
+            background-color: $color3;
+            margin: 0 5px;
+            transition: background-color 0.5s ease;
+            &--active {
+                background-color: $header-color;
+            }
+        }
+    }
+}

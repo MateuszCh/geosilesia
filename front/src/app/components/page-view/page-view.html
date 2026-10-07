@@ -1,0 +1,58 @@
+<main [class.homepage]="displayed()?.pageUrl === '/'">
+    @for (row of displayed()?.rows ?? []; track $index) {
+        <section [id]="'section-' + $index">
+            @switch (row.type) {
+                @case ('homepage_banner') {
+                    <app-homepage-banner [component]="row.data" />
+                }
+                @case ('map') {
+                    <app-search-map [component]="row.data" />
+                }
+                @case ('title_and_text') {
+                    <app-title-and-text [component]="row.data" />
+                }
+                @case ('marker_category_list') {
+                    <app-marker-category-list [component]="row.data" />
+                }
+                @case ('literature') {
+                    <app-literature [component]="row.data" />
+                }
+                @case ('news') {
+                    <app-news [component]="row.data" />
+                }
+                @case ('dictionary') {
+                    <app-dictionary [component]="row.data" />
+                }
+                @case ('footnotes') {
+                    <app-footnotes [component]="row.data" />
+                }
+                @case ('heading') {
+                    <app-heading [component]="row.data" />
+                }
+                @case ('geosites_logos') {
+                    <app-geosites-logos [component]="row.data" />
+                }
+                @case ('tabs') {
+                    <app-tabs [component]="row.data" />
+                }
+                @case ('gallery_list') {
+                    <app-gallery-list [component]="row.data" />
+                }
+                @case ('gallery') {
+                    <app-gallery [component]="row.data" />
+                }
+            }
+        </section>
+    }
+    @if (!displayed()?.rows?.length && loaded()) {
+        <section class="nopage">
+            <h2>Przepraszamy, nie możemy znaleźć tej strony!</h2>
+            <p>Strona prawdopodobnie nie istnieje{{ offlineAvailable ? '...' : '' }}</p>
+            @if (offlineAvailable) {
+                <p style="margin:0">lub nie została wcześniej zapisana jeśli jesteś w trybie offline.</p>
+            }
+            <a class="nopage__button"
+               routerLink="/">Przejdź do strony głównej</a>
+        </section>
+    }
+</main>

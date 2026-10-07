@@ -1,0 +1,68 @@
+<div class="gallery">
+    <h2>{{ component().title }}</h2>
+    @for (paragraph of component().paragraphs ?? []; track $index) {
+        <p class="gallery__description"
+           [innerHTML]="paragraph.paragraph"></p>
+    }
+    @for (image of images(); track image.id; let index = $index) {
+        @if (image.src) {
+            <figure class="gallery__figure"
+                    appImageLoaded="figury-up"
+                    (click)="openFullMode(index)">
+                <img class="gallery__figure__image"
+                     loading="lazy"
+                     [alt]="image.title ?? ''"
+                     [src]="image.src">
+                @if (image.title) {
+                    <figcaption class="gallery__figure__text">{{ image.title }}</figcaption>
+                }
+            </figure>
+        }
+    }
+</div>
+
+<div class="fullscreen-mode"
+     [class.fullscreen-mode--visible]="visible()">
+    <div class="image-overlay"
+         (click)="close()"></div>
+    <div class="fullscreen-image">
+        @for (img of images(); track img.id; let index = $index) {
+            <div class="fullscreen-image__figure"
+                 appSwipe
+                 (swipeRight)="prev()"
+                 (swipeLeft)="next()"
+                 [class.fullscreen-image__figure--active]="currentImage() === index"
+                 [class.fullscreen-image__figure--prev]="prevImage() === index"
+                 [class.fullscreen-image__figure--next]="nextImage() === index"
+                 [class.backward]="back()"
+                 [class.no-move]="noMove()">
+                <div class="fullscreen-image__figure__container"
+                     [class.fullscreen-image__figure__container--full-width]="!(img.title || img.description || img.author)">
+                    <img class="fullscreen-image__figure__container__img"
+                         loading="lazy"
+                         [alt]="img.title ?? ''"
+                         [src]="img.src">
+                </div>
+                @if (img.copy || img.description || img.author) {
+                    <div class="fullscreen-image__figure__figcaption">
+                        @if (img.title) {
+                            <h3 class="fullscreen-image__figure__figcaption__title">{{ img.title }}</h3>
+                        }
+                        @if (img.description) {
+                            <p class="fullscreen-image__figure__figcaption__text">{{ img.description }}</p>
+                        }
+                        @if (img.author) {
+                            <p class="fullscreen-image__figure__figcaption__text">{{ img.author }}</p>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        <div class="fullscreen-image__close"
+             (click)="close()"></div>
+        <span class="fullscreen-image__arrows fullscreen-image__arrows--prev"
+              (click)="prev()"></span>
+        <span class="fullscreen-image__arrows fullscreen-image__arrows--next"
+              (click)="next()"></span>
+    </div>
+</div>

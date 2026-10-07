@@ -1,0 +1,208 @@
+@use 'sass:color';
+@use 'variables' as *;
+@use 'mixins' as *;
+
+html {
+    font-size: 16px;
+}
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+ul {
+    list-style: none;
+}
+body {
+    width: 100%;
+    @include tablet {
+        background-color: #f8f8f8;
+    }
+}
+p,
+dd {
+    font-family: $text-font;
+    color: $text-color;
+    line-height: 1.5rem;
+    font-size: 0.9rem;
+    margin: 0.625rem 0;
+    @include tablet {
+        font-size: 1rem;
+        padding: 0 0.625rem;
+    }
+}
+
+h2 {
+    margin: 0 auto;
+    width: 100%;
+    font-family: $headers-font;
+    text-align: center;
+    font-size: 2rem;
+    color: color.adjust($header-color, $lightness: -10%);
+    padding-bottom: 0.625rem;
+    @include tablet {
+        font-size: 3rem;
+    }
+}
+dt {
+    font-family: $text-font;
+    font-size: 1.3rem;
+    color: color.adjust($text-color, $lightness: -10%);
+}
+
+main {
+    width: 95%;
+    margin: 0 auto;
+    padding-top: 5rem;
+    @include tablet {
+        width: 90%;
+        padding-top: 8.125rem;
+    }
+    @include laptop {
+        width: 80%;
+    }
+    @include full {
+        width: 60%;
+    }
+    &.homepage {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+
+a {
+    color: inherit;
+}
+
+.default-list {
+    list-style-type: disc;
+    list-style-position: outside;
+    padding-left: 1.25rem;
+    @include tablet {
+        padding-left: 2.25rem;
+    }
+    @include laptop {
+        padding-left: 3.125rem;
+    }
+    li {
+        margin: 0.625rem 0;
+        color: $text-color;
+        font-family: $text-font;
+        line-height: 1.5rem;
+        font-size: 0.9rem;
+        @include laptop {
+            font-size: 1rem;
+        }
+    }
+}
+
+.blur {
+    filter: blur(5px);
+    transition: filter 0.2s ease-in-out;
+}
+
+.closedScroll {
+    overflow: visible;
+    max-height: 100vh;
+    position: fixed;
+
+    @include laptop {
+        max-height: none;
+        position: static;
+    }
+}
+
+::-webkit-scrollbar {
+    width: 0.25rem;
+    background-color: #ebebeb;
+}
+::-webkit-scrollbar-track {
+    background-color: #ebebeb;
+}
+::-webkit-scrollbar-thumb {
+    background-color: color.adjust($header-color, $lightness: 0%);
+}
+
+.fw-bold {
+    font-weight: bold;
+}
+
+.fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.center-content {
+    @extend .fill;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+// A bar at the bottom instead of a full-screen overlay: the page arrives rendered by the
+// server, and without JavaScript only interactive elements stop working. Above the "back
+// to top" button (which does not work without JS anyway), below the photo preview.
+.noscript {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 110;
+    padding: 0.5rem 1rem;
+    background-color: $header-color;
+    text-align: center;
+
+    &__text {
+        margin: 0;
+        padding: 0;
+        color: white;
+    }
+}
+
+.nopage {
+    @extend .center-content;
+    text-align: center;
+    flex-direction: column;
+    padding: 0 1em;
+    &__button {
+        text-decoration: none;
+        margin-top: 2em;
+        background-color: $color3;
+        padding: 1em;
+        color: white;
+        font-family: $text-font;
+        transition: background-color 0.5s ease;
+        &:hover {
+            background-color: color.adjust($color3, $lightness: 10%);
+        }
+    }
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.busy {
+    color: transparent;
+    &:after,
+    &:before {
+        content: "";
+        width: 20px;
+        height: 20px;
+        position: absolute;
+        top: calc(50% - 10px);
+        left: calc(50% - 10px);
+        border-radius: 50%;
+        background-color: white;
+        opacity: 0.6;
+        animation: sk-bounce 2s infinite ease-in-out;
+    }
+    &:before {
+        animation-delay: -1s;
+    }
+}

@@ -1,0 +1,28 @@
+<h2>{{ component().title }}</h2>
+@for (event of events(); track event.id; let index = $index) {
+    <article class="news"
+             [class.news--active]="active() === index">
+        <div class="news__head"
+             (click)="toggle(index)">
+            <h3 class="news__head__title">{{ event.title }}</h3>
+            <p class="news__head__date">{{ event.data.date_and_place }}</p>
+        </div>
+        <div class="news__body"
+             [class.news__body--active]="active() === index">
+            @for (para of event.data.paragraphs ?? []; track $index) {
+                <p class="news__body__text">{{ para.item }}</p>
+            }
+            @for (link of event.data.links ?? []; track $index) {
+                <p class="news__body__links">
+                    <a class="news__body__links__item"
+                       [href]="link?.link"
+                       target="_blank"
+                       rel="noreferrer">{{ link?.text }}</a>
+                </p>
+            }
+        </div>
+    </article>
+}
+@if (!events().length) {
+    <p class="news__info">Obecnie nie ma żadnych wydarzeń</p>
+}

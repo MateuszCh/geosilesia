@@ -1,0 +1,247 @@
+@use 'sass:color';
+@use '../general/variables' as *;
+@use '../general/mixins' as *;
+@use '../general/general'; // for @extend p
+
+.fullscreen-mode {
+    z-index: 120;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+
+    // The name "--hidden" was misleading: this modifier SHOWS the preview. Renamed,
+    // because the template read exactly the opposite of what it does.
+    &--visible {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.5s ease;
+    }
+
+    .image-overlay {
+        display: none;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 6;
+        background-color: black;
+        opacity: 0.15;
+        @include laptop {
+            display: block;
+        }
+    }
+
+    .fullscreen-image {
+        overflow: hidden;
+        position: fixed;
+        top: 0;
+        background-color: white;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        z-index: 10;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        @include laptop {
+            top: 10%;
+            bottom: 10%;
+            left: 10%;
+            right: 10%;
+            box-shadow: grey 0 0 15px 5px;
+        }
+        @include full {
+            top: 15%;
+            bottom: 15%;
+            left: 20%;
+            right: 20%;
+        }
+        &__close {
+            z-index: 101;
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            height: 1.5rem;
+            width: 1.5rem;
+            cursor: pointer;
+            &:before,
+            &:after {
+                width: 1.5rem;
+                height: 0.3rem;
+                content: "";
+                position: absolute;
+                top: calc(50% - (0.3rem / 2));
+                left: 0;
+                display: block;
+                background-color: $header-color;
+                transition: all 0.2s ease-in-out;
+            }
+            &:after {
+                transform: rotate(45deg);
+            }
+            &:before {
+                transform: rotate(-45deg);
+            }
+            &:hover {
+                &:before {
+                    background-color: $color3;
+                }
+                &:after {
+                    background-color: $color3;
+                }
+            }
+        }
+
+        &__figure {
+            transform: translate(100%);
+            overflow: auto;
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            display: flex;
+            position: absolute;
+            justify-content: center;
+            flex-direction: column;
+            background-color: white;
+
+            &.backward {
+                transform: translate(-100%);
+            }
+            &.no-move {
+                transition: none !important;
+            }
+
+            @include laptop {
+                flex-direction: row;
+                padding: 3rem;
+            }
+
+            &--active {
+                transform: translate(0%) !important;
+                transition: transform 0.5s ease;
+            }
+            &--next {
+                transform: translate(100%) !important;
+                transition: transform 0.5s ease;
+            }
+            &--prev {
+                transform: translate(-100%) !important;
+                transition: transform 0.5s ease;
+            }
+
+            &__container {
+                width: 100%;
+                max-height: 80vh;
+                position: relative;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                @include landscape {
+                    position: absolute;
+                    max-height: 100vh;
+                }
+                @include laptop {
+                    width: 70%;
+                    max-height: 100%;
+                    height: 100%;
+                }
+                &--full-width {
+                    @include laptop {
+                        width: 100%;
+                    }
+                }
+                &__img {
+                    display: block;
+                    max-width: 100%;
+                    max-height: 100%;
+                    height: auto;
+                    @include landscape {
+                        max-width: 100vw;
+                        max-height: 100vh;
+                    }
+                    @include laptop {
+                        max-width: 100%;
+                        max-height: 100%;
+                    }
+                }
+            }
+
+            &__figcaption {
+                padding: 0 0.5rem;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                @include landscape {
+                    display: none !important;
+                }
+                @include tablet {
+                    display: flex;
+                }
+                @include laptop {
+                    width: 30%;
+                }
+                &__title,
+                &__text,
+                &__link {
+                    text-align: center;
+                    color: $text-color;
+                    font-family: $text-font;
+                    font-size: 0.9rem;
+                    line-height: 1rem;
+                }
+                &__link {
+                    @extend p;
+                    text-decoration: none;
+                }
+                &__title {
+                    margin-top: 0.625rem;
+                    @include laptop {
+                        font-size: 1.125rem;
+                    }
+                }
+            }
+        }
+        &__arrows {
+            display: none;
+            position: absolute;
+            top: 50%;
+            width: 2rem;
+            height: 2rem;
+            background: transparent;
+            border-top: 0.4rem solid $header-color;
+            border-right: 0.4rem solid $header-color;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            z-index: 10;
+            @include laptop {
+                display: block;
+            }
+            &--prev {
+                left: 1rem;
+                transform: translate3d(0, -50%, 0) rotate(-135deg);
+            }
+            &--next {
+                right: 1rem;
+                transform: translate3d(0, -50%, 0) rotate(45deg);
+            }
+            &:hover {
+                border-top: 0.4rem solid $header-color;
+                border-right: 0.4rem solid $header-color;
+                box-shadow: 0.2rem -0.2rem 0 color.adjust($header-color, $lightness: 50%);
+                &.fullscreen-image__arrows--prev {
+                    left: 0.8rem;
+                }
+                &.fullscreen-image__arrows--next {
+                    right: 0.8rem;
+                }
+            }
+        }
+    }
+}

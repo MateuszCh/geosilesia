@@ -1,15 +1,18 @@
 .idea/
 .DS_Store
 front/node_modules/
-front/public/css
-front/public/html
-front/public/js
-front/public/index.html
-front/public/sw.js
-front/public/images
-front/package-lock.json
+front/dist/
+front/.angular/
+# Previous front end (AngularJS) kept for reference – only the sources are tracked,
+# not gulp's dependencies or its build output.
+front-old/node_modules/
+front-old/public/
+front-old/package-lock.json
 node_modules/
 package-lock.json
+# The front-end lockfile must be in the repo: without it the server picks the newest
+# versions (e.g. @angular/build 22.2 with sass-embedded), which hang the build there.
+!front/package-lock.json
 config.json
 tmp/
 uploads/
