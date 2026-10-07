@@ -2,6 +2,7 @@ const express = require("express"),
     bodyParser = require("body-parser"),
     path = require("path"),
     fs = require("fs"),
+    crypto = require("crypto"),
     MongoClient = require("mongodb").MongoClient,
     config = require("./config"),
     seoMeta = require("./shared/seo-meta"),
@@ -163,7 +164,7 @@ const FRONT_DIR = path.resolve(`${__dirname}/front/dist/geosilesia/browser`);
 const INDEX_PATH = path.resolve(`${FRONT_DIR}/index.csr.html`);
 const SEO_START = "<!--seo:start-->";
 const SEO_END = "<!--seo:end-->";
-const PAGES_TTL = 10 * 60 * 1000;
+const PAGES_TTL = 30 * 60 * 1000;
 
 let pagesCache = null;
 let pagesCacheAt = 0;
@@ -363,6 +364,31 @@ const renderer = createRenderer({
     ttl: PAGES_TTL,
     // HTML without the markers would mean a page without meta – the CSR shell is better.
     accept: html => html.includes(SEO_START) && html.includes(SEO_END)
+});
+
+// Called by the CMS (frodo) after every saved page, post or file, so that changes do not
+// wait for PAGES_TTL – the TTL stays only as a safety net. It clears the caches of this
+// process only. Disabled (404) without "cacheClearSecret" in config.json.
+function sha256(value) {
+    return crypto.createHash("sha256").update(String(value)).digest();
+}
+
+app.post("/internal/cache/clear", (req, res) => {
+    if (!config.cacheClearSecret) {
+        res.status(404).type("text/plain").send("Not found");
+        return;
+    }
+    // Hashes have equal lengths, which timingSafeEqual requires; the comparison then takes
+    // the same time whatever the header contains.
+    const given = sha256(req.get("X-Cache-Secret") || "");
+    if (!crypto.timingSafeEqual(given, sha256(config.cacheClearSecret))) {
+        res.status(403).type("text/plain").send("Forbidden");
+        return;
+    }
+    pagesCache = null;
+    renderer.clear();
+    console.log(new Date(), "[ssr] cache cleared");
+    res.status(204).end();
 });
 
 // Diagnostic header: whether the response is a cached render, a fresh render or the shell.

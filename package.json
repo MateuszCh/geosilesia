@@ -5,7 +5,8 @@
     "main": "app.js",
     "scripts": {
         "start": "node app.js",
-        "watch": "nodemon --watch app.js --watch ssr.js --watch shared app.js"
+        "watch": "nodemon --watch app.js --watch ssr.js --watch shared --watch front/dist/geosilesia/server/server.mjs --delay 2 app.js",
+        "deploy": "sh deploy.sh"
     },
     "keywords": [],
     "author": "",
