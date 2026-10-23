@@ -2,6 +2,57 @@
 @use '../general/variables' as *;
 @use '../general/mixins' as *;
 
+/* Keyboard focus: a white gap, then the burgundy ring – visible on white and on navy. */
+$focus-ring: 0 0 0 2px white, 0 0 0 4px $color3;
+$control-size: 2.5rem;
+$control-size-laptop: 2.75rem;
+
+@mixin focus-ring {
+    &:focus-visible {
+        outline: none;
+        box-shadow: $focus-ring;
+    }
+}
+
+@mixin link-button {
+    min-height: 2rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: $header-color;
+    font-family: $text-font;
+    font-size: 0.85rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    &:hover {
+        color: $color3;
+    }
+    @include focus-ring;
+}
+
+/* A white "×" drawn with two bars, centred in the element. */
+@mixin cross($size) {
+    position: relative;
+    &::before,
+    &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 2px;
+        height: $size;
+        background-color: white;
+    }
+    &::before {
+        transform: translate(-50%, -50%) rotate(45deg);
+    }
+    &::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+    }
+}
+
 .search {
     background-color: #ebebeb;
     height: 100%;
@@ -38,157 +89,332 @@
         &--active {
             transform: translate3d(0, 0, 0);
         }
+        &__mode {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            padding-top: 0.5rem;
+            &__button {
+                height: 2.25rem;
+                padding: 0 0.5rem;
+                border: 2px solid $header-color;
+                border-bottom: none;
+                border-radius: 0;
+                background-color: transparent;
+                color: $header-color;
+                font-family: $text-font;
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition:
+                    background-color 0.5s ease,
+                    color 0.5s ease;
+                & + & {
+                    border-left: none;
+                }
+                &:hover {
+                    background-color: white;
+                }
+                &--active,
+                &--active:hover {
+                    background-color: $header-color;
+                    color: white;
+                    font-weight: 700;
+                }
+                &:focus-visible {
+                    position: relative;
+                    z-index: 1;
+                    outline: none;
+                    box-shadow: $focus-ring;
+                }
+                @include laptop {
+                    height: 2.5rem;
+                    font-size: 0.95rem;
+                }
+            }
+        }
         &__search {
-            padding: 0.5rem 0;
             display: flex;
-            position: relative;
             &__input {
                 flex-grow: 1;
+                min-width: 0;
                 border: 2px solid $header-color;
                 border-right: none;
+                border-radius: 0;
                 padding-left: 1rem;
                 line-height: 100%;
+                font-family: $text-font;
                 font-size: 0.9rem;
                 transition: background-color 0.5s ease;
                 &:focus {
                     outline: none;
                     background-color: $header-color;
                     color: white;
+                    &::placeholder {
+                        color: rgba(255, 255, 255, 0.75);
+                    }
+                }
+                @include laptop {
+                    font-size: 1rem;
+                }
+            }
+            &__button,
+            &__clear {
+                flex-shrink: 0;
+                display: block;
+                height: $control-size;
+                width: $control-size;
+                border: none;
+                border-radius: 0;
+                background-color: $header-color;
+                cursor: pointer;
+                @include focus-ring;
+                @include laptop {
+                    height: $control-size-laptop;
+                    width: $control-size-laptop;
                 }
             }
             &__button {
-                cursor: pointer;
-                box-shadow: none;
-                border: none;
-                position: relative;
-                background: url('/images/search-icon.png');
+                background-image: url('/images/search-icon.png');
                 background-repeat: no-repeat;
                 background-position: center;
                 background-size: 60% 60%;
-                border: 0;
-                display: block;
-                height: 30px;
-                width: 30px;
-                background-color: $header-color;
                 &.busy {
                     background: $header-color;
                 }
-                @include laptop {
-                    height: 40px;
-                    width: 40px;
+                &--static {
+                    cursor: default;
                 }
             }
-            &__message {
-                position: absolute;
-                text-align: center;
-                left: 0;
-                right: 0;
-                color: red;
-                top: 100%;
-                font-size: 0.85em;
-                padding: 0 !important;
-                margin: 0 !important;
+            &__clear {
+                @include cross(1.25rem);
+            }
+        }
+        &__hint,
+        &__message {
+            margin: 0.375rem 0 0;
+            padding: 0;
+            font-size: 0.8rem;
+            line-height: 1.35;
+            @include tablet {
+                padding: 0;
+                font-size: 0.85rem;
+            }
+        }
+        &__hint {
+            color: $text-color;
+        }
+        &__message {
+            color: red;
+        }
+        &__chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+            margin-top: 0.5rem;
+        }
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            min-height: 2rem;
+            padding-left: 0.625rem;
+            background-color: color.adjust($header-color, $lightness: -10%);
+            color: white;
+            font-family: $text-font;
+            font-size: 0.8rem;
+            line-height: 1.2;
+            &__icon {
+                width: 0.875rem;
+                height: 1rem;
+                object-fit: contain;
+            }
+            &__remove {
+                flex-shrink: 0;
+                width: 2rem;
+                height: 2rem;
+                margin-left: -0.25rem;
+                border: none;
+                background: transparent;
+                cursor: pointer;
+                @include cross(0.875rem);
+                &:focus-visible {
+                    outline: none;
+                    box-shadow: inset 0 0 0 2px white;
+                }
             }
         }
         &__category {
-            margin-top: 1em;
-            &__heading {
-                font-family: $text-font;
-                text-align: center;
-                padding: 0.2rem 0;
-                font-size: 0.9rem;
-                font-weight: normal;
-                @include tablet {
-                    font-size: 1.3rem;
-                }
-            }
-            &__container {
-                position: relative;
-                margin: 0.3rem 0;
-                display: flex;
-            }
-            &__radio {
-                display: none;
-                &:focus {
-                    outline: none;
-                }
-                &:checked + label .search__form__category__label__icon:after {
-                    background: transparent;
-                    transition: all 0.5s;
-                    transform: scale(1);
-                }
-                &:checked + label .search__form__category__label__icon:before {
-                    transform: scale(1);
-                    transition: all 0.4s;
-                }
-            }
-
-            &__label {
-                position: relative;
-                cursor: pointer;
-                width: 100%;
-                transition: background-color 0.6s ease;
+            margin-top: 0.875rem;
+            &__toggle {
                 display: flex;
                 align-items: center;
+                gap: 0.625rem;
+                width: 100%;
+                min-height: $control-size;
+                padding: 0 1rem;
+                border: 2px solid $header-color;
+                border-radius: 0;
+                background-color: white;
+                color: $header-color;
+                font-family: $text-font;
+                font-size: 0.9rem;
+                line-height: 1.3;
+                text-align: left;
+                cursor: pointer;
+                transition:
+                    background-color 0.3s ease-in-out,
+                    color 0.3s ease-in-out;
+                @include focus-ring;
+                @include laptop {
+                    min-height: $control-size-laptop;
+                    font-size: 0.95rem;
+                }
+                &__label {
+                    flex-shrink: 0;
+                    font-weight: 700;
+                }
+                &__summary {
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                /* The house chevron: a bordered square turned 45°. */
+                &__chevron {
+                    flex-shrink: 0;
+                    width: 0.5rem;
+                    height: 0.5rem;
+                    margin: -0.25rem 0.125rem 0 0;
+                    border-right: 2px solid currentColor;
+                    border-bottom: 2px solid currentColor;
+                    transform: rotate(45deg);
+                    transition: transform 0.3s ease-in-out;
+                }
+                &--open {
+                    background-color: $header-color;
+                    color: white;
+                    .search__form__category__toggle__chevron {
+                        margin-top: 0.25rem;
+                        transform: rotate(-135deg);
+                    }
+                }
+            }
+            &__list {
+                background-color: white;
+                border: 2px solid $header-color;
+                border-top: none;
+                @include laptop {
+                    max-height: 50vh;
+                    overflow-y: auto;
+                }
+            }
+            &__option {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                min-height: 2.75rem;
+                padding: 0.25rem 0.75rem;
+                cursor: pointer;
                 @include laptop {
                     &:hover {
-                        background-color: white;
-                        transition: background-color 0.2s ease;
+                        background-color: #f8f8f8;
                     }
                 }
-                &__text {
-                    flex-grow: 1;
-                    padding-left: 30px;
-                    font-family: $text-font;
-                    font-size: 0.9rem;
-                    @include laptop {
-                        font-size: 1rem;
+                &--all {
+                    border-bottom: 1px solid #dddddd;
+                    .search__form__category__name {
+                        font-weight: 700;
                     }
                 }
-                &__image {
-                    width: 21.5px;
-                    height: 25px;
-                    margin-right: 0.5rem;
+            }
+            /* The native checkbox stays focusable but invisible; the box next to it is drawn. */
+            &__checkbox {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                opacity: 0;
+                &:checked + .search__form__category__box {
+                    background-color: $header-color;
+                    &::after {
+                        opacity: 1;
+                    }
                 }
-                &__icon {
+                &:focus-visible + .search__form__category__box {
+                    box-shadow: $focus-ring;
+                }
+            }
+            &__box {
+                position: relative;
+                flex-shrink: 0;
+                width: 18px;
+                height: 18px;
+                border: 2px solid $header-color;
+                background-color: white;
+                transition: background-color 0.2s ease;
+                &::after {
+                    content: '';
                     position: absolute;
-                    display: inline-block;
-                    width: 16px;
-                    height: 16px;
-                    border-radius: 50%;
-                    background: $header-color;
-                    @include laptop {
-                        transition: all 0.2s ease-in-out;
-                    }
-
-                    &:before,
-                    &:after {
-                        position: absolute;
-                        bottom: 0;
-                        right: 0;
-                        content: '';
-                        border-radius: 50%;
-                    }
-                    &:before {
-                        width: 8px;
-                        height: 8px;
-                        background: white;
-                        transform: scale(0);
-                        top: calc(50% - 4px);
-                        left: calc(50% - 4px);
-                        @include laptop {
-                            transition: all 0.2s;
-                        }
-                    }
-                    &:after {
-                        top: 0;
-                        left: 0;
-                        width: 16px;
-                        height: 16px;
-                        background: rgba(255, 255, 255, 0.5);
-                        transform: scale(0);
-                    }
+                    top: 0;
+                    left: 4px;
+                    width: 6px;
+                    height: 11px;
+                    border-right: 2px solid white;
+                    border-bottom: 2px solid white;
+                    transform: rotate(45deg);
+                    opacity: 0;
                 }
+            }
+            &__name {
+                flex: 1 1 auto;
+                min-width: 0;
+                color: black;
+                font-family: $text-font;
+                font-size: 0.9rem;
+                line-height: 1.3;
+                @include laptop {
+                    font-size: 0.95rem;
+                }
+            }
+            &__count {
+                flex-shrink: 0;
+                color: $text-color;
+                font-family: $text-font;
+                font-size: 0.85rem;
+            }
+            &__image {
+                flex-shrink: 0;
+                width: 24px;
+                height: 27px;
+                object-fit: contain;
+            }
+            &__actions {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
+                padding: 0.375rem 0.75rem 0.625rem;
+                border-top: 1px solid #dddddd;
+            }
+            &__clear {
+                @include link-button;
+                min-height: 2.75rem;
+            }
+            &__apply {
+                min-height: $control-size;
+                padding: 0 1rem;
+                border: none;
+                border-radius: 0;
+                background-color: $color3;
+                color: white;
+                font-family: $text-font;
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: background-color 0.5s ease;
+                &:hover {
+                    background-color: color.adjust($color3, $lightness: 10%);
+                }
+                @include focus-ring;
             }
         }
         &__heading {
@@ -227,20 +453,92 @@
             }
         }
         &__results {
+            margin-top: 1rem;
             @include laptop {
                 overflow: auto;
                 flex-grow: 1;
                 display: flex;
                 flex-direction: column;
             }
+            &__header {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 0.75rem;
+                padding-bottom: 0.5rem;
+            }
             &__heading {
                 font-family: $text-font;
-                text-align: center;
-                padding: 0.2rem 0;
                 font-size: 0.9rem;
                 font-weight: normal;
+                color: color.adjust($header-color, $lightness: -10%);
                 @include tablet {
                     font-size: 1.3rem;
+                }
+            }
+            &__count {
+                color: $text-color;
+            }
+            &__clear {
+                @include link-button;
+                flex-shrink: 0;
+            }
+            &__empty {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.625rem;
+                padding: 1.375rem 1rem;
+                background-color: white;
+                text-align: center;
+                &__title,
+                &__hint {
+                    margin: 0;
+                    padding: 0;
+                    @include tablet {
+                        padding: 0;
+                    }
+                }
+                &__title {
+                    color: black;
+                }
+                &__hint {
+                    font-size: 0.85rem;
+                    line-height: 1.35;
+                }
+                &__actions {
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 0.5rem;
+                    margin-top: 0.375rem;
+                }
+                &__button {
+                    min-height: $control-size;
+                    padding: 0 0.875rem;
+                    border: 2px solid $header-color;
+                    border-radius: 0;
+                    background-color: white;
+                    color: $header-color;
+                    font-family: $text-font;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition:
+                        background-color 0.5s ease,
+                        color 0.5s ease;
+                    &:hover {
+                        background-color: $header-color;
+                        color: white;
+                    }
+                    &--primary {
+                        background-color: $header-color;
+                        color: white;
+                        &:hover {
+                            background-color: color.adjust($header-color, $lightness: 10%);
+                        }
+                    }
+                    @include focus-ring;
                 }
             }
             &__container {

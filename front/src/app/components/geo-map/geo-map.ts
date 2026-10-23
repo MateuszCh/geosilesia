@@ -29,7 +29,8 @@ import { MapCategory, MapMarker } from '../../core/map.types';
 export class GeoMap {
     readonly markersModels = input<MapMarker[]>([]);
     readonly categories = input<MapCategory[]>([]);
-    readonly activeCategory = input<string | undefined>();
+    /** Categories picked in the filter – a marker in several categories shows the icon of one of these. */
+    readonly activeCategories = input<string[]>([]);
     readonly markerCluster = input(false);
     /** Id of the marker the map should centre on; undefined = no selection. */
     readonly currentResult = input<string | number | undefined>();
@@ -46,7 +47,7 @@ export class GeoMap {
 
         effect(() => {
             this.markersModels();
-            this.activeCategory();
+            this.activeCategories();
             untracked(() => this.updateMap());
         });
 
@@ -108,7 +109,7 @@ export class GeoMap {
             this.markersModels(),
             this.categories(),
             this.map,
-            this.activeCategory()
+            this.activeCategories()
         );
 
         this.clusterer?.clearMarkers();

@@ -4,63 +4,176 @@
         <div id="search-form"
              class="search__form"
              [class.search__form--active]="showSearch() || !mapsReady()">
-            <h3 class="search__form__heading">{{ component().title }}</h3>
+            @if (component().title) {
+                <h3 class="search__form__heading">{{ component().title }}</h3>
+            }
             <form (submit)="search($event)">
                 @if (mapsReady()) {
+                    <div class="search__form__mode"
+                         role="group"
+                         aria-label="Tryb wyszukiwania">
+                        <button class="search__form__mode__button"
+                                type="button"
+                                [class.search__form__mode__button--active]="searchMode() === 'location'"
+                                [attr.aria-pressed]="searchMode() === 'location'"
+                                (click)="setSearchMode('location')">Lokalizacja</button>
+                        <button class="search__form__mode__button"
+                                type="button"
+                                [class.search__form__mode__button--active]="searchMode() === 'name'"
+                                [attr.aria-pressed]="searchMode() === 'name'"
+                                (click)="setSearchMode('name')">Nazwa obiektu</button>
+                    </div>
                     <div class="search__form__search">
                         <input class="search__form__search__input"
                                type="text"
-                               aria-label="Lokalizacja"
-                               placeholder="Wpisz szukaną lokalizację"
-                               [value]="searchInput()"
+                               [attr.aria-label]="searchMode() === 'name' ? 'Nazwa obiektu' : 'Lokalizacja'"
+                               [placeholder]="searchMode() === 'name' ? 'Wpisz nazwę obiektu' : 'Wpisz szukaną lokalizację'"
+                               [value]="searchMode() === 'name' ? nameInput() : locationInput()"
                                (input)="onSearchInput($event)">
-                        <button class="search__form__search__button"
-                                [class.busy]="searchBusy()"
-                                type="submit"
-                                aria-label="Szukaj atrakcji geoturystycznych"></button>
-                        @if (searchMessage()) {
-                            <p class="search__form__search__message">{{ searchMessage() }}</p>
+                        @if (searchMode() === 'location') {
+                            <button class="search__form__search__button"
+                                    [class.busy]="searchBusy()"
+                                    type="submit"
+                                    aria-label="Szukaj atrakcji geoturystycznych"></button>
+                        } @else if (nameInput()) {
+                            <button class="search__form__search__clear"
+                                    type="button"
+                                    aria-label="wyczyść wpisaną nazwę"
+                                    (click)="clearName()"></button>
+                        } @else {
+                            <span class="search__form__search__button search__form__search__button--static"
+                                  aria-hidden="true"></span>
                         }
                     </div>
+                    @if (searchMessage()) {
+                        <p class="search__form__message"
+                           role="alert">{{ searchMessage() }}</p>
+                    } @else {
+                        <p class="search__form__hint">
+                            @if (searchMode() === 'name') {
+                                Lista zawęża się podczas pisania. Polskie znaki są opcjonalne.
+                            } @else {
+                                Po zatwierdzeniu obiekty ułożą się od najbliższego.
+                            }
+                        </p>
+                    }
+                    @if (searchLocation() || (searchMode() === 'location' && nameQuery())) {
+                        <ul class="search__form__chips"
+                            aria-label="Aktywne wyszukiwanie">
+                            @if (searchLocation(); as location) {
+                                <li class="chip">
+                                    <span class="chip__text">Od najbliższych: {{ location.address }}</span>
+                                    <button class="chip__remove"
+                                            type="button"
+                                            aria-label="usuń sortowanie według lokalizacji"
+                                            (click)="clearLocation()"></button>
+                                </li>
+                            }
+                            @if (searchMode() === 'location' && nameQuery()) {
+                                <li class="chip">
+                                    <span class="chip__text">Nazwa: „{{ nameQuery() }}”</span>
+                                    <button class="chip__remove"
+                                            type="button"
+                                            aria-label="usuń filtr nazwy"
+                                            (click)="clearName()"></button>
+                                </li>
+                            }
+                        </ul>
+                    }
                 }
                 <div class="search__form__category">
-                    <h3 class="search__form__category__heading">Kategorie</h3>
-                    @for (cat of categories(); track cat.id) {
-                        <div class="search__form__category__container">
-                            <input class="search__form__category__radio"
-                                   type="radio"
-                                   name="category"
-                                   [id]="cat.category"
-                                   [checked]="category() === cat.category"
-                                   (change)="pickCategory(cat.category)">
-                            <label class="search__form__category__label"
-                                   [attr.for]="cat.category">
-                                <span class="search__form__category__label__icon"></span>
-                                <span class="search__form__category__label__text">{{ cat.name }} ({{ cat.count }})</span>
-                                <img class="search__form__category__label__image"
-                                     [alt]="cat.name ?? ''"
-                                     style="height:27px; width: 24px;"
-                                     [src]="cat.icon">
+                    <button class="search__form__category__toggle"
+                            type="button"
+                            aria-controls="category-list"
+                            [class.search__form__category__toggle--open]="categoriesOpen()"
+                            [attr.aria-expanded]="categoriesOpen()"
+                            (click)="toggleCategoriesList()">
+                        <span class="search__form__category__toggle__label">Kategorie</span>
+                        <span class="search__form__category__toggle__summary">{{ categorySummary() }}</span>
+                        <span class="search__form__category__toggle__chevron"
+                              aria-hidden="true"></span>
+                    </button>
+                    @if (categoriesOpen()) {
+                        <div id="category-list"
+                             class="search__form__category__list"
+                             role="group"
+                             aria-label="Kategorie">
+                            <label class="search__form__category__option search__form__category__option--all">
+                                <input class="search__form__category__checkbox"
+                                       type="checkbox"
+                                       [checked]="!selectedCategories().length"
+                                       (change)="selectAllCategories($event)">
+                                <span class="search__form__category__box"
+                                      aria-hidden="true"></span>
+                                <span class="search__form__category__name">Wszystkie</span>
+                                <span class="search__form__category__count">{{ markersCount() }}</span>
+                                <span class="search__form__category__image"
+                                      aria-hidden="true"></span>
                             </label>
+                            @for (cat of categories(); track cat.id) {
+                                <label class="search__form__category__option">
+                                    <input class="search__form__category__checkbox"
+                                           type="checkbox"
+                                           [checked]="selectedCategories().includes(cat.category)"
+                                           (change)="toggleCategory(cat.category)">
+                                    <span class="search__form__category__box"
+                                          aria-hidden="true"></span>
+                                    <span class="search__form__category__name">{{ cat.name }}</span>
+                                    <span class="search__form__category__count">{{ cat.count }}</span>
+                                    @if (cat.icon) {
+                                        <img class="search__form__category__image"
+                                             alt=""
+                                             [src]="cat.icon">
+                                    } @else {
+                                        <span class="search__form__category__image"
+                                              aria-hidden="true"></span>
+                                    }
+                                </label>
+                            }
+                            <div class="search__form__category__actions">
+                                <button class="search__form__category__clear"
+                                        type="button"
+                                        (click)="clearCategories()">Wyczyść wybór</button>
+                                <button class="search__form__category__apply"
+                                        type="button"
+                                        (click)="applyCategories()">Pokaż wyniki ({{ filteredMarkers().length }})</button>
+                            </div>
                         </div>
+                    } @else if (selectedCategoryItems().length) {
+                        <ul class="search__form__chips"
+                            aria-label="Wybrane kategorie">
+                            @for (cat of selectedCategoryItems(); track cat.id) {
+                                <li class="chip">
+                                    @if (cat.icon) {
+                                        <img class="chip__icon"
+                                             alt=""
+                                             [src]="cat.icon">
+                                    }
+                                    <span class="chip__text">{{ cat.name }}</span>
+                                    <button class="chip__remove"
+                                            type="button"
+                                            [attr.aria-label]="'usuń kategorię ' + cat.name"
+                                            (click)="toggleCategory(cat.category)"></button>
+                                </li>
+                            }
+                        </ul>
                     }
-                    <div class="search__form__category__container">
-                        <input class="search__form__category__radio"
-                               type="radio"
-                               name="category"
-                               id="all"
-                               [checked]="category() === 'all'"
-                               (change)="pickCategory('all')">
-                        <label class="search__form__category__label"
-                               for="all">
-                            <span class="search__form__category__label__icon"></span>
-                            <span class="search__form__category__label__text">Wszystkie ({{ markersCount() }})</span>
-                        </label>
-                    </div>
                 </div>
             </form>
             <div class="search__form__results">
-                <h3 class="search__form__results__heading">Obiekty/Atrakcje</h3>
+                <div class="search__form__results__header">
+                    <h3 class="search__form__results__heading">
+                        Obiekty/Atrakcje
+                        @if (markersCount()) {
+                            <span class="search__form__results__count">({{ filteredMarkers().length }})</span>
+                        }
+                    </h3>
+                    @if (hasFilters()) {
+                        <button class="search__form__results__clear"
+                                type="button"
+                                (click)="clearFilters()">Wyczyść filtry</button>
+                    }
+                </div>
                 <div class="search__form__results__container">
                     @for (result of selectedMarkers(); track result.id) {
                         @if (!result.type) {
@@ -90,6 +203,38 @@
                             </div>
                         }
                     }
+                    @if (markersCount() && !filteredMarkers().length) {
+                        <div class="search__form__results__empty">
+                            <p class="search__form__results__empty__title">
+                                @if (nameQuery()) {
+                                    Brak obiektów o nazwie zawierającej „{{ nameQuery() }}”.
+                                } @else {
+                                    Brak obiektów w wybranych kategoriach.
+                                }
+                            </p>
+                            @if (nameQuery()) {
+                                <p class="search__form__results__empty__hint">
+                                    @if (selectedCategories().length) {
+                                        Szukano tylko w wybranych kategoriach ({{ selectedCategories().length }}).
+                                    } @else {
+                                        Sprawdź pisownię lub wpisz krótszy fragment nazwy.
+                                    }
+                                </p>
+                            }
+                            <div class="search__form__results__empty__actions">
+                                @if (nameQuery()) {
+                                    <button class="search__form__results__empty__button"
+                                            type="button"
+                                            (click)="clearName()">Wyczyść nazwę</button>
+                                }
+                                @if (selectedCategories().length) {
+                                    <button class="search__form__results__empty__button search__form__results__empty__button--primary"
+                                            type="button"
+                                            (click)="clearCategories()">Szukaj we wszystkich kategoriach</button>
+                                }
+                            </div>
+                        </div>
+                    }
                     <div class="search__form__results__container__show-more">
                         @if (showMore()) {
                             <button class="search__form__results__container__show-more__button"
@@ -112,7 +257,7 @@
                          [class.search__container--smaller]="showSearch()"
                          [markersModels]="selectedMarkers()"
                          [categories]="categories()"
-                         [activeCategory]="category()"
+                         [activeCategories]="selectedCategories()"
                          [currentResult]="currentResult()"
                          [markerCluster]="!!component().marker_cluster"></app-geo-map>
         }

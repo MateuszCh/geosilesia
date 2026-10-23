@@ -155,7 +155,7 @@ export class MapService {
         models: MapMarker[],
         categories: MapCategory[],
         map: google.maps.Map,
-        activeCategory: string | undefined
+        activeCategories: string[]
     ): google.maps.Marker[] {
         const infoWindow = new google.maps.InfoWindow();
         const byName = new Map(categories.map(category => [category.category, category]));
@@ -176,10 +176,11 @@ export class MapService {
 
             let icon = '';
             if (!model.type && model.categories?.length) {
+                // A marker in several categories shows the icon of the first one being
+                // filtered by; with no filter, the icon of its first category.
                 const name =
-                    !activeCategory || activeCategory === 'all'
-                        ? model.categories[0]
-                        : activeCategory;
+                    model.categories.find(category => activeCategories.includes(category)) ??
+                    model.categories[0];
                 icon = byName.get(name)?.icon ?? '';
             }
 

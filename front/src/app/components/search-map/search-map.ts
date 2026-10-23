@@ -5,6 +5,7 @@ import {
     DestroyRef,
     ElementRef,
     OnInit,
+    computed,
     inject,
     input,
     signal
@@ -24,7 +25,23 @@ import { GeoMap } from '../geo-map/geo-map';
 const NARROW_BREAKPOINT = 850;
 const DEFAULT_RESULTS = 10;
 const MESSAGE_MS = 5000;
-const ALL = 'all';
+/** Name filtering waits for a short pause in typing, so the map does not redraw on every key. */
+const NAME_FILTER_DELAY_MS = 150;
+
+/** What the single search input does: geocode a place, or filter the list by object name. */
+export type SearchMode = 'location' | 'name';
+
+/**
+ * Lower-cases and strips diacritics, so "kamieniol" matches "Kamieniołom".
+ * "ł" has no Unicode decomposition and is mapped by hand.
+ */
+function foldText(text: string): string {
+    return text
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[łŁ]/g, 'l')
+        .toLowerCase();
+}
 
 @Component({
     selector: 'app-search-map',
@@ -36,12 +53,15 @@ export class SearchMap implements OnInit {
     readonly component = input.required<MapData>();
 
     readonly categories = signal<MapCategory[]>([]);
-    readonly selectedMarkers = signal<MapMarker[]>([]);
-    readonly markersCount = signal(0);
-    readonly category = signal<string>(ALL);
-    readonly searchInput = signal('');
+    readonly searchMode = signal<SearchMode>('location');
+    readonly locationInput = signal('');
+    readonly nameInput = signal('');
+    /** Names of the categories picked in the filter; empty means all categories. */
+    readonly selectedCategories = signal<string[]>([]);
+    readonly categoriesOpen = signal(false);
+    /** The searched point (a "home" pseudo-marker); while set, results are sorted by distance from it. */
+    readonly searchLocation = signal<MapMarker | undefined>(undefined);
     readonly showSearch = signal(false);
-    readonly showMore = signal(false);
     readonly currentResult = signal<string | number | undefined>(undefined);
     readonly searchBusy = signal(false);
     readonly searchMessage = signal('');
@@ -56,16 +76,104 @@ export class SearchMap implements OnInit {
     private readonly host: HTMLElement = inject(ElementRef).nativeElement;
     private readonly destroyRef = inject(DestroyRef);
 
-    private allMarkers: MapMarker[] = [];
-    private markersByDistance: MapMarker[] = [];
+    private readonly allMarkers = signal<MapMarker[]>([]);
+    /** Debounced copy of nameInput – the value that actually filters. */
+    private readonly nameFilter = signal('');
+    /** How many of the nearest results a location search shows. */
+    private readonly resultsLimit = signal(DEFAULT_RESULTS);
+
+    readonly markersCount = computed(() => this.allMarkers().length);
+    readonly nameQuery = computed(() => this.nameFilter().trim());
+
+    private readonly foldedTitles = computed(
+        () =>
+            new Map(
+                this.allMarkers().map(marker => [marker.id, foldText(marker.title ?? '')])
+            )
+    );
+
+    /** Default list order: north to south. */
+    private readonly markersByLatitude = computed(() =>
+        [...this.allMarkers()].sort((a, b) => b.position.lat - a.position.lat)
+    );
+
+    private readonly markersByDistance = computed(() => {
+        const location = this.searchLocation();
+        return location
+            ? this.mapService.sortMarkersByDistance(
+                  this.allMarkers(),
+                  location.position.lat,
+                  location.position.lng
+              )
+            : [];
+    });
+
+    /** Markers that pass the category and name filters, in list order. */
+    readonly filteredMarkers = computed(() => {
+        const selected = this.selectedCategories();
+        const query = foldText(this.nameQuery());
+        const titles = this.foldedTitles();
+
+        let markers = this.searchLocation()
+            ? this.markersByDistance()
+            : this.markersByLatitude();
+        if (selected.length) {
+            markers = markers.filter(marker =>
+                marker.categories?.some(name => selected.includes(name))
+            );
+        }
+        if (query) {
+            markers = markers.filter(marker => titles.get(marker.id)?.includes(query));
+        }
+        return markers;
+    });
+
+    /**
+     * What the list and the map show. After a location search only the nearest results are
+     * shown, headed by the searched point itself.
+     */
+    readonly selectedMarkers = computed(() => {
+        const location = this.searchLocation();
+        const markers = this.filteredMarkers();
+        return location ? [location, ...markers.slice(0, this.resultsLimit())] : markers;
+    });
+
+    readonly showMore = computed(
+        () => !!this.searchLocation() && this.filteredMarkers().length > this.resultsLimit()
+    );
+
+    readonly selectedCategoryItems = computed(() => {
+        const selected = this.selectedCategories();
+        return this.categories().filter(category => selected.includes(category.category));
+    });
+
+    /** The text on the collapsed category list. */
+    readonly categorySummary = computed(() => {
+        const chosen = this.selectedCategoryItems();
+        if (!chosen.length) return `Wszystkie (${this.markersCount()})`;
+        if (chosen.length === 1) return `${chosen[0].name} (${chosen[0].count})`;
+        return `Wybrano ${chosen.length} z ${this.categories().length}`;
+    });
+
+    readonly hasFilters = computed(
+        () =>
+            this.selectedCategories().length > 0 ||
+            !!this.nameQuery() ||
+            !!this.searchLocation()
+    );
+
     private resultsQty = DEFAULT_RESULTS;
-    private searchQty = DEFAULT_RESULTS;
     private dataLoaded = false;
     private messageTimer: ReturnType<typeof setTimeout> | undefined;
+    private nameTimer: ReturnType<typeof setTimeout> | undefined;
 
     ngOnInit(): void {
         this.resultsQty = this.component().number_results || DEFAULT_RESULTS;
-        this.destroyRef.onDestroy(() => clearTimeout(this.messageTimer));
+        this.resultsLimit.set(this.resultsQty);
+        this.destroyRef.onDestroy(() => {
+            clearTimeout(this.messageTimer);
+            clearTimeout(this.nameTimer);
+        });
 
         if (this.resource.isOfflineAvailable()) {
             void Promise.all([
@@ -95,14 +203,7 @@ export class SearchMap implements OnInit {
 
     private onLoad(markers: MarkerPost[], icons: IconPost[]): void {
         this.categories.set(this.mapService.getCategories(markers, icons));
-        this.allMarkers = this.mapService.getFormattedMarkers(markers);
-        this.markersCount.set(this.allMarkers.length);
-        this.selectedMarkers.set(this.sortedByLatitude(this.allMarkers));
-    }
-
-    /** Default list order: north to south. */
-    private sortedByLatitude(markers: MapMarker[]): MapMarker[] {
-        return [...markers].sort((a, b) => b.position.lat - a.position.lat);
+        this.allMarkers.set(this.mapService.getFormattedMarkers(markers));
     }
 
     private get isNarrow(): boolean {
@@ -125,8 +226,39 @@ export class SearchMap implements OnInit {
         );
     }
 
+    private clearMessage(): void {
+        clearTimeout(this.messageTimer);
+        this.searchMessage.set('');
+    }
+
+    setSearchMode(mode: SearchMode): void {
+        this.searchMode.set(mode);
+        this.clearMessage();
+    }
+
     onSearchInput(event: Event): void {
-        this.searchInput.set((event.target as HTMLInputElement).value);
+        const value = (event.target as HTMLInputElement).value;
+        if (this.searchMode() === 'location') {
+            this.locationInput.set(value);
+            return;
+        }
+        this.nameInput.set(value);
+        clearTimeout(this.nameTimer);
+        this.nameTimer = setTimeout(
+            () => this.applyNameFilter(value),
+            NAME_FILTER_DELAY_MS
+        );
+    }
+
+    private applyNameFilter(value: string): void {
+        clearTimeout(this.nameTimer);
+        this.nameFilter.set(value);
+        this.currentResult.set(undefined);
+    }
+
+    clearName(): void {
+        this.nameInput.set('');
+        this.applyNameFilter('');
     }
 
     toggleSearchPanel(): void {
@@ -139,10 +271,15 @@ export class SearchMap implements OnInit {
 
     search(event: Event): void {
         event.preventDefault();
-        clearTimeout(this.messageTimer);
-        this.searchMessage.set('');
+        this.clearMessage();
 
-        const query = this.searchInput().trim();
+        if (this.searchMode() === 'name') {
+            // Enter applies the name filter at once instead of waiting for the pause in typing.
+            this.applyNameFilter(this.nameInput());
+            return;
+        }
+
+        const query = this.locationInput().trim();
         if (!query) {
             this.showMessage('Proszę wpisać lokalizację');
             return;
@@ -152,25 +289,11 @@ export class SearchMap implements OnInit {
         this.mapService
             .getCoordinates(query)
             .then(result => {
-                // +1 for the pseudo-marker of the searched location itself, which heads the
-                // list and should not take a slot from the real results.
-                this.searchQty = this.resultsQty + 1;
-                this.category.set('');
-                this.scrollToMapIfNarrow();
-
-                const location = this.mapService.getLocationDetails(result);
-                this.markersByDistance = [
-                    location,
-                    ...this.mapService.sortMarkersByDistance(
-                        this.allMarkers,
-                        location.position.lat,
-                        location.position.lng
-                    )
-                ];
-                this.showNearest();
-                this.showMore.set(true);
+                this.searchLocation.set(this.mapService.getLocationDetails(result));
+                this.resultsLimit.set(this.resultsQty);
                 this.currentResult.set(undefined);
                 this.searchBusy.set(false);
+                this.scrollToMapIfNarrow();
             })
             .catch(status => {
                 if (status === 'ZERO_RESULTS') {
@@ -180,31 +303,51 @@ export class SearchMap implements OnInit {
             });
     }
 
-    private showNearest(): void {
-        this.selectedMarkers.set(this.markersByDistance.slice(0, this.searchQty));
+    clearLocation(): void {
+        this.searchLocation.set(undefined);
+        this.locationInput.set('');
+        this.resultsLimit.set(this.resultsQty);
+        this.currentResult.set(undefined);
     }
 
     increaseSearchQty(): void {
-        this.searchQty += this.resultsQty;
-        this.showNearest();
-        if (this.searchQty > this.markersByDistance.length) {
-            this.showMore.set(false);
-        }
+        this.resultsLimit.update(limit => limit + this.resultsQty);
     }
 
-    pickCategory(category: string): void {
-        this.category.set(category);
-        this.showMore.set(false);
-        this.currentResult.set(undefined);
+    toggleCategoriesList(): void {
+        this.categoriesOpen.update(open => !open);
+    }
 
-        const markers =
-            category === ALL
-                ? this.allMarkers
-                : this.allMarkers.filter(marker =>
-                      marker.categories?.includes(category)
-                  );
-        this.selectedMarkers.set(this.sortedByLatitude(markers));
+    toggleCategory(category: string): void {
+        this.selectedCategories.update(selected =>
+            selected.includes(category)
+                ? selected.filter(name => name !== category)
+                : [...selected, category]
+        );
+        this.currentResult.set(undefined);
+    }
+
+    clearCategories(): void {
+        this.selectedCategories.set([]);
+        this.currentResult.set(undefined);
+    }
+
+    /** "Wszystkie" cannot be unticked – it is the state with no category picked. */
+    selectAllCategories(event: Event): void {
+        (event.target as HTMLInputElement).checked = true;
+        this.clearCategories();
+    }
+
+    /** Closes the category list; on a narrow screen also scrolls to the map with the results. */
+    applyCategories(): void {
+        this.categoriesOpen.set(false);
         this.scrollToMapIfNarrow();
+    }
+
+    clearFilters(): void {
+        this.clearCategories();
+        this.clearName();
+        this.clearLocation();
     }
 
     /** Clicking the same result again deselects it. */
