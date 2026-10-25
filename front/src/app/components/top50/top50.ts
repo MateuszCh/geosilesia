@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    DOCUMENT,
+    DestroyRef,
+    Injector,
+    OnInit,
+    afterNextRender,
+    computed,
+    inject,
+    input,
+    signal
+} from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -9,7 +21,8 @@ import { Top50Data } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 
 const PREVIEW_LIMIT = 7;
-const PAGE_SIZE = 15;
+/** The full list opens with this many places; "Dalej: miejsca 16–50" shows the rest at once. */
+const FIRST_STOPS = 15;
 
 interface Stop {
     id: string | number;
@@ -55,10 +68,12 @@ export class Top50 implements OnInit {
 
     readonly preview = computed(() => this.component().variant === 'zapowiedź');
     readonly stops = signal<Stop[]>([]);
-    private readonly visibleCount = signal(PAGE_SIZE);
+    private readonly expanded = signal(false);
 
     private readonly content = inject(ContentService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly doc = inject(DOCUMENT);
+    private readonly injector = inject(Injector);
 
     /** The link may carry a query ("/mapa-atrakcji?top50=1"); the router needs it apart. */
     private readonly parsedLink = computed(() => {
@@ -77,10 +92,10 @@ export class Top50 implements OnInit {
 
     readonly shown = computed(() => {
         const limit = this.limit();
-        return this.stops().slice(0, limit ?? this.visibleCount());
+        return this.stops().slice(0, limit ?? (this.expanded() ? undefined : FIRST_STOPS));
     });
 
-    readonly hasMore = computed(() => !this.limit() && this.stops().length > this.visibleCount());
+    readonly hasMore = computed(() => !this.limit() && !this.expanded() && this.stops().length > FIRST_STOPS);
 
     /** The photo of the preview: the first stop that has one. */
     readonly featured = computed(() => this.stops().find(stop => stop.image));
@@ -109,7 +124,18 @@ export class Top50 implements OnInit {
             );
     }
 
+    /**
+     * Shows every remaining place. The button disappears with it, so the focus moves to the
+     * first place it revealed instead of falling back to the page.
+     */
     more(): void {
-        this.visibleCount.update(count => count + PAGE_SIZE);
+        const next = this.stops()[FIRST_STOPS];
+        this.expanded.set(true);
+        if (!next) return;
+        afterNextRender(() => this.doc.getElementById(this.stopId(next))?.focus(), { injector: this.injector });
+    }
+
+    stopId(stop: Stop): string {
+        return `top50-${stop.number}`;
     }
 }

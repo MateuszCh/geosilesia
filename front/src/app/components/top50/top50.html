@@ -91,7 +91,9 @@
         }
         <ol class="route">
             @for (stop of shown(); track stop.id) {
-                <li class="route__stop">
+                <li class="route__stop"
+                    tabindex="-1"
+                    [id]="stopId(stop)">
                     <span class="route__track">
                         <span class="route-stop route-stop--large"
                               [class.route-stop--filled]="$first">{{ stop.number }}</span>
