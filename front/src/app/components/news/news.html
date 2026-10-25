@@ -1,28 +1,125 @@
-<h2>{{ component().title }}</h2>
-@for (event of events(); track event.id; let index = $index) {
-    <article class="news"
-             [class.news--active]="active() === index">
-        <div class="news__head"
-             (click)="toggle(index)">
-            <h3 class="news__head__title">{{ event.title }}</h3>
-            <p class="news__head__date">{{ event.data.date_and_place }}</p>
-        </div>
-        <div class="news__body"
-             [class.news__body--active]="active() === index">
-            @for (para of event.data.paragraphs ?? []; track $index) {
-                <p class="news__body__text">{{ para.item }}</p>
-            }
-            @for (link of event.data.links ?? []; track $index) {
-                <p class="news__body__links">
-                    <a class="news__body__links__item"
-                       [href]="link?.link"
-                       target="_blank"
-                       rel="noreferrer">{{ link?.text }}</a>
-                </p>
+@if (preview()) {
+    <section class="events-preview">
+        <div class="section-head">
+            <h2 class="h-article">{{ component().title || 'Wydarzenia' }}</h2>
+            @if (component().link) {
+                <a class="more-link"
+                   [routerLink]="internalLink(component().link)">{{ component().link_label || 'Wszystkie' }} →</a>
             }
         </div>
-    </article>
-}
-@if (!events().length) {
-    <p class="news__info">Obecnie nie ma żadnych wydarzeń</p>
+        @if (component().intro) {
+            <div class="prose"
+                 [innerHTML]="component().intro | trusted"></div>
+        }
+        <ul class="events-preview__list">
+            @for (event of visible(); track event.id) {
+                <li>
+                    <a class="events-preview__item"
+                       [routerLink]="internalLink(component().link) ?? null">
+                        <span class="events-preview__date">{{ event.short }}</span>
+                        <span class="events-preview__text">
+                            <span class="events-preview__title">{{ event.title }}</span>
+                            @if (event.lead) {
+                                <span class="events-preview__lead">{{ event.lead }}</span>
+                            }
+                        </span>
+                        <span aria-hidden="true">→</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </section>
+} @else {
+    <section class="events">
+        <div class="events__bar">
+            <p class="events__count">{{ countLabel() }}</p>
+            @if (years().length > 1) {
+                <div class="events__years segmented-row"
+                     role="group"
+                     aria-label="Rok">
+                    @for (year of years(); track year.value) {
+                        <button type="button"
+                                [attr.aria-pressed]="selectedYear() === year.value"
+                                (click)="selectYear(year.value)">{{ year.label }}</button>
+                    }
+                </div>
+            }
+        </div>
+        @if (component().intro) {
+            <div class="prose lead"
+                 [innerHTML]="component().intro | trusted"></div>
+        }
+
+        @if (visible().length) {
+            <ol class="events__list">
+                @for (event of visible(); track event.id) {
+                    <li class="event"
+                        [class.event--open]="openId() === event.id">
+                        <button class="event__head"
+                                type="button"
+                                [attr.aria-expanded]="openId() === event.id"
+                                [attr.aria-controls]="'event-' + event.id"
+                                (click)="toggle(event.id)">
+                            <span class="event__date">
+                                @if (event.day) {
+                                    <span class="event__day">{{ event.day }}</span>
+                                    <span class="event__month">{{ event.month }} {{ event.year }}</span>
+                                }
+                            </span>
+                            <span class="event__titles">
+                                <span class="event__title">{{ event.title }}</span>
+                                @if (event.place) {
+                                    <span class="event__place">{{ event.place }}</span>
+                                }
+                            </span>
+                            <span class="event__sign"
+                                  aria-hidden="true">{{ openId() === event.id ? '−' : '+' }}</span>
+                        </button>
+                        <div class="event__body"
+                             [id]="'event-' + event.id"
+                             [hidden]="openId() !== event.id">
+                            @for (paragraph of event.paragraphs; track $index) {
+                                <p class="event__text">{{ paragraph }}</p>
+                            }
+                            @if (event.links.length) {
+                                <div class="event__links">
+                                    @for (link of event.links; track $index) {
+                                        <a class="btn btn--primary"
+                                           target="_blank"
+                                           rel="noreferrer"
+                                           [href]="link.href">{{ link.label }} ↗</a>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </li>
+                }
+            </ol>
+        } @else if (loaded()) {
+            <p class="notice-box">Obecnie nie ma żadnych wydarzeń.</p>
+        }
+
+        @if (pageCount() > 1) {
+            <nav class="pager"
+                 aria-label="Strony">
+                @for (page of pages(); track $index) {
+                    @if (page === 0) {
+                        <span class="pager__gap"
+                              aria-hidden="true">…</span>
+                    } @else {
+                        <button class="pager__page"
+                                type="button"
+                                [attr.aria-current]="page === currentPage() ? 'page' : null"
+                                [attr.aria-label]="'Strona ' + page"
+                                (click)="goToPage(page)">{{ page }}</button>
+                    }
+                }
+                @if (currentPage() < pageCount()) {
+                    <button class="pager__next"
+                            type="button"
+                            (click)="goToPage(currentPage() + 1)">Starsze →</button>
+                }
+            </nav>
+        }
+    </section>
 }

@@ -1,265 +1,258 @@
-<div class="homepage-map">
-    <div id="search"
-         class="search">
-        <div id="search-form"
-             class="search__form"
-             [class.search__form--active]="showSearch() || !mapsReady()">
-            @if (component().title) {
-                <h3 class="search__form__heading">{{ component().title }}</h3>
-            }
-            <form (submit)="search($event)">
-                @if (mapsReady()) {
-                    <div class="search__form__mode"
-                         role="group"
-                         aria-label="Tryb wyszukiwania">
-                        <button class="search__form__mode__button"
-                                type="button"
-                                [class.search__form__mode__button--active]="searchMode() === 'location'"
-                                [attr.aria-pressed]="searchMode() === 'location'"
-                                (click)="setSearchMode('location')">Lokalizacja</button>
-                        <button class="search__form__mode__button"
-                                type="button"
-                                [class.search__form__mode__button--active]="searchMode() === 'name'"
-                                [attr.aria-pressed]="searchMode() === 'name'"
-                                (click)="setSearchMode('name')">Nazwa obiektu</button>
-                    </div>
-                    <div class="search__form__search">
-                        <input class="search__form__search__input"
-                               type="text"
-                               [attr.aria-label]="searchMode() === 'name' ? 'Nazwa obiektu' : 'Lokalizacja'"
-                               [placeholder]="searchMode() === 'name' ? 'Wpisz nazwę obiektu' : 'Wpisz szukaną lokalizację'"
-                               [value]="searchMode() === 'name' ? nameInput() : locationInput()"
-                               (input)="onSearchInput($event)">
-                        @if (searchMode() === 'location') {
-                            <button class="search__form__search__button"
-                                    [class.busy]="searchBusy()"
-                                    type="submit"
-                                    aria-label="Szukaj atrakcji geoturystycznych"></button>
-                        } @else if (nameInput()) {
-                            <button class="search__form__search__clear"
-                                    type="button"
-                                    aria-label="wyczyść wpisaną nazwę"
-                                    (click)="clearName()"></button>
-                        } @else {
-                            <span class="search__form__search__button search__form__search__button--static"
-                                  aria-hidden="true"></span>
-                        }
-                    </div>
-                    @if (searchMessage()) {
-                        <p class="search__form__message"
-                           role="alert">{{ searchMessage() }}</p>
-                    } @else {
-                        <p class="search__form__hint">
-                            @if (searchMode() === 'name') {
-                                Lista zawęża się podczas pisania. Polskie znaki są opcjonalne.
-                            } @else {
-                                Po zatwierdzeniu obiekty ułożą się od najbliższego.
-                            }
-                        </p>
-                    }
-                    @if (searchLocation() || (searchMode() === 'location' && nameQuery())) {
-                        <ul class="search__form__chips"
-                            aria-label="Aktywne wyszukiwanie">
-                            @if (searchLocation(); as location) {
-                                <li class="chip">
-                                    <span class="chip__text">Od najbliższych: {{ location.address }}</span>
-                                    <button class="chip__remove"
-                                            type="button"
-                                            aria-label="usuń sortowanie według lokalizacji"
-                                            (click)="clearLocation()"></button>
-                                </li>
-                            }
-                            @if (searchMode() === 'location' && nameQuery()) {
-                                <li class="chip">
-                                    <span class="chip__text">Nazwa: „{{ nameQuery() }}”</span>
-                                    <button class="chip__remove"
-                                            type="button"
-                                            aria-label="usuń filtr nazwy"
-                                            (click)="clearName()"></button>
-                                </li>
-                            }
-                        </ul>
-                    }
+<div class="map-app"
+     id="mapa">
+    <aside class="map-panel"
+           aria-label="Wyszukiwanie atrakcji">
+        <form class="map-panel__search"
+              (submit)="search($event)">
+            <div class="map-panel__heading">
+                @if (standalone()) {
+                    <h1 class="map-panel__title">{{ title() }}</h1>
+                } @else {
+                    <h2 class="map-panel__title">{{ title() }}</h2>
                 }
-                <div class="search__form__category">
-                    <button class="search__form__category__toggle"
+                @if (markersCount()) {
+                    <span class="map-panel__total">{{ markersCount() }} {{ placesLabel(markersCount()) }}</span>
+                }
+            </div>
+
+            <div class="segmented"
+                 role="group"
+                 aria-label="Tryb wyszukiwania">
+                <button class="segmented__button"
+                        type="button"
+                        [attr.aria-pressed]="searchMode() === 'location'"
+                        (click)="setSearchMode('location')">Lokalizacja</button>
+                <button class="segmented__button"
+                        type="button"
+                        [attr.aria-pressed]="searchMode() === 'name'"
+                        (click)="setSearchMode('name')">Nazwa obiektu</button>
+            </div>
+
+            <div class="search-field"
+                 [class.search-field--filled]="!!currentInput()">
+                <svg class="search-field__icon"
+                     width="18"
+                     height="18"
+                     viewBox="0 0 24 24"
+                     aria-hidden="true">
+                    @if (searchMode() === 'name') {
+                        <circle cx="10.5"
+                                cy="10.5"
+                                r="6.5"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2" />
+                        <path d="M15.5 15.5L21 21"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round" />
+                    } @else {
+                        <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 8.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2" />
+                    }
+                </svg>
+                <label class="visually-hidden"
+                       for="map-query">{{ searchMode() === 'name' ? 'Nazwa obiektu' : 'Lokalizacja' }}</label>
+                <input id="map-query"
+                       class="search-field__input"
+                       type="text"
+                       autocomplete="off"
+                       [placeholder]="searchMode() === 'name' ? 'Wpisz nazwę obiektu' : 'Skąd ruszasz? np. Zawiercie'"
+                       [value]="currentInput()"
+                       (input)="onSearchInput($event)">
+                @if (currentInput()) {
+                    <button class="search-field__clear"
                             type="button"
-                            aria-controls="category-list"
-                            [class.search__form__category__toggle--open]="categoriesOpen()"
-                            [attr.aria-expanded]="categoriesOpen()"
-                            (click)="toggleCategoriesList()">
-                        <span class="search__form__category__toggle__label">Kategorie</span>
-                        <span class="search__form__category__toggle__summary">{{ categorySummary() }}</span>
-                        <span class="search__form__category__toggle__chevron"
-                              aria-hidden="true"></span>
+                            [attr.aria-label]="searchMode() === 'name' ? 'wyczyść wpisaną nazwę' : 'wyczyść lokalizację'"
+                            (click)="searchMode() === 'name' ? clearName() : clearLocation()">×</button>
+                }
+                @if (searchMode() === 'location') {
+                    <button class="search-field__submit btn btn--primary"
+                            type="submit"
+                            [class.busy]="searchBusy()"
+                            [disabled]="!mapsReady()">Szukaj</button>
+                }
+            </div>
+
+            @if (searchMessage()) {
+                <p class="map-panel__message"
+                   role="alert">{{ searchMessage() }}</p>
+            } @else {
+                <p class="map-panel__hint">
+                    @if (searchMode() === 'name') {
+                        Lista zawęża się podczas pisania. Polskie znaki są opcjonalne.
+                    } @else if (mapsReady()) {
+                        Po zatwierdzeniu obiekty ułożą się od najbliższego.
+                    } @else {
+                        Wyszukiwanie miejsc zadziała po wczytaniu mapy.
+                    }
+                </p>
+            }
+
+            <button class="map-panel__filters-toggle btn btn--secondary"
+                    type="button"
+                    aria-controls="map-categories"
+                    [attr.aria-expanded]="categoriesOpen()"
+                    (click)="toggleCategoriesList()">
+                Kategorie
+                @if (selectedCategories().length) {
+                    <span class="map-panel__badge">{{ selectedCategories().length }}</span>
+                }
+                <span aria-hidden="true">{{ categoriesOpen() ? '▴' : '▾' }}</span>
+            </button>
+
+            <div id="map-categories"
+                 class="map-panel__chips"
+                 [class.map-panel__chips--open]="categoriesOpen()"
+                 role="group"
+                 aria-label="Kategorie">
+                @for (cat of categories(); track cat.id) {
+                    <button class="category-chip"
+                            type="button"
+                            [attr.aria-pressed]="selectedCategories().includes(cat.category)"
+                            (click)="toggleCategory(cat.category)">
+                        <span class="trail-mark trail-mark--xs"
+                              aria-hidden="true"
+                              [style.--mark]="cat.color"></span>
+                        {{ cat.shortName }}
+                        <span class="category-chip__count">{{ cat.count }}</span>
                     </button>
-                    @if (categoriesOpen()) {
-                        <div id="category-list"
-                             class="search__form__category__list"
-                             role="group"
-                             aria-label="Kategorie">
-                            <label class="search__form__category__option search__form__category__option--all">
-                                <input class="search__form__category__checkbox"
-                                       type="checkbox"
-                                       [checked]="!selectedCategories().length"
-                                       (change)="selectAllCategories($event)">
-                                <span class="search__form__category__box"
-                                      aria-hidden="true"></span>
-                                <span class="search__form__category__name">Wszystkie</span>
-                                <span class="search__form__category__count">{{ markersCount() }}</span>
-                                <span class="search__form__category__image"
-                                      aria-hidden="true"></span>
-                            </label>
-                            @for (cat of categories(); track cat.id) {
-                                <label class="search__form__category__option">
-                                    <input class="search__form__category__checkbox"
-                                           type="checkbox"
-                                           [checked]="selectedCategories().includes(cat.category)"
-                                           (change)="toggleCategory(cat.category)">
-                                    <span class="search__form__category__box"
-                                          aria-hidden="true"></span>
-                                    <span class="search__form__category__name">{{ cat.name }}</span>
-                                    <span class="search__form__category__count">{{ cat.count }}</span>
-                                    @if (cat.icon) {
-                                        <img class="search__form__category__image"
-                                             alt=""
-                                             [src]="cat.icon">
-                                    } @else {
-                                        <span class="search__form__category__image"
-                                              aria-hidden="true"></span>
-                                    }
-                                </label>
+                }
+            </div>
+        </form>
+
+        <div class="map-panel__summary">
+            <span>{{ summary() }}</span>
+            @if (hasFilters()) {
+                <button class="map-panel__clear"
+                        type="button"
+                        (click)="clearFilters()">Wyczyść filtry</button>
+            }
+        </div>
+
+        <div class="map-panel__results">
+            @if (markersCount() && !filteredMarkers().length) {
+                <div class="map-panel__empty notice-box"
+                     role="status">
+                    <div>
+                        <p><b>
+                            @if (nameQuery()) {
+                                Brak obiektów o nazwie zawierającej „{{ nameQuery() }}”.
+                            } @else {
+                                Brak obiektów w wybranych kategoriach.
                             }
-                            <div class="search__form__category__actions">
-                                <button class="search__form__category__clear"
-                                        type="button"
-                                        (click)="clearCategories()">Wyczyść wybór</button>
-                                <button class="search__form__category__apply"
-                                        type="button"
-                                        (click)="applyCategories()">Pokaż wyniki ({{ filteredMarkers().length }})</button>
-                            </div>
-                        </div>
-                    } @else if (selectedCategoryItems().length) {
-                        <ul class="search__form__chips"
-                            aria-label="Wybrane kategorie">
-                            @for (cat of selectedCategoryItems(); track cat.id) {
-                                <li class="chip">
-                                    @if (cat.icon) {
-                                        <img class="chip__icon"
-                                             alt=""
-                                             [src]="cat.icon">
-                                    }
-                                    <span class="chip__text">{{ cat.name }}</span>
-                                    <button class="chip__remove"
-                                            type="button"
-                                            [attr.aria-label]="'usuń kategorię ' + cat.name"
-                                            (click)="toggleCategory(cat.category)"></button>
-                                </li>
-                            }
-                        </ul>
-                    }
-                </div>
-            </form>
-            <div class="search__form__results">
-                <div class="search__form__results__header">
-                    <h3 class="search__form__results__heading">
-                        Obiekty/Atrakcje
-                        @if (markersCount()) {
-                            <span class="search__form__results__count">({{ filteredMarkers().length }})</span>
-                        }
-                    </h3>
-                    @if (hasFilters()) {
-                        <button class="search__form__results__clear"
-                                type="button"
-                                (click)="clearFilters()">Wyczyść filtry</button>
-                    }
-                </div>
-                <div class="search__form__results__container">
-                    @for (result of selectedMarkers(); track result.id) {
-                        @if (!result.type) {
-                            <div class="result"
-                                 [class.cursor-pointer]="mapsReady()"
-                                 (click)="mapsReady() ? setCurrentResult(result.id) : null">
-                                <h4 class="result__heading">{{ result.title }}</h4>
-                                <div class="result__container">
-                                    <div class="result__container__left">
-                                        @if (result.place) {
-                                            <p class="result__container__left__address">{{ result.place }}</p>
-                                        }
-                                    </div>
-                                    <div class="result__container__right">
-                                        <a class="result__container__right__directions"
-                                           [href]="'https://www.google.com/maps/dir/Current+Location/' + result.position.lat + ',' + result.position.lng"
-                                           target="_blank"
-                                           rel="noreferrer"
-                                           (click)="$event.stopPropagation()">Dojazd</a>
-                                    </div>
-                                </div>
-                                @if (result.distance) {
-                                    <p class="result__distance">Odległość:
-                                        <span>{{ result.distance | number: '1.2-2' }}</span> km
-                                    </p>
-                                }
-                            </div>
-                        }
-                    }
-                    @if (markersCount() && !filteredMarkers().length) {
-                        <div class="search__form__results__empty">
-                            <p class="search__form__results__empty__title">
-                                @if (nameQuery()) {
-                                    Brak obiektów o nazwie zawierającej „{{ nameQuery() }}”.
+                        </b></p>
+                        @if (nameQuery()) {
+                            <p>
+                                @if (selectedCategories().length) {
+                                    Szukano tylko w wybranych kategoriach ({{ selectedCategories().length }}).
                                 } @else {
-                                    Brak obiektów w wybranych kategoriach.
+                                    Sprawdź pisownię lub wpisz krótszy fragment nazwy.
                                 }
                             </p>
-                            @if (nameQuery()) {
-                                <p class="search__form__results__empty__hint">
-                                    @if (selectedCategories().length) {
-                                        Szukano tylko w wybranych kategoriach ({{ selectedCategories().length }}).
-                                    } @else {
-                                        Sprawdź pisownię lub wpisz krótszy fragment nazwy.
-                                    }
-                                </p>
-                            }
-                            <div class="search__form__results__empty__actions">
-                                @if (nameQuery()) {
-                                    <button class="search__form__results__empty__button"
-                                            type="button"
-                                            (click)="clearName()">Wyczyść nazwę</button>
-                                }
-                                @if (selectedCategories().length) {
-                                    <button class="search__form__results__empty__button search__form__results__empty__button--primary"
-                                            type="button"
-                                            (click)="clearCategories()">Szukaj we wszystkich kategoriach</button>
-                                }
-                            </div>
-                        </div>
-                    }
-                    <div class="search__form__results__container__show-more">
-                        @if (showMore()) {
-                            <button class="search__form__results__container__show-more__button"
-                                    (click)="increaseSearchQty()">Pokaż więcej</button>
                         }
+                        <div class="map-panel__empty-actions">
+                            @if (nameQuery()) {
+                                <button class="btn btn--secondary"
+                                        type="button"
+                                        (click)="clearName()">Wyczyść nazwę</button>
+                            }
+                            @if (selectedCategories().length) {
+                                <button class="btn btn--primary"
+                                        type="button"
+                                        (click)="clearCategories()">Szukaj we wszystkich kategoriach</button>
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
-            @if (mapsReady()) {
-                <div class="search__form__activate"
-                     (click)="toggleSearchPanel()">
-                    <img class="search__form__activate__image"
-                         alt="otwórz panel wyszukiwania atrakcji geoturystycznych"
-                         src="/images/search-icon.png">
+            }
+
+            <ol class="result-list">
+                @for (result of listedMarkers(); track result.id; let index = $index) {
+                    <li class="result-row"
+                        [class.result-row--selected]="currentResult() === result.id">
+                        <button class="result-row__main"
+                                type="button"
+                                [attr.aria-pressed]="currentResult() === result.id"
+                                (click)="setCurrentResult(result.id)">
+                            <span class="result-row__number"
+                                  [style.background]="currentResult() === result.id ? null : result.color">{{ index + 1 }}</span>
+                            <span class="result-row__text">
+                                <span class="result-row__title">{{ result.title }}</span>
+                                @if (result.rock || result.place) {
+                                    <span class="result-row__meta">{{ joinMeta(result.rock, result.place) }}</span>
+                                }
+                            </span>
+                        </button>
+                        <span class="result-row__side">
+                            @if (result.distance !== undefined) {
+                                <span class="result-row__distance">{{ formatKm(result.distance) }} km</span>
+                            }
+                            <a class="result-row__directions"
+                               target="_blank"
+                               rel="noreferrer"
+                               [href]="directionsUrl(result)">Dojazd ↗</a>
+                        </span>
+                    </li>
+                }
+            </ol>
+
+            @if (showMore()) {
+                <div class="map-panel__more">
+                    <button class="btn btn--outline"
+                            type="button"
+                            (click)="increaseSearchQty()">Pokaż kolejne</button>
                 </div>
             }
         </div>
+    </aside>
+
+    <div class="map-area">
         @if (mapsReady()) {
-            <app-geo-map class="search__container"
-                         [class.search__container--smaller]="showSearch()"
-                         [markersModels]="selectedMarkers()"
+            <app-geo-map class="map-area__map"
+                         [markersModels]="mapMarkers()"
                          [categories]="categories()"
                          [activeCategories]="selectedCategories()"
                          [currentResult]="currentResult()"
-                         [markerCluster]="!!component().marker_cluster"></app-geo-map>
+                         [markerCluster]="!!component().marker_cluster"
+                         (selected)="currentResult.set($event)" />
+            <div class="map-area__controls">
+                <button class="map-control"
+                        type="button"
+                        aria-label="Pokaż moją lokalizację"
+                        [class.busy]="locating()"
+                        (click)="useMyLocation()">
+                    <svg width="20"
+                         height="20"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true">
+                        <path d="M3 11l18-8-8 18-2-8z"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linejoin="round" />
+                    </svg>
+                </button>
+            </div>
+        } @else {
+            <div class="map-area__placeholder">
+                <svg width="40"
+                     height="40"
+                     viewBox="0 0 24 24"
+                     aria-hidden="true">
+                    <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.7" />
+                    <circle cx="12"
+                            cy="10"
+                            r="2.5"
+                            fill="currentColor" />
+                </svg>
+                <span>{{ markersCount() ? 'Wczytywanie mapy…' : 'Wczytywanie obiektów…' }}</span>
+            </div>
         }
     </div>
 </div>

@@ -1,68 +1,213 @@
-<div class="gallery">
-    <h2>{{ component().title }}</h2>
-    @for (paragraph of component().paragraphs ?? []; track $index) {
-        <p class="gallery__description"
-           [innerHTML]="paragraph.paragraph"></p>
-    }
-    @for (image of images(); track image.id; let index = $index) {
-        @if (image.src) {
-            <figure class="gallery__figure"
-                    appImageLoaded="figury-up"
-                    (click)="openFullMode(index)">
-                <img class="gallery__figure__image"
-                     loading="lazy"
-                     [alt]="image.title ?? ''"
-                     [src]="image.src">
-                @if (image.title) {
-                    <figcaption class="gallery__figure__text">{{ image.title }}</figcaption>
+<article class="album">
+    <header class="album__head">
+        @if (crumbs().length) {
+            <nav class="crumbs"
+                 aria-label="Ścieżka">
+                @for (crumb of crumbs(); track $index) {
+                    <a class="crumbs__link"
+                       [routerLink]="crumb.link">{{ crumb.title }}</a>
+                    <span aria-hidden="true"> › </span>
                 }
-            </figure>
+                <span>{{ component().title }}</span>
+            </nav>
         }
-    }
-</div>
+        @if (category(); as cat) {
+            <span class="album__category">
+                <span class="trail-mark trail-mark--sm"
+                      aria-hidden="true"
+                      [style.--mark]="cat.color"></span>
+                {{ cat.label }}
+            </span>
+        }
+        <h1 class="album__title">{{ component().title }}</h1>
+        @if (meta()) {
+            <p class="album__meta">{{ meta() }}</p>
+        }
+    </header>
 
-<div class="fullscreen-mode"
-     [class.fullscreen-mode--visible]="visible()">
-    <div class="image-overlay"
-         (click)="close()"></div>
-    <div class="fullscreen-image">
-        @for (img of images(); track img.id; let index = $index) {
-            <div class="fullscreen-image__figure"
-                 appSwipe
-                 (swipeRight)="prev()"
-                 (swipeLeft)="next()"
-                 [class.fullscreen-image__figure--active]="currentImage() === index"
-                 [class.fullscreen-image__figure--prev]="prevImage() === index"
-                 [class.fullscreen-image__figure--next]="nextImage() === index"
-                 [class.backward]="back()"
-                 [class.no-move]="noMove()">
-                <div class="fullscreen-image__figure__container"
-                     [class.fullscreen-image__figure__container--full-width]="!(img.title || img.description || img.author)">
-                    <img class="fullscreen-image__figure__container__img"
-                         loading="lazy"
-                         [alt]="img.title ?? ''"
-                         [src]="img.src">
-                </div>
-                @if (img.copy || img.description || img.author) {
-                    <div class="fullscreen-image__figure__figcaption">
-                        @if (img.title) {
-                            <h3 class="fullscreen-image__figure__figcaption__title">{{ img.title }}</h3>
-                        }
-                        @if (img.description) {
-                            <p class="fullscreen-image__figure__figcaption__text">{{ img.description }}</p>
-                        }
-                        @if (img.author) {
-                            <p class="fullscreen-image__figure__figcaption__text">{{ img.author }}</p>
-                        }
-                    </div>
+    @if (intro().length || top50() || category()) {
+        <div class="album__intro">
+            <div class="album__text">
+                @for (paragraph of intro(); track $index) {
+                    <p class="prose"
+                       [innerHTML]="paragraph | trusted"></p>
                 }
             </div>
-        }
-        <div class="fullscreen-image__close"
-             (click)="close()"></div>
-        <span class="fullscreen-image__arrows fullscreen-image__arrows--prev"
-              (click)="prev()"></span>
-        <span class="fullscreen-image__arrows fullscreen-image__arrows--next"
-              (click)="next()"></span>
+            @if (top50() || categoryCount()) {
+                <aside class="album__aside"
+                       aria-label="Zobacz też">
+                    @if (top50(); as entry) {
+                        <a class="top50-link"
+                           [routerLink]="entry.link">
+                            <span class="route-stop route-stop--filled">{{ entry.number }}</span>
+                            <span class="top50-link__text">
+                                <span class="top50-link__label">TOP 50 · nr {{ entry.number }}</span>
+                                <span class="top50-link__title">{{ entry.title }} →</span>
+                            </span>
+                        </a>
+                    }
+                    @if (category(); as cat) {
+                        @if (galleryLink() && categoryCount()) {
+                            <a class="album__category-link"
+                               [routerLink]="galleryLink()">
+                                {{ cat.label }}
+                                <span>{{ categoryCount() }} {{ albumsLabel(categoryCount()) }} →</span>
+                            </a>
+                        }
+                    }
+                </aside>
+            }
+        </div>
+    }
+
+    @if (images().length) {
+        <section class="album__photos"
+                 aria-label="Zdjęcia i ryciny">
+            <ul class="photo-grid">
+                @for (image of images(); track image.id; let index = $index) {
+                    <li [hidden]="!showAll() && index >= collapsedCount">
+                        <button class="photo-card"
+                                type="button"
+                                [attr.aria-label]="'Powiększ zdjęcie ' + (index + 1) + (image.title ? ': ' + image.title : '')"
+                                (click)="open(index)">
+                            <img class="photo-card__image"
+                                 loading="lazy"
+                                 alt=""
+                                 [src]="image.src">
+                            <span class="photo-card__caption">
+                                <span class="photo-card__number">{{ index + 1 }}</span>
+                                <span class="photo-card__text">
+                                    @if (image.title) {
+                                        <span class="photo-card__description">{{ image.title }}</span>
+                                    }
+                                    @if (image.author) {
+                                        <span class="photo-card__author">{{ image.author }}</span>
+                                    }
+                                </span>
+                            </span>
+                        </button>
+                    </li>
+                }
+            </ul>
+            @if (!showAll() && images().length > collapsedCount) {
+                <div class="album__more">
+                    <button class="btn btn--outline btn--large"
+                            type="button"
+                            (click)="showAll.set(true)">Pokaż pozostałe {{ images().length - collapsedCount }} {{ photosLabel(images().length - collapsedCount) }}</button>
+                </div>
+            }
+        </section>
+    }
+
+    @if (otherAlbums().length) {
+        <section class="album__others"
+                 aria-labelledby="other-albums">
+            <div class="section-head">
+                <h2 id="other-albums"
+                    class="h-article">Inne albumy{{ category() ? ': ' + category()!.label : '' }}</h2>
+                @if (galleryLink()) {
+                    <a class="more-link"
+                       [routerLink]="galleryLink()">Wszystkie {{ visibleAlbumCount() }} {{ albumsLabel(visibleAlbumCount()) }} →</a>
+                }
+            </div>
+            <ul class="album-grid album-grid--small">
+                @for (album of otherAlbums(); track album.pageUrl) {
+                    <li>
+                        <a class="album-card"
+                           [routerLink]="album.pageUrl">
+                            @if (album.cover) {
+                                <img class="album-card__image"
+                                     loading="lazy"
+                                     [src]="album.cover"
+                                     [alt]="'przejdź do galerii ' + album.title">
+                            }
+                            <span class="album-card__title">{{ album.title }}</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+</article>
+
+@if (current() !== undefined) {
+    <div class="lightbox"
+         role="dialog"
+         aria-modal="true"
+         [attr.aria-label]="'Podgląd zdjęcia ' + (current()! + 1) + ' z ' + images().length + ': ' + (component().title ?? '')">
+        <div class="lightbox__bar">
+            <span class="trail-mark trail-mark--on-forest"
+                  aria-hidden="true"
+                  [style.--mark]="category()?.color ?? 'var(--trail-red)'"></span>
+            <span class="lightbox__album">{{ component().title }}</span>
+            <span class="lightbox__counter"><b>{{ current()! + 1 }}</b> / {{ images().length }}</span>
+            <button class="lightbox__close"
+                    type="button"
+                    aria-label="Zamknij podgląd i wróć do albumu"
+                    (click)="close()">
+                <svg width="16"
+                     height="16"
+                     viewBox="0 0 18 18"
+                     aria-hidden="true">
+                    <path d="M3 3l12 12M15 3L3 15"
+                          stroke="currentColor"
+                          stroke-width="2.4"
+                          stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <div class="lightbox__main">
+            <div class="lightbox__stage"
+                 appSwipe
+                 (swipeLeft)="next()"
+                 (swipeRight)="prev()">
+                <img class="lightbox__image"
+                     [src]="images()[current()!]?.src"
+                     [alt]="'Zdjęcie ' + (current()! + 1) + ' z ' + images().length"
+                     aria-describedby="lightbox-description">
+                @if (images().length > 1) {
+                    <button class="lightbox__arrow lightbox__arrow--prev"
+                            type="button"
+                            aria-label="Poprzednie zdjęcie"
+                            (click)="prev()">←</button>
+                    <button class="lightbox__arrow lightbox__arrow--next"
+                            type="button"
+                            aria-label="Następne zdjęcie"
+                            (click)="next()">→</button>
+                }
+            </div>
+            <aside class="lightbox__info">
+                <span class="lightbox__section">Galeria{{ category() ? ' · ' + category()!.label : '' }}</span>
+                <p id="lightbox-description"
+                   class="lightbox__description">{{ images()[current()!]?.title || images()[current()!]?.description }}</p>
+                @if (images()[current()!]?.author) {
+                    <p class="lightbox__author">{{ images()[current()!]?.author }}</p>
+                }
+                <div class="lightbox__actions">
+                    <button class="btn btn--primary"
+                            type="button"
+                            (click)="close()">Wróć do albumu</button>
+                    @if (galleryLink()) {
+                        <a class="btn btn--secondary"
+                           [routerLink]="galleryLink()">Wszystkie albumy</a>
+                    }
+                </div>
+            </aside>
+        </div>
+        <div class="lightbox__thumbs"
+             role="group"
+             aria-label="Miniatury">
+            @for (image of images(); track image.id; let index = $index) {
+                <button class="lightbox__thumb"
+                        type="button"
+                        [attr.aria-label]="'Pokaż zdjęcie ' + (index + 1)"
+                        [attr.aria-current]="index === current() ? 'true' : null"
+                        (click)="current.set(index)">
+                    <img loading="lazy"
+                         alt=""
+                         [src]="image.src">
+                </button>
+            }
+        </div>
     </div>
-</div>
+}

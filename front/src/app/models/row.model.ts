@@ -183,6 +183,8 @@ export interface GalleryData {
     author?: string;
     updated?: string | number;
     hidden?: boolean;
+    /** Not a CMS field: the publication date parsed from the old byline paragraph. */
+    published?: string;
 }
 
 // ---- Components added in variant C ----

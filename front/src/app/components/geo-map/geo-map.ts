@@ -6,6 +6,7 @@ import {
     effect,
     inject,
     input,
+    output,
     untracked
 } from '@angular/core';
 import {
@@ -17,30 +18,37 @@ import { MAP_CENTER, MAP_ZOOM } from '../../core/map.config';
 import { MAP_STYLE } from '../../core/map-style';
 import { MapCategory, MapMarker } from '../../core/map.types';
 
+/** The selected pin is drawn larger and in ink. */
+const SELECTED_COLOR = '#18201b';
+
 /**
  * Named `GeoMap`, not `Map` – the latter would shadow the built-in Map type in every file
  * that imported it.
  */
 @Component({
     selector: 'app-geo-map',
-    template: '<div class="search__container__map"></div>',
+    template: '<div class="map-area__canvas"></div>',
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GeoMap {
     readonly markersModels = input<MapMarker[]>([]);
     readonly categories = input<MapCategory[]>([]);
-    /** Categories picked in the filter – a marker in several categories shows the icon of one of these. */
+    /** Categories picked in the filter – a marker in several categories takes the colour of one of these. */
     readonly activeCategories = input<string[]>([]);
     readonly markerCluster = input(false);
     /** Id of the marker the map should centre on; undefined = no selection. */
     readonly currentResult = input<string | number | undefined>();
+    /** A pin was clicked. */
+    readonly selected = output<string | number>();
 
     private readonly mapService = inject(MapService);
     private readonly host: HTMLElement = inject(ElementRef).nativeElement;
 
     private map: google.maps.Map | undefined;
     private clusterer: MarkerClusterer | undefined;
+    private infoWindow: google.maps.InfoWindow | undefined;
     private markers: google.maps.Marker[] = [];
+    private highlighted: google.maps.Marker | undefined;
 
     constructor() {
         afterNextRender(() => this.initMap());
@@ -68,40 +76,35 @@ export class GeoMap {
             {
                 center: MAP_CENTER,
                 zoom: MAP_ZOOM,
-                scrollwheel: false,
-                draggable: true,
                 mapTypeId: 'styled_map',
-                fullscreenControl: true,
+                gestureHandling: 'cooperative',
+                fullscreenControl: false,
+                streetViewControl: false,
                 zoomControl: true,
                 zoomControlOptions: {
-                    position: google.maps.ControlPosition.RIGHT_TOP
-                },
-                streetViewControl: true,
-                streetViewControlOptions: {
                     position: google.maps.ControlPosition.RIGHT_TOP
                 },
                 mapTypeControl: true,
                 mapTypeControlOptions: {
                     position: google.maps.ControlPosition.LEFT_TOP,
-                    mapTypeIds: [
-                        'roadmap',
-                        'satellite',
-                        'hybrid',
-                        'terrain',
-                        'styled_map'
-                    ],
+                    mapTypeIds: ['styled_map', 'terrain', 'satellite', 'hybrid'],
                     style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
                 },
                 scaleControl: true
             },
             MAP_STYLE
         );
+        this.infoWindow = new google.maps.InfoWindow({ maxWidth: 320 });
+        this.infoWindow.addListener('closeclick', () => this.unhighlight());
         this.updateMap();
+        this.focusMarker(this.currentResult());
     }
 
     private updateMap(): void {
         if (!this.map) return;
 
+        this.infoWindow?.close();
+        this.highlighted = undefined;
         if (this.markers.length) {
             this.mapService.deleteMarkers(this.markers);
         }
@@ -109,7 +112,8 @@ export class GeoMap {
             this.markersModels(),
             this.categories(),
             this.map,
-            this.activeCategories()
+            this.activeCategories(),
+            id => this.selected.emit(id)
         );
 
         this.clusterer?.clearMarkers();
@@ -127,13 +131,12 @@ export class GeoMap {
                             position,
                             label: {
                                 text: String(count),
-                                color: 'white',
-                                fontSize: '12px'
+                                color: '#ffffff',
+                                fontFamily: 'Barlow Condensed, sans-serif',
+                                fontSize: '15px',
+                                fontWeight: '800'
                             },
-                            icon: {
-                                url: this.clusterImage(count),
-                                scaledSize: new google.maps.Size(60, 60)
-                            },
+                            icon: this.mapService.clusterIcon(count),
                             zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count
                         })
                 }
@@ -143,24 +146,41 @@ export class GeoMap {
         this.mapService.setBounds(this.markers, this.map);
     }
 
-    /** Cluster size is signalled by a different graphic – thresholds 10 / 100 / 1000. */
-    private clusterImage(count: number): string {
-        if (count < 10) return '/images/markers/1.png';
-        if (count < 100) return '/images/markers/2.png';
-        if (count < 1000) return '/images/markers/3.png';
-        return '/images/markers/4.png';
+    private unhighlight(): void {
+        const marker = this.highlighted;
+        if (!marker) return;
+        marker.setIcon(this.mapService.pinIcon(marker.get('color'), 26));
+        marker.setZIndex(undefined);
+        this.highlighted = undefined;
     }
 
     private focusMarker(id: string | number | undefined): void {
-        if (!this.map || id === undefined || !this.markers.length) return;
+        if (!this.map || !this.markers.length) return;
+        this.unhighlight();
+        if (id === undefined) {
+            this.infoWindow?.close();
+            return;
+        }
         // Loose comparison: a marker id from Mongo is sometimes a number, and from the
         // result list a string.
         const marker = this.markers.find(item => item.get('id') == id);
-        if (!marker) return;
+        const model = this.markersModels().find(item => item.id == id);
+        if (!marker || !model) return;
 
-        this.map.setZoom(18);
+        marker.setIcon(this.mapService.pinIcon(SELECTED_COLOR, 34));
+        marker.setZIndex(Number(google.maps.Marker.MAX_ZINDEX) + 10000);
+        this.highlighted = marker;
+
+        // Past the clusterer's maxZoom, so the selected pin is not hidden in a cluster.
+        const minZoom = this.markerCluster() ? 16 : 13;
+        if ((this.map.getZoom() ?? 0) < minZoom) this.map.setZoom(minZoom);
         const position = marker.getPosition();
         if (position) this.map.panTo(position);
-        google.maps.event.trigger(marker, 'click');
+
+        const active = this.activeCategories();
+        const key = model.categories?.find(category => active.includes(category)) ?? model.categories?.[0];
+        const category = this.categories().find(item => item.category === key);
+        this.infoWindow?.setContent(this.mapService.objectCard(model, category));
+        this.infoWindow?.open({ map: this.map, anchor: marker });
     }
 }

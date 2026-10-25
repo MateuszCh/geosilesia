@@ -1,4 +1,5 @@
 import { Page } from '../models/page.model';
+import { formatDate } from './dates';
 import {
     GalleryData,
     NoticeData,
@@ -60,28 +61,6 @@ export function parseByline(html: string | undefined): Byline | undefined {
     return { author: match[1].trim(), published: match[2], updated: match[3] };
 }
 
-const pad = (value: number) => String(value).padStart(2, '0');
-
-/** dd.mm.rrrr from a CMS date: ms, an ISO string, a "dd.mm.rrrr" string or a Date. */
-export function formatDate(value: string | number | Date | undefined | null): string | undefined {
-    if (value === undefined || value === null || value === '') return undefined;
-    if (typeof value === 'string' && /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(value.trim())) {
-        return value.trim();
-    }
-    const raw = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
-    const date = raw instanceof Date ? raw : new Date(raw);
-    if (Number.isNaN(date.getTime())) return undefined;
-    // Calendar fields in Polish time, so the server (UTC) and the browser show the same day.
-    const parts = new Intl.DateTimeFormat('pl-PL', {
-        timeZone: 'Europe/Warsaw',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    }).formatToParts(date);
-    const get = (type: string) => parts.find(part => part.type === type)?.value ?? '';
-    return `${get('day')}.${get('month')}.${get('year')}`;
-}
-
 /** Rows that need the full container width; a page holding one gets no side panel. */
 const FULL_WIDTH: RowType[] = [
     'homepage_banner',
@@ -134,7 +113,8 @@ function galleryWithoutByline(data: GalleryData): GalleryData {
         ...data,
         paragraphs,
         author: data.author || byline.author,
-        updated: data.updated || byline.updated
+        updated: data.updated || byline.updated,
+        published: byline.published
     };
 }
 
@@ -185,7 +165,8 @@ function heroFromRow(row: Row | undefined): { hero: PageHeroData; consumed: 'row
 export function layoutPage(page: Page | undefined): PageLayout {
     const source = (page?.rows ?? []).filter(row => !!row?.type);
 
-    if (source.some(row => row.type === 'homepage_banner')) {
+    // The home page and the map page draw their own header (the photo hero, the map panel).
+    if (source.some(row => row.type === 'homepage_banner' || row.type === 'map')) {
         return { kind: 'home', rows: source, side: [], wide: true };
     }
 

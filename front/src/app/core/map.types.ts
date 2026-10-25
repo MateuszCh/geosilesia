@@ -23,6 +23,10 @@ export interface MapMarker {
     /** "home" marks the search point chosen by the user, not an attraction. */
     type?: 'home';
     address?: string;
+    /** Variant C marker fields – most markers do not have them yet. */
+    rock?: string;
+    image?: string;
+    top50?: number;
 }
 
 export interface MapCategory {
@@ -32,4 +36,8 @@ export interface MapCategory {
     icon?: string;
     /** How many markers belong to the category – shown next to its name in the filter list. */
     count: number;
+    /** Category colour (hex) – pins, chips and result numbers. */
+    color: string;
+    /** "Geologiczne" for "Obiekty geologiczne" – the chips are short. */
+    shortName: string;
 }

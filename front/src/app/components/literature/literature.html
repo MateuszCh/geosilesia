@@ -1,11 +1,16 @@
 <section class="literature"
          [attr.aria-label]="component().title || 'Literatura'">
-    <h2 class="literature__title">{{ component().title || 'Literatura' }}</h2>
-    @if (component().items?.length) {
-        <!-- Order as in the CMS. -->
+    <h2 class="literature__title">
+        {{ component().title || 'Literatura' }}
+        @if (items().length > 1) {
+            <span class="literature__count">{{ items().length }} {{ positionsLabel(items().length) }}</span>
+        }
+    </h2>
+    @if (items().length) {
+        <!-- Order as in the CMS. Every item is in the HTML; the long tail is only hidden. -->
         <ol class="literature__list">
-            @for (item of component().items; track $index) {
-                <li>
+            @for (item of items(); track $index) {
+                <li [hidden]="collapsible() && !expanded() && $index >= collapsedCount">
                     @if (item.author) {
                         <b>{{ item.author }}</b>
                     }
@@ -13,5 +18,11 @@
                 </li>
             }
         </ol>
+        @if (collapsible()) {
+            <button class="btn btn--outline literature__toggle"
+                    type="button"
+                    [attr.aria-expanded]="expanded()"
+                    (click)="expanded.set(!expanded())">{{ expanded() ? 'Zwiń listę' : 'Pokaż wszystkie ' + items().length }}</button>
+        }
     }
 </section>

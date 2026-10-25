@@ -1,38 +1,83 @@
-<div class="photos">
-    <ul class="photos__categories">
-        @for (category of categories(); track category) {
-        <li class="photos__categories__category"
-            [class.markedCategory]="selectedCategory() === category"
-            (click)="changeCategory(category)">{{ category }}</li>
+<section class="albums">
+    <div class="albums__bar">
+        @if (component().intro) {
+            <div class="albums__intro lead prose"
+                 [innerHTML]="component().intro | trusted"></div>
+        } @else if (albums().length) {
+            <p class="albums__intro lead">{{ albums().length }} {{ albumsLabel(albums().length) }} fotograficznych z terenu.</p>
         }
-    </ul>
-    <ul class="photos__list">
-        @for (gallery of component().galleries ?? []; track $index) {
-        <li class="photos__list__item"
-            appImageLoaded="figury-up"
-            [class.photos__list__item--collapsed]="!matches(gallery.category)"
-            [class.photos__list__item--hidden]="isHidden(gallery.category)">
-            @if (isExternalLink(gallery.link)) {
-            <a [href]="gallery.link">
-                <ng-container *ngTemplateOutlet="figure; context: { $implicit: gallery }" />
-            </a>
-            } @else {
-            <a [routerLink]="internalLink(gallery.link)">
-                <ng-container *ngTemplateOutlet="figure; context: { $implicit: gallery }" />
-            </a>
-            }
-        </li>
+        @if (filters().length > 1) {
+            <div class="albums__filters"
+                 role="group"
+                 aria-label="Filtruj albumy">
+                <button class="filter-button"
+                        type="button"
+                        [attr.aria-pressed]="!selected()"
+                        (click)="select(undefined)">Wszystkie {{ albums().length }}</button>
+                @for (filter of filters(); track filter.key) {
+                    <button class="filter-button"
+                            type="button"
+                            [attr.aria-pressed]="selected() === filter.key"
+                            (click)="select(filter.key)">
+                        <span class="trail-mark trail-mark--xs"
+                              aria-hidden="true"
+                              [style.--mark]="filter.color"></span>
+                        {{ filter.label }} {{ filter.count }}
+                    </button>
+                }
+            </div>
         }
-    </ul>
-</div>
+    </div>
 
-<ng-template #figure
-             let-gallery>
-    <figure class="photos__list__item__figure">
-        <img class="photos__list__item__figure__image"
+    <ul class="album-grid">
+        @for (album of shown(); track album.link; let index = $index) {
+            <li [hidden]="!expanded() && index >= collapsedCount">
+                @if (album.external) {
+                    <a class="album-card"
+                       [href]="album.link">
+                        <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: album }" />
+                    </a>
+                } @else {
+                    <a class="album-card"
+                       [routerLink]="album.link">
+                        <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: album }" />
+                    </a>
+                }
+            </li>
+        }
+        @if (!expanded() && shown().length > collapsedCount) {
+            <li>
+                <button class="album-more"
+                        type="button"
+                        (click)="expanded.set(true)">
+                    <span class="album-more__count">+{{ shown().length - collapsedCount }}</span>
+                    <span>Pokaż kolejne albumy</span>
+                </button>
+            </li>
+        }
+    </ul>
+</section>
+
+<ng-template #cardBody
+             let-album>
+    @if (album.cover) {
+        <img class="album-card__image"
              loading="lazy"
-             [src]="gallery.image"
-             [alt]="'przejdź do galerii ' + gallery.title">
-        <figcaption class="photos__list__item__figure__text">{{ gallery.title }}</figcaption>
-    </figure>
+             [src]="album.cover"
+             [alt]="'przejdź do galerii ' + album.title">
+    } @else {
+        <span class="album-card__image album-card__image--empty"
+              aria-hidden="true"></span>
+    }
+    <span class="album-card__caption">
+        <span class="trail-mark trail-mark--sm album-card__mark"
+              aria-hidden="true"
+              [style.--mark]="album.color"></span>
+        <span class="album-card__text">
+            <span class="album-card__title">{{ album.title }}</span>
+            @if (album.categoryLabel) {
+                <span class="album-card__meta">{{ album.categoryLabel }}</span>
+            }
+        </span>
+    </span>
 </ng-template>

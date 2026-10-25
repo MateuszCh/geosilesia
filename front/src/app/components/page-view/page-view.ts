@@ -80,6 +80,10 @@ export class PageView {
             : { kind: 'content', rows: [], side: [], wide: false };
     });
 
+    /** The map is the page's main content (and its title the h1) unless the home banner is above it. */
+    readonly mapStandalone = computed(
+        () => !this.layout().rows.some(row => row.type === 'homepage_banner')
+    );
     readonly crumbs = computed(() => this.navigation.trail(this.path()));
     readonly section = computed(() => this.navigation.section(this.path()));
     readonly next = computed(() => this.navigation.next(this.path()));

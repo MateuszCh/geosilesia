@@ -1,14 +1,61 @@
-<div class="homepage-banner">
-    <app-carousel [interval]="component().interval"
-                  [slides]="component().slides ?? []"
-                  [custom]="component()"></app-carousel>
-    <div>
-        <h2 class="homepage-banner__heading"
-            (click)="scrollToFirstSection()">
-            <span>{{ component().title }}</span>
-            <span class="homepage-banner__heading__left"></span>
-            <span class="homepage-banner__heading__right"></span>
-        </h2>
-        <span class="homepage-banner__bar"></span>
+<section class="home-hero"
+         aria-roledescription="karuzela"
+         aria-label="Fotografie"
+         (mouseenter)="pause()"
+         (mouseleave)="resume()"
+         (focusin)="pause()"
+         (focusout)="resume()">
+    <div class="home-hero__slides"
+         appSwipe
+         (swipeLeft)="next()"
+         (swipeRight)="prev()">
+        @for (slide of slides(); track $index) {
+            <img class="home-hero__image"
+                 draggable="false"
+                 [class.home-hero__image--current]="current() === $index"
+                 [src]="slide.image"
+                 [alt]="slide.text ?? ''"
+                 [attr.loading]="$index === 0 ? null : 'lazy'"
+                 [attr.aria-hidden]="current() === $index ? null : 'true'"
+                 [style.object-position]="objectPosition(slide)">
+        }
     </div>
-</div>
+
+    <div class="home-hero__overlay container">
+        <div class="home-hero__panel">
+            <span class="home-hero__eyebrow">
+                <span class="trail-mark trail-mark--on-forest"
+                      aria-hidden="true"></span>
+                {{ component().eyebrow || 'Serwis edukacyjno-informacyjny' }}
+            </span>
+            <h1 class="home-hero__title">{{ title() }}</h1>
+            @if (component().info_text) {
+                <p class="home-hero__lead">{{ component().info_text }}</p>
+            }
+            @if (slides()[current()]?.text; as text) {
+                <span class="home-hero__now">Na zdjęciu: {{ text }}</span>
+            }
+        </div>
+
+        @if (slides().length) {
+            <div class="home-hero__caption"
+                 aria-live="polite">
+                <span class="home-hero__caption-text">
+                    <span class="home-hero__caption-title">{{ slides()[current()]?.text }}</span>
+                    <span class="home-hero__caption-meta">{{ meta() }}</span>
+                </span>
+                @if (slides().length > 1) {
+                    <span class="home-hero__counter">{{ counter() }}</span>
+                    <button class="home-hero__arrow"
+                            type="button"
+                            aria-label="Poprzednie zdjęcie"
+                            (click)="prev()">←</button>
+                    <button class="home-hero__arrow home-hero__arrow--next"
+                            type="button"
+                            aria-label="Następne zdjęcie"
+                            (click)="next()">→</button>
+                }
+            </div>
+        }
+    </div>
+</section>

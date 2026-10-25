@@ -124,6 +124,77 @@ function pageData(pageUrl) {
         .then(pages => ({ pages }));
 }
 
+// Albums for the gallery list and the "Inne albumy" section: every page with a "gallery"
+// row. Variant C keeps the category, cover and "hidden" flag on the album itself; albums
+// not migrated yet take them from the manual gallery_list (and an album missing from that
+// list counts as hidden, as on the old site).
+function galleriesList() {
+    return Promise.all([
+        collections.pages
+            .find({ "rows.type": "gallery" }, { projection: { pageUrl: 1, title: 1, rows: 1, updated: 1 } })
+            .toArray(),
+        collections.pages.find({ "rows.type": "gallery_list" }, { projection: { rows: 1 } }).toArray()
+    ]).then(([albumPages, listPages]) => {
+        const listed = new Map();
+        listPages.forEach(page =>
+            (page.rows || []).forEach(row => {
+                if (row.type !== "gallery_list" || !row.data) return;
+                (row.data.galleries || []).forEach(entry => {
+                    const key = entry && entry.link ? seoMeta.normalizePath(decodePath(entry.link.replace(/^https?:\/\/[^/]+/, ""))) : "";
+                    if (key && !listed.has(key)) listed.set(key, { entry, order: listed.size });
+                });
+            })
+        );
+
+        const albums = albumPages.map(page => {
+            const gallery = (page.rows.find(row => row.type === "gallery") || {}).data || {};
+            const pageUrl = seoMeta.normalizePath(page.pageUrl);
+            const manual = listed.get(pageUrl);
+            return {
+                pageUrl,
+                title: gallery.title || (manual && manual.entry.title) || page.title,
+                category: gallery.category || (manual && manual.entry.category) || "",
+                cover: gallery.cover || (manual && manual.entry.image) || "",
+                catalogue: typeof gallery.catalogue === "string" ? gallery.catalogue : "",
+                hidden: typeof gallery.hidden === "boolean" ? gallery.hidden : !manual,
+                updated: page.updated,
+                order: manual ? manual.order : Number.MAX_SAFE_INTEGER
+            };
+        });
+
+        const catalogues = albums.map(album => album.catalogue).filter(Boolean);
+        return collections.files
+            .aggregate([
+                { $match: { catalogues: { $in: catalogues } } },
+                { $unwind: "$catalogues" },
+                { $match: { catalogues: { $in: catalogues } } },
+                { $sort: { position: 1, id: 1 } },
+                { $group: { _id: "$catalogues", count: { $sum: 1 }, first: { $first: "$src" } } }
+            ])
+            .toArray()
+            .then(groups => {
+                const byCatalogue = new Map(groups.map(group => [group._id, group]));
+                return albums
+                    .map(({ catalogue, order, ...album }) => {
+                        const files = byCatalogue.get(catalogue);
+                        return Object.assign(album, {
+                            count: files ? files.count : 0,
+                            cover: album.cover || (files && files.first) || "",
+                            order
+                        });
+                    })
+                    .sort((a, b) => a.order - b.order || String(a.title).localeCompare(String(b.title), "pl"))
+                    .map(({ order, ...album }) => album);
+            });
+    });
+}
+
+app.get("/api/galleries", (req, res, next) => {
+    galleriesList()
+        .then(albums => res.send(albums))
+        .catch(next);
+});
+
 app.get("/api/posts/:type", (req, res, next) => {
     postsOfType(req.params.type)
         .then(posts => res.send(posts))
@@ -386,18 +457,21 @@ function injectSeo(html, block) {
 // SSR (Angular rendering) //
 ///////////////////////////
 
-// Counterparts of the /api/page/:pageUrl and /api/posts/:type routes for server-side
+// Counterparts of the /api/page/:pageUrl, /api/posts/:type and /api/galleries routes for server-side
 // rendering. Requests made during a render do not go over the network – under Passenger
 // the process has no predictable port. The JSON round trip yields exactly what the
 // browser receives (ObjectIds and dates as strings) – otherwise the server HTML would
 // differ from the client's first render.
 function ssrApi(apiPath) {
+    if (databaseError) {
+        return Promise.reject(new Error("Database unavailable"));
+    }
+    if (apiPath === "/api/galleries") {
+        return galleriesList().then(result => JSON.parse(JSON.stringify(result)));
+    }
     const match = /^\/api\/(page|posts)\/([^/]+)$/.exec(apiPath);
     if (!match) {
         return Promise.reject(new Error(`unsupported request ${apiPath}`));
-    }
-    if (databaseError) {
-        return Promise.reject(new Error("Database unavailable"));
     }
     const param = decodePath(match[2]);
     const data = match[1] === "page" ? pageData(param) : postsOfType(param);

@@ -5,7 +5,8 @@
             <app-homepage-banner [component]="row.data" />
         }
         @case ('map') {
-            <app-search-map [component]="row.data" />
+            <app-search-map [component]="row.data"
+                            [standalone]="mapStandalone()" />
         }
         @case ('title_and_text') {
             <app-title-and-text [component]="row.data" />
