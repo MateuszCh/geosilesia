@@ -20,6 +20,10 @@ be replayed on production later in the same order.
 | `05-top50.js` | `top50` posts from the TOP 50 page text; the page rebuilt from them |
 | `06-content.js` | `page_hero` on content pages, notices, contact, dictionary terms, event places |
 | `07-knowledge-base.js` | `zasob` posts from the 7 section pages; the section pages rebuilt |
+| `08-photos.js` | Banner slides get author, place and description from the "Fotografie" page; the page becomes a photo grid |
+| `09-markers.js` | Marker `top50` from `data/top50-markers.json`, marker `rock` from the titles; the TOP 50 list links to the map |
+| `10-content-drafts.js` | Drafts: Skarby natury as a numbered list, Geoparki timeline and figures, figures and charts on Położenie and Rzeźba terenu (`--only=` picks pages) |
+| `11-header-photos.js` | Banner photos as header photos of five content pages |
 | `check-fallbacks.js` | Read-only: pages and posts that still need a front-end fallback (run after the scripts) |
 | `restore.js` | Restores collections from a backup |
 
