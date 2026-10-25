@@ -8,11 +8,11 @@ import {
     input,
     signal
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Location, NgTemplateOutlet } from '@angular/common';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { internalLink, isExternalLink } from '../../core/cms-link';
-import { ALBUM_CATEGORIES, albumCategory } from '../../core/albums';
+import { ALBUM_CATEGORIES, ALBUM_CATEGORY_PARAM, albumCategory, albumCategoryBySlug } from '../../core/albums';
 import { ResourceService } from '../../core/resource.service';
 import { AlbumSummary } from '../../models/post.model';
 import { GalleryListData } from '../../models/row.model';
@@ -31,7 +31,9 @@ interface AlbumCard {
 
 /**
  * The album list. In the "automatycznie" mode (variant C) it is built from the album pages
- * themselves; otherwise from the albums entered by hand in this row.
+ * themselves; otherwise from the albums entered by hand in this row. The chosen category
+ * lives in the address ("?kategoria=inne"), so an album page can link to its category and
+ * the filtered list can be shared.
  */
 @Component({
     selector: 'app-gallery-list',
@@ -51,6 +53,8 @@ export class GalleryList implements OnInit {
     private readonly auto = signal<AlbumSummary[] | undefined>(undefined);
     private readonly resource = inject(ResourceService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly route = inject(ActivatedRoute);
+    private readonly location = inject(Location);
 
     readonly albums = computed<AlbumCard[]>(() => {
         const auto = this.auto();
@@ -89,6 +93,10 @@ export class GalleryList implements OnInit {
     });
 
     ngOnInit(): void {
+        this.route.queryParamMap
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(params => this.selected.set(albumCategoryBySlug(params.get(ALBUM_CATEGORY_PARAM))?.key));
+
         if (this.component().mode !== 'automatycznie') return;
         this.resource
             .loadAlbums()
@@ -100,6 +108,10 @@ export class GalleryList implements OnInit {
 
     select(key: string | undefined): void {
         this.selected.set(key);
+        // replaceState, not a router navigation: the router would scroll back to the top.
+        const slug = albumCategory(key)?.slug;
+        const [path] = this.location.path().split('?');
+        this.location.replaceState(path, slug ? `${ALBUM_CATEGORY_PARAM}=${encodeURIComponent(slug)}` : '');
     }
 
     albumsLabel(count: number): string {

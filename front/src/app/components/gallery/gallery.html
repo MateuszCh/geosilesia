@@ -49,7 +49,8 @@
                     @if (category(); as cat) {
                         @if (galleryLink() && categoryCount()) {
                             <a class="album__category-link"
-                               [routerLink]="galleryLink()">
+                               [routerLink]="galleryLink()"
+                               [queryParams]="categoryParams()">
                                 {{ cat.label }}
                                 <span>{{ categoryCount() }} {{ albumsLabel(categoryCount()) }} →</span>
                             </a>

@@ -14,7 +14,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { GalleryData, GalleryImage } from '../../models/row.model';
 import { AlbumSummary, Top50PostData } from '../../models/post.model';
-import { albumCategory } from '../../core/albums';
+import { ALBUM_CATEGORY_PARAM, albumCategory } from '../../core/albums';
 import { formatDate } from '../../core/dates';
 import { NavigationService } from '../../core/navigation.service';
 import { ResourceService } from '../../core/resource.service';
@@ -89,6 +89,11 @@ export class Gallery implements OnInit {
 
     /** The album's own field first; until it is migrated, the category from the album list. */
     readonly category = computed(() => albumCategory(this.component().category || this.self()?.category));
+    /** Opens the album list on this album's category. */
+    readonly categoryParams = computed(() => {
+        const slug = this.category()?.slug;
+        return slug ? { [ALBUM_CATEGORY_PARAM]: slug } : {};
+    });
 
     readonly categoryCount = computed(() => {
         const key = this.category()?.key;
