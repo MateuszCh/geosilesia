@@ -5,8 +5,9 @@
 //
 // - Skarby natury: the ten-item list becomes a `numbered_list` – the item text stays, the
 //   names and places come from the mockup, photos from the home banner where the mockup has
-//   one; the seven "a ponadto" items become its short side list (mockup wording, so their
-//   longer text leaves the page). The motto becomes a quote paragraph.
+//   one. The seven "a ponadto" items keep their full text (the editor's choice over the
+//   mockup's short side list): a text section "A ponadto" right below the list, each item a
+//   sentence of its own. The motto becomes a quote paragraph.
 // - Geoparki: the opening sentence becomes the lead, a `facts` strip and a `timeline` of
 //   geoparks in Poland and the region (dates and links from the page text).
 // - Położenie: a `facts` strip; border lengths and river basin shares as bar charts.
@@ -49,22 +50,13 @@ const TREASURES = [
     { title: "Pustynia Błędowska", place: "pogranicze z woj. małopolskim", match: "pustynia bledowska" }
 ];
 
-/** The "a ponadto" items in the mockup's short wording, in the page's order. */
-const MORE = [
-    ["Przełomowe odcinki Liswarty i Warty, przemodelowane przez lądolód Warty", "liswarty"],
-    ["Kuesta jurajska – próg skalny i punkt widokowy", "kuesta"],
-    ["Kontynentalny dział wodny wzdłuż południowej granicy", "dzial wodny"],
-    ["Masyw Pilska z najwyższym punktem województwa", "pilska"],
-    ["Graniczny Meander Odry w gminie Krzyżanowice", "meander odry"],
-    ["Przełomy Warty pod Mstowem i Białej Przemszy pod Okradzionowem", "mstowem"],
-    ["Górnośląskie Pojezierze Antropogeniczne", "pojezierza antropogenicznego"]
-];
-
-/** A list item as a stand-alone paragraph: capital letter, full stop. */
-function sentence(item) {
+/** A list item as a stand-alone sentence: capital letter, full stop. */
+function asSentence(item) {
     const text = String(item || "").trim().replace(/;$/, ".");
-    return `<p>${text.charAt(0).toUpperCase()}${text.slice(1)}</p>`;
+    return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
+
+const sentence = item => `<p>${asSentence(item)}</p>`;
 
 function skarby(page, ctx) {
     if (page.rows.some(r => r && r.type === "numbered_list")) return { done: "has a numbered_list" };
@@ -90,11 +82,17 @@ function skarby(page, ctx) {
             link: ""
         };
     });
-    if ((moreBlock.list || []).length !== MORE.length) throw new Error(`${SKARBY}: ${moreBlock.list.length} "a ponadto" items, expected ${MORE.length}`);
-    const moreItems = moreBlock.list.map((entry, i) => {
-        if (!fold(entry.item).includes(MORE[i][1])) throw new Error(`${SKARBY}: "a ponadto" item ${i + 1} is not "${MORE[i][0]}"`);
-        return { text: MORE[i][0], link: "" };
-    });
+    // "a ponadto:" becomes the section title; the items stay whole.
+    const moreRow = {
+        ...more,
+        data: {
+            ...more.data,
+            title: "A ponadto",
+            text: more.data.text.map(t =>
+                t === moreBlock ? { ...t, paragraph: "", list: (t.list || []).map(entry => ({ ...entry, item: asSentence(entry.item) })) } : t
+            )
+        }
+    };
 
     const list = row(
         "numbered_list",
@@ -102,8 +100,8 @@ function skarby(page, ctx) {
             title: "",
             intro: `<p>${mainBlock.paragraph}</p>`,
             items,
-            more_title: "A ponadto",
-            more_items: moreItems
+            more_title: "",
+            more_items: []
         },
         ctx.titles
     );
@@ -122,15 +120,14 @@ function skarby(page, ctx) {
             return { ...r, data: { ...r.data, text } };
         });
     const heroAt = rest.findIndex(r => r && r.type === "page_hero");
-    const rows = [...rest.slice(0, heroAt + 1), list, ...rest.slice(heroAt + 1)];
+    const rows = [...rest.slice(0, heroAt + 1), list, moreRow, ...rest.slice(heroAt + 1)];
 
     const lines = items.map(
         (item, i) =>
             `  ${String(i + 1).padStart(2)}. ${item.title} · ${item.place}${item.image ? ` · photo ${item.image}${item.image_author ? "" : " (no author yet – run 08 first)"}` : ""}\n         ${short(stripTags(item.text))}`
     );
-    lines.push(`  a ponadto: ${moreItems.map(item => item.text).join(" | ")}`);
+    moreRow.data.text.forEach(t => (t.list || []).forEach(entry => lines.push(`  A ponadto: ${short(stripTags(entry.item))}`)));
     if (motto) lines.push(`  quote paragraph: ${motto}`);
-    lines.push(`  removed from the page: the longer text of the ${moreItems.length} "a ponadto" items (kept in the backup)`);
     return { rows, lines };
 }
 
