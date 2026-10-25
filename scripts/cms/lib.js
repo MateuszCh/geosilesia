@@ -179,7 +179,7 @@ async function insertPosts(db, type, posts) {
         type,
         id: ids[i],
         created: post.created || now,
-        updated: now,
+        updated: post.updated || now,
         __v: 0
     }));
     await db.collection("posts").insertMany(docs);

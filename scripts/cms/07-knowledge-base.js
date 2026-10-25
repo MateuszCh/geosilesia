@@ -7,6 +7,9 @@
 // for documents in /uploads ("Do pobrania", where the link only says "Pobierz plik PDF" and
 // the title is the text before it). The order on the page is kept in `position`.
 // Each section page then becomes: page header (name and byline) → knowledge base (that section).
+// The posts take their dates from the section's byline, so "aktualizacja" next to a section
+// keeps the date the editor last changed it, not the day of the migration. Posts created
+// before this rule (never edited since) get the same dates.
 //
 // Idempotent: posts are created only while there are none of type `zasob`; a section page is
 // rebuilt only while it has no knowledge_base row.
@@ -76,6 +79,22 @@ function parseParagraph(html) {
     return resources;
 }
 
+/**
+ * `created`/`updated` in ms from a byline: "dd.mm.rrrr" strings, or – with `isoDates` – the
+ * ISO dates a page_hero stores. Empty when there is no date.
+ */
+function bylineDates(byline, isoDates = false) {
+    if (!byline) return {};
+    const ms = value => {
+        const iso = isoDates ? value : toCmsDate(value);
+        const time = iso ? Date.parse(iso) : NaN;
+        return Number.isNaN(time) ? undefined : time;
+    };
+    const updated = ms(byline.updated);
+    if (!updated) return {};
+    return { created: ms(byline.published) || updated, updated };
+}
+
 withDb(async (db, { apply, dbName }) => {
     console.log(`database: ${dbName}`);
     const titles = await componentTitles(db);
@@ -117,6 +136,8 @@ withDb(async (db, { apply, dbName }) => {
                     );
                 })
             );
+        const dates = bylineDates(byline);
+        posts.filter(post => post.data.section === section).forEach(post => Object.assign(post, dates));
         report.push(`${pageUrl}: ${position} resource(s) → section "${section}"`);
         skipped.forEach(text => report.push(`    ! paragraph without a link kept out: "${text.slice(0, 100)}"`));
         const rows = [
@@ -140,6 +161,27 @@ withDb(async (db, { apply, dbName }) => {
         pageWrites.push(() => updatePageRows(db, page._id, rows));
     }
 
+    // Posts created by an earlier run carry the migration day: give them the section's dates,
+    // as long as nobody has edited them since (created === updated).
+    const dateWrites = [];
+    if (existing) {
+        for (const [pageUrl, section] of Object.entries(SECTION_PAGES)) {
+            const page = await pagesColl.findOne({ pageUrl });
+            const hero = page && page.rows.find(r => r && r.type === "page_hero");
+            const dates = hero ? bylineDates({ published: hero.data.published, updated: hero.data.updated }, true) : {};
+            if (!dates.updated) continue;
+            const stale = await db
+                .collection("posts")
+                .find({ type: "zasob", "data.section": section, $expr: { $eq: ["$created", "$updated"] }, updated: { $gt: dates.updated } })
+                .toArray();
+            if (!stale.length) continue;
+            report.push(`${pageUrl}: ${stale.length} post(s) dated ${new Date(dates.updated).toLocaleDateString("pl-PL", { timeZone: "Europe/Warsaw" })} (section byline)`);
+            dateWrites.push(() =>
+                db.collection("posts").updateMany({ _id: { $in: stale.map(post => post._id) } }, { $set: dates })
+            );
+        }
+    }
+
     if (existing) {
         report.push(`ok     ${existing} zasob post(s) exist – none created`);
     } else {
@@ -154,10 +196,10 @@ withDb(async (db, { apply, dbName }) => {
     }
 
     printReport("knowledge base", report, apply);
-    if (apply && (pageWrites.length || (!existing && posts.length))) {
+    if (apply && (pageWrites.length || dateWrites.length || (!existing && posts.length))) {
         console.log(`backup: ${await backup(db, "knowledge-base", ["pages", "posts", "post_types", "counters"])}`);
         if (!existing) await insertPosts(db, "zasob", posts);
-        for (const write of pageWrites) await write();
+        for (const write of [...pageWrites, ...dateWrites]) await write();
         await bumpContentVersion(db);
     }
 }).catch(err => {

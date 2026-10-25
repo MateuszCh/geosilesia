@@ -72,7 +72,6 @@ const FULL_WIDTH: RowType[] = [
     'news',
     'knowledge_base',
     'photos',
-    'contact',
     'map_search',
     'facts',
     'category_grid',

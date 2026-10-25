@@ -57,7 +57,10 @@
             @if (current(); as section) {
                 <div class="kb__section">
                     <div class="kb__section-head">
-                        <h3 class="kb__section-title">{{ section.name }}</h3>
+                        <!-- A section page is already titled with the section's name. -->
+                        @if (showNav()) {
+                            <h3 class="kb__section-title">{{ section.name }}</h3>
+                        }
                         <span class="kb__section-meta">{{ section.meta }}</span>
                     </div>
                     @if (section.items.length) {
