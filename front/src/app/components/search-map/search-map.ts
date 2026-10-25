@@ -87,6 +87,16 @@ export class SearchMap implements OnInit {
     readonly top50Only = signal(false);
     /** Phones: the full-screen filters are open. */
     readonly filtersOpen = signal(false);
+    /**
+     * Desktop and tablets: the full category list is open. Folded, the panel shows only the
+     * picked categories, so the place list below gets the height.
+     */
+    readonly categoriesOpen = signal(false);
+    /** "wszystkie" or "2 z 10" – the state of the folded category list. */
+    readonly categoriesState = computed(() => {
+        const picked = this.selectedCategories().length;
+        return picked ? `${picked} z ${this.categories().length}` : 'wszystkie';
+    });
     /** Phones: the bottom sheet shows the selected place ("card") or the result list. */
     readonly sheet = signal<'card' | 'list'>('card');
     /** The phone layout is on – the map then shows no InfoWindow, the sheet takes its place. */

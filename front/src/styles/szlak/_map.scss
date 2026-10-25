@@ -170,8 +170,12 @@
         order: 3;
     }
 
-    &__chips {
+    .map-categories-toggle {
         order: 4;
+    }
+
+    &__chips {
+        order: 5;
     }
 
     &__title {
@@ -489,6 +493,57 @@
     }
 }
 
+// ---- Folding category list (desktop and tablets) ----
+
+.map-categories-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 40px;
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+
+    &:hover {
+        border-color: var(--ink);
+    }
+
+    &__state {
+        margin-left: auto;
+        color: var(--muted);
+        font-weight: 500;
+    }
+
+    &__chevron {
+        flex-shrink: 0;
+        transition: transform 0.2s;
+    }
+
+    &[aria-expanded='true'] &__chevron {
+        transform: rotate(180deg);
+    }
+}
+
+// Folded, the list keeps only the picked categories (each can still be unpicked here); with
+// none picked it takes no room at all.
+@include above($bp-phone) {
+    .map-panel__chips--folded {
+        .category-chip:not([aria-pressed='true']) {
+            display: none;
+        }
+
+        &:not(:has(.category-chip[aria-pressed='true'])) {
+            display: none;
+        }
+    }
+}
+
 // ---- Wrappers that only the phone layout uses ----
 
 .map-bar,
@@ -634,6 +689,11 @@
     // (same specificity as `.map-panel .segmented`, and later in the file).
     .map-panel .map-filters__body > * {
         order: 0;
+    }
+
+    // The full-screen filters always list every category.
+    .map-categories-toggle {
+        display: none;
     }
 
     .map-filters {

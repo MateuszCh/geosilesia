@@ -148,7 +148,29 @@
                                 (click)="setSearchMode('name')">Nazwa obiektu</button>
                     </div>
                     <span class="map-filters__label">Kategorie</span>
-                    <div class="map-panel__chips"
+                    <button class="map-categories-toggle"
+                            type="button"
+                            aria-controls="map-categories"
+                            [attr.aria-expanded]="categoriesOpen()"
+                            (click)="categoriesOpen.set(!categoriesOpen())">
+                        Kategorie
+                        <span class="map-categories-toggle__state">{{ categoriesState() }}</span>
+                        <svg class="map-categories-toggle__chevron"
+                             width="14"
+                             height="14"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path d="M6 9l6 6 6-6"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="2.4"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                    <div id="map-categories"
+                         class="map-panel__chips"
+                         [class.map-panel__chips--folded]="!categoriesOpen()"
                          role="group"
                          aria-label="Kategorie">
                         @for (cat of categories(); track cat.id) {
