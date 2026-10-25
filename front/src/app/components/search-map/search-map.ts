@@ -13,7 +13,7 @@ import {
     signal,
     untracked
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, ParamMap, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MapData } from '../../models/row.model';
@@ -252,7 +252,7 @@ export class SearchMap implements OnInit {
     private resultsQty = DEFAULT_RESULTS;
     private dataLoaded = false;
     /** A location passed in the address, searched as soon as the map can geocode it. */
-    private pendingLocation: string | undefined;
+    private readonly pendingLocation = signal<string | undefined>(undefined);
 
     constructor() {
         afterNextRender(() => {
@@ -265,10 +265,10 @@ export class SearchMap implements OnInit {
         });
 
         effect(() => {
-            if (!this.mapsReady() || !this.markersCount() || !this.pendingLocation) return;
-            const location = this.pendingLocation;
-            this.pendingLocation = undefined;
+            const location = this.pendingLocation();
+            if (!this.mapsReady() || !this.markersCount() || !location) return;
             untracked(() => {
+                this.pendingLocation.set(undefined);
                 if (location === 'moja') {
                     this.useMyLocation();
                 } else {
@@ -289,21 +289,10 @@ export class SearchMap implements OnInit {
             clearTimeout(this.nameTimer);
         });
 
-        const params = this.route.snapshot.queryParamMap;
-        const category = params.get('kategoria');
-        if (category) this.selectedCategories.set([category]);
-        if (params.get('top50')) this.top50Only.set(true);
-        const location = params.get('lokalizacja')?.trim();
-        if (location) {
-            this.pendingLocation = location;
-            if (location !== 'moja') this.locationInput.set(location);
-        }
-        const name = params.get('nazwa');
-        if (name) {
-            this.searchMode.set('name');
-            this.nameInput.set(name);
-            this.nameFilter.set(name);
-        }
+        // Not only the snapshot: the menu's search can open this same page with a new query.
+        this.route.queryParamMap
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(params => this.applyParams(params));
 
         if (this.resource.isOfflineAvailable()) {
             void Promise.all([
@@ -329,6 +318,26 @@ export class SearchMap implements OnInit {
                 void this.mapService.loadGoogleMaps();
                 this.onLoad(markers, icons);
             });
+    }
+
+    private applyParams(params: ParamMap): void {
+        const category = params.get('kategoria');
+        if (category) this.selectedCategories.set([category]);
+        if (params.get('top50')) this.top50Only.set(true);
+        const location = params.get('lokalizacja')?.trim();
+        if (location) {
+            this.searchMode.set('location');
+            this.pendingLocation.set(location);
+            if (location !== 'moja') this.locationInput.set(location);
+        }
+        const name = params.get('nazwa')?.trim();
+        if (name) {
+            this.searchMode.set('name');
+            this.nameInput.set(name);
+            this.nameFilter.set(name);
+            this.currentResult.set(undefined);
+            this.sheet.set('list');
+        }
     }
 
     private onLoad(markers: MarkerPost[], icons: IconPost[]): void {

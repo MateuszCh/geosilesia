@@ -85,6 +85,36 @@
                 </svg>
             </button>
         </div>
+        <!-- The site has no full-text search: the field looks for places on the map by name. -->
+        <form class="mobile-menu__search"
+              role="search"
+              aria-label="Szukaj miejsca na mapie"
+              (submit)="searchMap($event, query.value)">
+            <label class="mobile-menu__field">
+                <svg width="18"
+                     height="18"
+                     viewBox="0 0 24 24"
+                     aria-hidden="true">
+                    <circle cx="10.5"
+                            cy="10.5"
+                            r="6.5"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2" />
+                    <path d="M15.5 15.5L21 21"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round" />
+                </svg>
+                <span class="visually-hidden">Szukaj miejsca na mapie po nazwie</span>
+                <input #query
+                       class="mobile-menu__input"
+                       type="search"
+                       placeholder="Szukaj miejsca na mapie"
+                       enterkeyhint="search"
+                       autocomplete="off">
+            </label>
+        </form>
         <nav class="mobile-menu__nav"
              aria-label="Główna nawigacja">
             <ul class="mobile-menu__list">

@@ -94,6 +94,15 @@ export class Header implements OnInit {
         this.doc.body.classList.remove('menu-open');
     }
 
+    /** Opens the map filtered by the typed name (the map reads `?nazwa=`). */
+    searchMap(event: Event, query: string): void {
+        event.preventDefault();
+        const name = query.trim();
+        if (!name) return;
+        this.closeMenu();
+        void this.router.navigate([this.navigation.cta().link], { queryParams: { nazwa: name } });
+    }
+
     toggleSection(index: number): void {
         this.openSection.update(open => (open === index ? -1 : index));
     }
