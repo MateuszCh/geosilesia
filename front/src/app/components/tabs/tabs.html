@@ -113,7 +113,7 @@
                                                   [class.bar-chart__bar--highlight]="bar.highlight"
                                                   [style.width.%]="barWidth(row.chart, bar.value)"></span>
                                         </span>
-                                        <span class="bar-chart__value">{{ bar.value }}{{ row.chart_unit ? ' ' + row.chart_unit : '' }}</span>
+                                        <span class="bar-chart__value">{{ barValue(bar.value) }}{{ row.chart_unit ? ' ' + row.chart_unit : '' }}</span>
                                     </div>
                                 }
                                 @if (row.chart_source) {

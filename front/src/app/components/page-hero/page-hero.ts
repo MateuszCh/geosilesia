@@ -5,6 +5,7 @@ import { Crumb } from '../../core/navigation.service';
 import { Byline } from '../../core/page-layout';
 import { PageHeroData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
+import { photoCredit } from '../../shared/photo-credit';
 
 /**
  * Header of a content page: a photo band with the title on a forest panel, or – without a
@@ -26,8 +27,7 @@ export class PageHero {
     readonly caption = computed(() => {
         const { image_caption: caption, image_author: author } = this.hero();
         const text = caption ? (/^na zdjęciu/i.test(caption) ? caption : `Na zdjęciu: ${caption}`) : '';
-        const credit = author ? (/^(fot|il)\./i.test(author) ? author : `Fot. ${author}`) : '';
-        return [text, credit].filter(Boolean).join(' · ');
+        return [text, photoCredit(author)].filter(Boolean).join(' · ');
     });
 
     /** "Ryszard Chybiorz · 03.06.2026 · ostatnia aktualizacja 05.10.2026" */

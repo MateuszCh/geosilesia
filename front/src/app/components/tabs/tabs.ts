@@ -101,4 +101,12 @@ export class Tabs {
         const max = Math.max(...values, 0);
         return max ? Math.round(((Number(value) || 0) / max) * 100) : 0;
     }
+
+    /** The bar's figure in Polish notation ("55,3", "12 334"); text is shown as typed. */
+    barValue(value: number | string | undefined): string {
+        const number = typeof value === 'number' ? value : Number(value);
+        return value !== '' && value !== undefined && Number.isFinite(number)
+            ? number.toLocaleString('pl-PL')
+            : String(value ?? '');
+    }
 }

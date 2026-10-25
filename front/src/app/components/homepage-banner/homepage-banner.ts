@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { HomepageBannerData, Slide } from '../../models/row.model';
 import { SwipeDirective } from '../../shared/swipe.directive';
+import { photoCredit } from '../../shared/photo-credit';
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -48,8 +49,7 @@ export class HomepageBanner {
 
     readonly meta = computed(() => {
         const slide = this.slides()[this.current()];
-        const author = slide?.author ? (/^(fot|il)\./i.test(slide.author) ? slide.author : `Fot. ${slide.author}`) : '';
-        return [slide?.place, slide?.text_english, author].filter(Boolean).join(' · ');
+        return [slide?.place, slide?.text_english, photoCredit(slide?.author)].filter(Boolean).join(' · ');
     });
 
     private timer: ReturnType<typeof setInterval> | undefined;

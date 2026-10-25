@@ -50,7 +50,7 @@
                                      [src]="item.image"
                                      [alt]="item.title ?? ''">
                                 @if (item.image_author) {
-                                    <figcaption>{{ item.image_author }}</figcaption>
+                                    <figcaption>{{ photoCredit(item.image_author) }}</figcaption>
                                 }
                             </figure>
                         }

@@ -7,6 +7,7 @@ import { internalLink } from '../../core/cms-link';
 import { GalleryImage, PhotosData, Slide } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
+import { photoCredit } from '../../shared/photo-credit';
 import { PhotoViewer, ViewerPhoto } from '../photo-viewer/photo-viewer';
 
 interface PhotoView {
@@ -19,13 +20,8 @@ interface PhotoView {
     description?: string;
 }
 
-function credit(author: string | undefined): string | undefined {
-    if (!author) return undefined;
-    return /^(fot|il)\./i.test(author.trim()) ? author.trim() : `Fot. ${author.trim()}`;
-}
-
 function fromSlide(slide: Slide): PhotoView {
-    const author = credit(slide.author);
+    const author = photoCredit(slide.author) || undefined;
     return {
         src: slide.image!,
         title: slide.text ?? '',
