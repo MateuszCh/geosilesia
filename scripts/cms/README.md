@@ -25,7 +25,7 @@ be replayed on production later in the same order.
 | `10-content-drafts.js` | Drafts: Skarby natury as a numbered list, Geoparki timeline and figures, figures and charts on Położenie and Rzeźba terenu (`--only=` picks pages) |
 | `11-header-photos.js` | Banner photos as header photos of five content pages |
 | `12-category-icons.js` | The design system's category line icons into `uploads/` and the file library; each map category's `icon` field points at its SVG; `line_icon` dropped |
-| `13-knowledge-base-sections.js` | Section pages get the knowledge base's header; links to the retired `baza-wiedzy` page point at its redirect target (`shared/redirects.js`) |
+| `13-knowledge-base-sections.js` | Section pages get the knowledge base's header; links to the retired `baza-wiedzy` page point at its redirect target (`shared/redirects.js`); the page is removed |
 | `check-fallbacks.js` | Read-only: pages and posts that still need a front-end fallback (run after the scripts) |
 | `restore.js` | Restores collections from a backup |
 
