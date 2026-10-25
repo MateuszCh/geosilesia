@@ -183,6 +183,12 @@
         padding: 14px 16px;
         border: 1px solid var(--line);
         border-radius: var(--radius-lg);
+
+        // A map category: its colour as the band on top, as on the home page category cards.
+        &--band {
+            padding-top: 19px;
+            box-shadow: inset 0 5px 0 var(--band);
+        }
     }
 
     &__icon {
@@ -190,6 +196,14 @@
         width: 36px;
         height: 36px;
         object-fit: contain;
+    }
+
+    // The line icon of a map category (an <svg> or an uploaded SVG).
+    &__item--band &__icon {
+        width: 30px;
+        height: 30px;
+        margin: 0 3px;
+        color: var(--ink);
     }
 
     &__text {
