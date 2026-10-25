@@ -183,8 +183,8 @@ export interface GalleryData {
     author?: string;
     updated?: string | number;
     hidden?: boolean;
-    /** Not a CMS field: the publication date parsed from the old byline paragraph. */
-    published?: string;
+    /** Not in the CMS spec, added with the migration: the date the album was published. */
+    published?: string | number;
 }
 
 // ---- Components added in variant C ----

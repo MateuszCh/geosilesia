@@ -12,7 +12,9 @@
 
 const fs = require("fs");
 const path = require("path");
-const { MongoClient, ObjectId } = require("mongodb");
+const { MongoClient, ObjectId, BSON } = require("mongodb");
+
+const { EJSON } = BSON;
 
 const ROOT = path.resolve(__dirname, "../..");
 const BACKUP_DIR = path.join(ROOT, "tmp", "cms-backups");
@@ -45,21 +47,22 @@ function formatId(str) {
 }
 
 /**
- * Builds a field definition the way frodo stores it (a mongoose subdocument with its own
- * `_id`, `repeaterFields` always present). `spec` is `[id, title, type, extra]`, where
- * `extra` is a `selectOptions` string or an array of nested field specs for a repeater.
+ * Builds a field definition the way frodo stores it: top-level fields are mongoose
+ * subdocuments with their own `_id`, nested repeater fields are plain objects, and
+ * `repeaterFields` is always present. `spec` is `[id, title, type, extra]`, where `extra`
+ * is a `selectOptions` string or an array of nested field specs for a repeater.
  */
-function field([id, title, type, extra]) {
+function field([id, title, type, extra], nested = false) {
     const result = {
-        _id: new ObjectId(),
         title,
         type,
         id: formatId(id),
         repeaterFields: []
     };
+    if (!nested) result._id = new ObjectId();
     if (type === "select" && typeof extra === "string") result.selectOptions = extra;
     if (type === "multiselect" && typeof extra === "string") result.multiselectOptions = extra;
-    if (type === "repeater") result.repeaterFields = (extra || []).map(field);
+    if (type === "repeater") result.repeaterFields = (extra || []).map(spec => field(spec, true));
     return result;
 }
 
@@ -120,16 +123,112 @@ async function bumpContentVersion(db) {
     await db.collection("meta").updateOne({ _id: "content" }, { $inc: { version: 1 } }, { upsert: true });
 }
 
-/** Dumps whole collections to tmp/cms-backups/<timestamp>-<label>/<collection>.json. */
+/**
+ * Dumps whole collections to tmp/cms-backups/<timestamp>-<label>/<collection>.json as
+ * canonical Extended JSON, so ObjectIds and numbers survive a restore (restore.js).
+ */
 async function backup(db, label, collectionNames) {
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     const dir = path.join(BACKUP_DIR, `${stamp}-${label}`);
     fs.mkdirSync(dir, { recursive: true });
     for (const name of collectionNames) {
         const docs = await db.collection(name).find({}).toArray();
-        fs.writeFileSync(path.join(dir, `${name}.json`), JSON.stringify(docs, null, 2));
+        fs.writeFileSync(path.join(dir, `${name}.json`), EJSON.stringify(docs, null, 1, { relaxed: false }));
     }
     return path.relative(ROOT, dir);
+}
+
+/** Row of a page as frodo saves it: the component's title travels with the row. */
+function row(type, data, componentTitles) {
+    return { data, title: componentTitles[type] || type, type };
+}
+
+/** Titles of all component definitions by type – for rows created by a script. */
+async function componentTitles(db) {
+    const components = await db.collection("components").find({}, { projection: { type: 1, title: 1 } }).toArray();
+    return Object.fromEntries(components.map(c => [c.type, c.title]));
+}
+
+/**
+ * Inserts posts of one type the way frodo's import does: consecutive ids from the counter,
+ * `created`/`updated`, and the new _ids pushed into the post type's `posts`.
+ */
+async function insertPosts(db, type, posts) {
+    if (!posts.length) return [];
+    const postType = await db.collection("post_types").findOne({ type });
+    if (!postType) throw new Error(`post type "${type}" does not exist – run 01-definitions.js first`);
+    const ids = await reserveIds(db, posts.length, true);
+    const now = Date.now();
+    const docs = posts.map((post, i) => ({
+        _id: new ObjectId(),
+        title: post.title,
+        data: post.data,
+        type,
+        id: ids[i],
+        created: post.created || now,
+        updated: now,
+        __v: 0
+    }));
+    await db.collection("posts").insertMany(docs);
+    await db.collection("post_types").updateOne({ _id: postType._id }, { $push: { posts: { $each: docs.map(d => d._id) } }, $set: { updated: now } });
+    return docs;
+}
+
+/** Inserts a page the way frodo's page controller does (id from the counter, ms timestamps). */
+async function insertPage(db, page) {
+    const [id] = await reserveIds(db, 1, true);
+    const now = Date.now();
+    const doc = { _id: new ObjectId(), rows: page.rows, title: page.title, pageUrl: page.pageUrl, seoTitle: page.seoTitle || "", seoDescription: page.seoDescription || "", created: now, id, updated: now, __v: 0 };
+    await db.collection("pages").insertOne(doc);
+    return doc;
+}
+
+/** Replaces the rows of an existing page and bumps its `updated`, as a save in the panel does. */
+async function updatePageRows(db, pageId, rows) {
+    await db.collection("pages").updateOne({ _id: pageId }, { $set: { rows, updated: Date.now() } });
+}
+
+/**
+ * A "dd.mm.rrrr" date as frodo's date fields store it: the ISO instant of midnight in
+ * Poland ("14.10.2026" → "2026-10-13T22:00:00.000Z").
+ */
+function toCmsDate(text) {
+    const match = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(String(text || "").trim());
+    if (!match) return "";
+    const [, day, month, year] = match.map(Number);
+    for (const offsetHours of [1, 2]) {
+        const instant = new Date(Date.UTC(year, month - 1, day, -offsetHours));
+        const local = new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Europe/Warsaw",
+            hour: "2-digit",
+            day: "2-digit",
+            hourCycle: "h23"
+        }).formatToParts(instant);
+        const hour = Number(local.find(part => part.type === "hour").value);
+        const localDay = Number(local.find(part => part.type === "day").value);
+        if (hour === 0 && localDay === day) return instant.toISOString();
+    }
+    return "";
+}
+
+/**
+ * The trailing byline paragraph of older pages:
+ * "<i>Ryszard Chybiorz / 03.06.2026 / Ostatnia aktualizacja 05.10.2026.<i>" – the publication
+ * date is missing on some pages. Same pattern as the front end's fallback (page-layout.ts).
+ */
+const BYLINE_PATTERN =
+    /^\s*([^/:()]{2,60}?)\s*\/\s*(?:(\d{1,2}\.\d{1,2}\.\d{4})\s*\/\s*)?Ostatnia aktualizacja:?\s*(\d{1,2}\.\d{1,2}\.\d{4})\.?\s*$/i;
+
+function parseByline(html) {
+    if (!html) return undefined;
+    const text = String(html).replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+    const match = BYLINE_PATTERN.exec(text);
+    return match ? { author: match[1].trim(), published: match[2] || "", updated: match[3] } : undefined;
+}
+
+/** Compact one-line description of a page's rows: "page_hero → tabs → literature". */
+function describeRows(rows) {
+    return (rows || []).map(r => (r && r.type) || "(no type)").join(" → ");
 }
 
 /**
@@ -186,6 +285,15 @@ function printReport(title, lines, apply) {
 module.exports = {
     ROOT,
     ObjectId,
+    EJSON,
+    row,
+    componentTitles,
+    insertPosts,
+    insertPage,
+    updatePageRows,
+    describeRows,
+    toCmsDate,
+    parseByline,
     withDb,
     formatId,
     field,

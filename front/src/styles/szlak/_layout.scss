@@ -268,7 +268,8 @@
     > .row:not([data-row='homepage_banner']):not([data-row='map']) {
         width: 100%;
         max-width: $bp-container;
-        margin: 0 auto;
+        margin-right: auto;
+        margin-left: auto;
         padding: 0 var(--gutter);
     }
 

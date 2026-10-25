@@ -119,7 +119,7 @@ export class Gallery implements OnInit {
         const data = this.component();
         const count = this.images().length;
         const updated = formatDate(data.updated);
-        const dates = [data.published, updated ? `ostatnia aktualizacja ${updated}` : '']
+        const dates = [formatDate(data.published), updated ? `ostatnia aktualizacja ${updated}` : '']
             .filter(Boolean)
             .join(', ');
         return [count ? `${count} ${plural(count, 'zdjęcie', 'zdjęcia', 'zdjęć')} i rycin` : '', data.author, dates]
