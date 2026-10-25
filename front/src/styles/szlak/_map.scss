@@ -151,6 +151,29 @@
         gap: 12px;
     }
 
+    // Desktop and tablets: heading, mode switch, field, hint, categories – the wrappers
+    // below only group them for the phone layout.
+    &__heading {
+        order: 0;
+    }
+
+    .segmented {
+        order: 1;
+    }
+
+    .search-field {
+        order: 2;
+    }
+
+    &__hint,
+    &__message {
+        order: 3;
+    }
+
+    &__chips {
+        order: 4;
+    }
+
     &__title {
         font-family: var(--font-display);
         font-size: 36px;
@@ -176,40 +199,10 @@
         font-weight: 600;
     }
 
-    &__filters-toggle {
-        display: none;
-        justify-content: space-between;
-
-        @include below($bp-tablet) {
-            display: inline-flex;
-        }
-    }
-
-    &__badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 22px;
-        height: 22px;
-        padding: 0 6px;
-        border-radius: 11px;
-        background: var(--trail-red);
-        color: #fff;
-        font-size: 13px;
-    }
-
     &__chips {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
-
-        @include below($bp-tablet) {
-            display: none;
-
-            &--open {
-                display: flex;
-            }
-        }
     }
 
     &__summary {
@@ -492,6 +485,416 @@
             min-height: 42px;
             padding: 10px;
             font-size: 15px;
+        }
+    }
+}
+
+// ---- Wrappers that only the phone layout uses ----
+
+.map-bar,
+.map-filters,
+.map-filters__body,
+.map-sheet {
+    display: contents;
+}
+
+.map-bar__back,
+.map-bar__filters,
+.map-filters__head,
+.map-filters__label,
+.map-filters__actions,
+.map-sheet__handle,
+.map-sheet__card,
+.map-sheet__to-map,
+.category-chip__full {
+    display: none;
+}
+
+// ---- Phones: full-screen map, floating search bar, bottom sheet, full-screen filters ----
+
+@include below($bp-phone) {
+    .map-app {
+        position: relative;
+        display: block;
+        height: calc(100dvh - 61px);
+        min-height: 520px;
+        overflow: hidden;
+        border-bottom: 0;
+    }
+
+    .map-area {
+        position: absolute;
+        inset: 0;
+        height: auto;
+        min-height: 0;
+
+        &__controls {
+            top: 82px;
+            right: 12px;
+        }
+    }
+
+    .map-panel,
+    .map-panel__search {
+        display: contents;
+    }
+
+    .map-panel__heading {
+        position: absolute !important;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+    }
+
+    .map-panel__hint {
+        display: none;
+    }
+
+    .map-panel__message {
+        position: absolute;
+        top: 74px;
+        left: 12px;
+        right: 12px;
+        z-index: 4;
+        padding: 10px 14px;
+        border-radius: var(--radius-md);
+        background: var(--notice);
+        box-shadow: var(--shadow-control);
+    }
+
+    .map-bar {
+        position: absolute;
+        top: 14px;
+        left: 12px;
+        right: 12px;
+        z-index: 3;
+        display: flex;
+        align-items: stretch;
+        overflow: hidden;
+        border-radius: var(--radius-lg);
+        background: #fff;
+        box-shadow: 0 6px 20px #18201b26;
+
+        &__back {
+            display: inline-flex;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            border-right: 1px solid var(--line);
+            color: var(--ink);
+        }
+
+        &__filters {
+            order: 1;
+            display: inline-flex;
+            flex-shrink: 0;
+            align-items: center;
+            gap: 6px;
+            padding: 0 14px;
+            border: 0;
+            background: var(--ink);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        &__badge {
+            padding: 0 6px;
+            border-radius: var(--radius-sm);
+            background: var(--trail-red);
+            font-size: 14px;
+        }
+
+        .search-field {
+            // The desktop order (field after the mode switch) does not apply in the bar.
+            order: 0;
+            flex: 1;
+            min-width: 0;
+            height: 52px;
+            padding: 0 6px 0 12px;
+            border: 0;
+            border-radius: 0;
+
+            &:focus-within {
+                padding-left: 12px;
+                border: 0;
+                box-shadow: inset 0 0 0 2px var(--ink);
+            }
+
+            &__icon,
+            &__submit {
+                display: none;
+            }
+        }
+    }
+
+    // Back to document order: the desktop panel orders these pieces differently
+    // (same specificity as `.map-panel .segmented`, and later in the file).
+    .map-panel .map-filters__body > * {
+        order: 0;
+    }
+
+    .map-filters {
+        display: none;
+
+        &--open {
+            position: fixed;
+            inset: 0;
+            z-index: 170;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+
+        &__head {
+            display: flex;
+            flex-shrink: 0;
+            align-items: center;
+            height: 60px;
+            padding: 0 8px 0 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        &__title {
+            flex: 1;
+            font-family: var(--font-display);
+            font-size: 30px;
+            font-weight: 800;
+        }
+
+        &__close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border: 0;
+            border-radius: var(--radius-md);
+            background: var(--surface-alt);
+            color: var(--ink);
+        }
+
+        &__body {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            gap: 8px;
+            padding: 14px 16px 6px;
+            overflow-y: auto;
+        }
+
+        &__label {
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+
+            & + .map-panel__chips {
+                margin-top: 0;
+            }
+        }
+
+        .segmented + .map-filters__label {
+            margin-top: 8px;
+        }
+
+        &__actions {
+            display: grid;
+            flex-shrink: 0;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 8px;
+            padding: 12px 16px 20px;
+            border-top: 1px solid var(--line);
+        }
+
+        // Categories as a list of rows with a tick box, as in the mockup.
+        .map-panel__chips {
+            flex-direction: column;
+            flex-wrap: nowrap;
+            gap: 0;
+        }
+
+        .category-chip {
+            display: grid;
+            grid-template-columns: 18px minmax(0, 1fr) auto 22px;
+            align-items: center;
+            gap: 12px;
+            min-height: 52px;
+            padding: 0;
+            border: 0;
+            border-bottom: 1px solid var(--line-soft);
+            border-radius: 0;
+            background: transparent;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: left;
+
+            &[aria-pressed='true'] {
+                background: transparent;
+                font-weight: 700;
+            }
+
+            &::after {
+                content: '';
+                width: 22px;
+                height: 22px;
+                border: 1.5px solid var(--muted);
+                border-radius: 4px;
+            }
+
+            &[aria-pressed='true']::after {
+                border-color: var(--forest);
+                background:
+                    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+                        center / 16px no-repeat,
+                    var(--forest);
+            }
+
+            .trail-mark {
+                width: 14px;
+                height: 19px;
+                border-width: 1.5px;
+            }
+
+            &__short {
+                display: none;
+            }
+
+            &__full {
+                display: inline;
+            }
+
+            &__count {
+                font-size: 14px;
+            }
+        }
+    }
+
+    .map-sheet {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 62%;
+        padding: 8px 16px 18px;
+        border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+        background: #fff;
+        box-shadow: 0 -8px 28px #18201b26;
+
+        &__handle {
+            display: block;
+            align-self: center;
+            width: 40px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--line);
+        }
+
+        &__card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        &__image {
+            display: block;
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: var(--radius-lg);
+        }
+
+        &__tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        &__title {
+            font-family: var(--font-display);
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1.02;
+        }
+
+        &__meta {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        &__actions {
+            display: grid;
+            grid-auto-columns: minmax(0, 1fr);
+            grid-auto-flow: column;
+            gap: 8px;
+        }
+
+        &__prompt {
+            color: var(--muted);
+            font-size: 15px;
+            text-align: center;
+        }
+
+        &__toggle,
+        &__to-map {
+            padding: 8px 0;
+            border: 0;
+            background: transparent;
+            color: var(--forest);
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        // The list is hidden while the sheet shows a place …
+        .map-panel__summary,
+        .map-panel__results {
+            display: none;
+        }
+
+        // … and takes over when the sheet is pulled up.
+        &--list {
+            top: 82px;
+            max-height: none;
+            gap: 0;
+
+            .map-sheet__card {
+                display: none;
+            }
+
+            .map-sheet__to-map {
+                display: inline;
+            }
+
+            .map-panel__summary {
+                display: flex;
+                padding: 0 0 8px;
+                background: transparent;
+            }
+
+            .map-panel__summary-text {
+                flex: 1;
+                font-family: var(--font-display);
+                font-size: 24px;
+                font-weight: 800;
+            }
+
+            .map-panel__results {
+                display: block;
+                flex: 1;
+                min-height: 0;
+                max-height: none;
+                margin: 0 -16px;
+                overflow-y: auto;
+            }
         }
     }
 }

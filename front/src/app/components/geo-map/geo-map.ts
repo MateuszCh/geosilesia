@@ -38,6 +38,8 @@ export class GeoMap {
     readonly markerCluster = input(false);
     /** Id of the marker the map should centre on; undefined = no selection. */
     readonly currentResult = input<string | number | undefined>();
+    /** Phones show the selected place in a bottom sheet instead of the InfoWindow. */
+    readonly infoWindow = input(true);
     /** A pin was clicked. */
     readonly selected = output<string | number>();
 
@@ -46,7 +48,7 @@ export class GeoMap {
 
     private map: google.maps.Map | undefined;
     private clusterer: MarkerClusterer | undefined;
-    private infoWindow: google.maps.InfoWindow | undefined;
+    private bubble: google.maps.InfoWindow | undefined;
     private markers: google.maps.Marker[] = [];
     private highlighted: google.maps.Marker | undefined;
 
@@ -94,8 +96,8 @@ export class GeoMap {
             },
             MAP_STYLE
         );
-        this.infoWindow = new google.maps.InfoWindow({ maxWidth: 320 });
-        this.infoWindow.addListener('closeclick', () => this.unhighlight());
+        this.bubble = new google.maps.InfoWindow({ maxWidth: 320 });
+        this.bubble.addListener('closeclick', () => this.unhighlight());
         this.updateMap();
         this.focusMarker(this.currentResult());
     }
@@ -103,7 +105,7 @@ export class GeoMap {
     private updateMap(): void {
         if (!this.map) return;
 
-        this.infoWindow?.close();
+        this.bubble?.close();
         this.highlighted = undefined;
         if (this.markers.length) {
             this.mapService.deleteMarkers(this.markers);
@@ -158,7 +160,7 @@ export class GeoMap {
         if (!this.map || !this.markers.length) return;
         this.unhighlight();
         if (id === undefined) {
-            this.infoWindow?.close();
+            this.bubble?.close();
             return;
         }
         // Loose comparison: a marker id from Mongo is sometimes a number, and from the
@@ -180,7 +182,11 @@ export class GeoMap {
         const active = this.activeCategories();
         const key = model.categories?.find(category => active.includes(category)) ?? model.categories?.[0];
         const category = this.categories().find(item => item.category === key);
-        this.infoWindow?.setContent(this.mapService.objectCard(model, category));
-        this.infoWindow?.open({ map: this.map, anchor: marker });
+        if (!this.infoWindow()) {
+            this.bubble?.close();
+            return;
+        }
+        this.bubble?.setContent(this.mapService.objectCard(model, category));
+        this.bubble?.open({ map: this.map, anchor: marker });
     }
 }

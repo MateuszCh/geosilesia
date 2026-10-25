@@ -1,3 +1,6 @@
+<!-- One markup for both layouts. On desktop and tablets the panel stands beside or above
+     the map; on phones (_map.scss) the map fills the screen, the search field floats on top,
+     the filters open full screen and the results live in a bottom sheet. -->
 <div class="map-app"
      id="mapa">
     <aside class="map-panel"
@@ -15,65 +18,80 @@
                 }
             </div>
 
-            <div class="segmented"
-                 role="group"
-                 aria-label="Tryb wyszukiwania">
-                <button class="segmented__button"
-                        type="button"
-                        [attr.aria-pressed]="searchMode() === 'location'"
-                        (click)="setSearchMode('location')">Lokalizacja</button>
-                <button class="segmented__button"
-                        type="button"
-                        [attr.aria-pressed]="searchMode() === 'name'"
-                        (click)="setSearchMode('name')">Nazwa obiektu</button>
-            </div>
-
-            <div class="search-field"
-                 [class.search-field--filled]="!!currentInput()">
-                <svg class="search-field__icon"
-                     width="18"
-                     height="18"
-                     viewBox="0 0 24 24"
-                     aria-hidden="true">
-                    @if (searchMode() === 'name') {
-                        <circle cx="10.5"
-                                cy="10.5"
-                                r="6.5"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2" />
-                        <path d="M15.5 15.5L21 21"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round" />
-                    } @else {
-                        <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 8.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"
+            <div class="map-bar">
+                <a class="map-bar__back"
+                   routerLink="/"
+                   aria-label="Wróć do strony głównej">
+                    <svg width="18"
+                         height="18"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true">
+                        <path d="M15 5l-7 7 7 7"
                               fill="none"
                               stroke="currentColor"
-                              stroke-width="2" />
+                              stroke-width="2.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round" />
+                    </svg>
+                </a>
+                <div class="search-field"
+                     [class.search-field--filled]="!!currentInput()">
+                    <svg class="search-field__icon"
+                         width="18"
+                         height="18"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true">
+                        @if (searchMode() === 'name') {
+                            <circle cx="10.5"
+                                    cy="10.5"
+                                    r="6.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2" />
+                            <path d="M15.5 15.5L21 21"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  stroke-linecap="round" />
+                        } @else {
+                            <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 8.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="2" />
+                        }
+                    </svg>
+                    <label class="visually-hidden"
+                           for="map-query">{{ searchMode() === 'name' ? 'Nazwa obiektu' : 'Lokalizacja' }}</label>
+                    <input id="map-query"
+                           class="search-field__input"
+                           type="text"
+                           autocomplete="off"
+                           enterkeyhint="search"
+                           [placeholder]="searchMode() === 'name' ? 'Wpisz nazwę obiektu' : 'Skąd ruszasz? np. Zawiercie'"
+                           [value]="currentInput()"
+                           (input)="onSearchInput($event)">
+                    @if (currentInput()) {
+                        <button class="search-field__clear"
+                                type="button"
+                                [attr.aria-label]="searchMode() === 'name' ? 'wyczyść wpisaną nazwę' : 'wyczyść lokalizację'"
+                                (click)="searchMode() === 'name' ? clearName() : clearLocation()">×</button>
                     }
-                </svg>
-                <label class="visually-hidden"
-                       for="map-query">{{ searchMode() === 'name' ? 'Nazwa obiektu' : 'Lokalizacja' }}</label>
-                <input id="map-query"
-                       class="search-field__input"
-                       type="text"
-                       autocomplete="off"
-                       [placeholder]="searchMode() === 'name' ? 'Wpisz nazwę obiektu' : 'Skąd ruszasz? np. Zawiercie'"
-                       [value]="currentInput()"
-                       (input)="onSearchInput($event)">
-                @if (currentInput()) {
-                    <button class="search-field__clear"
-                            type="button"
-                            [attr.aria-label]="searchMode() === 'name' ? 'wyczyść wpisaną nazwę' : 'wyczyść lokalizację'"
-                            (click)="searchMode() === 'name' ? clearName() : clearLocation()">×</button>
-                }
-                @if (searchMode() === 'location') {
-                    <button class="search-field__submit btn btn--primary"
-                            type="submit"
-                            [class.busy]="searchBusy()"
-                            [disabled]="!mapsReady()">Szukaj</button>
-                }
+                    @if (searchMode() === 'location') {
+                        <button class="search-field__submit btn btn--primary"
+                                type="submit"
+                                [class.busy]="searchBusy()"
+                                [disabled]="!mapsReady()">Szukaj</button>
+                    }
+                </div>
+                <button class="map-bar__filters"
+                        type="button"
+                        aria-controls="map-filters"
+                        [attr.aria-expanded]="filtersOpen()"
+                        (click)="openFilters()">
+                    Filtry
+                    @if (filterCount()) {
+                        <span class="map-bar__badge">{{ filterCount() }}</span>
+                    }
+                </button>
             </div>
 
             @if (searchMessage()) {
@@ -91,122 +109,209 @@
                 </p>
             }
 
-            <button class="map-panel__filters-toggle btn btn--secondary"
-                    type="button"
-                    aria-controls="map-categories"
-                    [attr.aria-expanded]="categoriesOpen()"
-                    (click)="toggleCategoriesList()">
-                Kategorie
-                @if (selectedCategories().length) {
-                    <span class="map-panel__badge">{{ selectedCategories().length }}</span>
-                }
-                <span aria-hidden="true">{{ categoriesOpen() ? '▴' : '▾' }}</span>
-            </button>
-
-            <div id="map-categories"
-                 class="map-panel__chips"
-                 [class.map-panel__chips--open]="categoriesOpen()"
-                 role="group"
-                 aria-label="Kategorie">
-                @for (cat of categories(); track cat.id) {
-                    <button class="category-chip"
+            <div id="map-filters"
+                 class="map-filters"
+                 [class.map-filters--open]="filtersOpen()"
+                 [attr.role]="filtersOpen() ? 'dialog' : null"
+                 [attr.aria-modal]="filtersOpen() ? 'true' : null"
+                 [attr.aria-labelledby]="filtersOpen() ? 'map-filters-title' : null">
+                <div class="map-filters__head">
+                    <h2 id="map-filters-title"
+                        class="map-filters__title">Filtry</h2>
+                    <button class="map-filters__close"
                             type="button"
-                            [attr.aria-pressed]="selectedCategories().includes(cat.category)"
-                            (click)="toggleCategory(cat.category)">
-                        <span class="trail-mark trail-mark--xs"
-                              aria-hidden="true"
-                              [style.--mark]="cat.color"></span>
-                        {{ cat.shortName }}
-                        <span class="category-chip__count">{{ cat.count }}</span>
+                            aria-label="Zamknij filtry"
+                            (click)="closeFilters()">
+                        <svg width="14"
+                             height="14"
+                             viewBox="0 0 18 18"
+                             aria-hidden="true">
+                            <path d="M3 3l12 12M15 3L3 15"
+                                  stroke="currentColor"
+                                  stroke-width="2.4"
+                                  stroke-linecap="round" />
+                        </svg>
                     </button>
-                }
+                </div>
+                <div class="map-filters__body">
+                    <span class="map-filters__label">Szukaj według</span>
+                    <div class="segmented"
+                         role="group"
+                         aria-label="Tryb wyszukiwania">
+                        <button class="segmented__button"
+                                type="button"
+                                [attr.aria-pressed]="searchMode() === 'location'"
+                                (click)="setSearchMode('location')">Lokalizacja</button>
+                        <button class="segmented__button"
+                                type="button"
+                                [attr.aria-pressed]="searchMode() === 'name'"
+                                (click)="setSearchMode('name')">Nazwa obiektu</button>
+                    </div>
+                    <span class="map-filters__label">Kategorie</span>
+                    <div class="map-panel__chips"
+                         role="group"
+                         aria-label="Kategorie">
+                        @for (cat of categories(); track cat.id) {
+                            <button class="category-chip"
+                                    type="button"
+                                    [attr.aria-pressed]="selectedCategories().includes(cat.category)"
+                                    (click)="toggleCategory(cat.category)">
+                                <span class="trail-mark trail-mark--xs"
+                                      aria-hidden="true"
+                                      [style.--mark]="cat.color"></span>
+                                <span class="category-chip__name">
+                                    <span class="category-chip__short">{{ cat.shortName }}</span>
+                                    <span class="category-chip__full">{{ cat.name }}</span>
+                                </span>
+                                <span class="category-chip__count">{{ cat.count }}</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+                <div class="map-filters__actions">
+                    <button class="btn btn--secondary btn--large"
+                            type="button"
+                            (click)="clearFilters()">Wyczyść</button>
+                    <button class="btn btn--primary btn--large"
+                            type="button"
+                            (click)="closeFilters()">Pokaż {{ filteredMarkers().length }} {{ placesLabel(filteredMarkers().length) }}</button>
+                </div>
             </div>
         </form>
 
-        <div class="map-panel__summary">
-            <span>{{ summary() }}</span>
-            @if (hasFilters()) {
-                <button class="map-panel__clear"
-                        type="button"
-                        (click)="clearFilters()">Wyczyść filtry</button>
-            }
-        </div>
-
-        <div class="map-panel__results">
-            @if (markersCount() && !filteredMarkers().length) {
-                <div class="map-panel__empty notice-box"
-                     role="status">
-                    <div>
-                        <p><b>
-                            @if (nameQuery()) {
-                                Brak obiektów o nazwie zawierającej „{{ nameQuery() }}”.
-                            } @else {
-                                Brak obiektów w wybranych kategoriach.
-                            }
-                        </b></p>
-                        @if (nameQuery()) {
-                            <p>
-                                @if (selectedCategories().length) {
-                                    Szukano tylko w wybranych kategoriach ({{ selectedCategories().length }}).
-                                } @else {
-                                    Sprawdź pisownię lub wpisz krótszy fragment nazwy.
-                                }
-                            </p>
-                        }
-                        <div class="map-panel__empty-actions">
-                            @if (nameQuery()) {
-                                <button class="btn btn--secondary"
-                                        type="button"
-                                        (click)="clearName()">Wyczyść nazwę</button>
-                            }
-                            @if (selectedCategories().length) {
-                                <button class="btn btn--primary"
-                                        type="button"
-                                        (click)="clearCategories()">Szukaj we wszystkich kategoriach</button>
-                            }
-                        </div>
-                    </div>
-                </div>
-            }
-
-            <ol class="result-list">
-                @for (result of listedMarkers(); track result.id; let index = $index) {
-                    <li class="result-row"
-                        [class.result-row--selected]="currentResult() === result.id">
-                        <button class="result-row__main"
-                                type="button"
-                                [attr.aria-pressed]="currentResult() === result.id"
-                                (click)="setCurrentResult(result.id)">
-                            <span class="result-row__number"
-                                  [style.background]="currentResult() === result.id ? null : result.color">{{ index + 1 }}</span>
-                            <span class="result-row__text">
-                                <span class="result-row__title">{{ result.title }}</span>
-                                @if (result.rock || result.place) {
-                                    <span class="result-row__meta">{{ joinMeta(result.rock, result.place) }}</span>
-                                }
-                            </span>
-                        </button>
-                        <span class="result-row__side">
-                            @if (result.distance !== undefined) {
-                                <span class="result-row__distance">{{ formatKm(result.distance) }} km</span>
-                            }
-                            <a class="result-row__directions"
+        <section class="map-sheet"
+                 [class.map-sheet--list]="sheet() === 'list'"
+                 [attr.aria-label]="sheet() === 'list' ? 'Lista miejsc' : 'Wybrane miejsce'">
+            <span class="map-sheet__handle"
+                  aria-hidden="true"></span>
+            <div class="map-sheet__card">
+                @if (selected(); as place) {
+                    @if (place.image) {
+                        <img class="map-sheet__image"
+                             alt=""
+                             [src]="place.image">
+                    }
+                    @if (place.tag) {
+                        <span class="map-sheet__tag"
+                              [style.color]="place.tagColor">
+                            <span class="trail-mark trail-mark--xs"
+                                  aria-hidden="true"
+                                  [style.--mark]="place.color"></span>
+                            {{ place.tag }}
+                        </span>
+                    }
+                    <span class="map-sheet__title">{{ place.title }}</span>
+                    @if (place.meta) {
+                        <span class="map-sheet__meta">{{ place.meta }}</span>
+                    }
+                    <div class="map-sheet__actions">
+                        @if (place.hyperlink) {
+                            <a class="btn btn--primary"
                                target="_blank"
                                rel="noreferrer"
-                               [href]="directionsUrl(result)">Dojazd ↗</a>
-                        </span>
-                    </li>
+                               [href]="place.hyperlink">Szczegóły</a>
+                        }
+                        <a class="btn btn--secondary"
+                           target="_blank"
+                           rel="noreferrer"
+                           [href]="directionsUrl(place)">Dojazd ↗</a>
+                    </div>
+                } @else {
+                    <p class="map-sheet__prompt">Wybierz miejsce na mapie albo z listy.</p>
                 }
-            </ol>
+                <button class="map-sheet__toggle"
+                        type="button"
+                        (click)="sheet.set('list')">Lista: {{ summary() }} ↑</button>
+            </div>
 
-            @if (showMore()) {
-                <div class="map-panel__more">
-                    <button class="btn btn--outline"
+            <div class="map-panel__summary">
+                <span class="map-panel__summary-text">{{ summary() }}</span>
+                @if (hasFilters()) {
+                    <button class="map-panel__clear"
                             type="button"
-                            (click)="increaseSearchQty()">Pokaż kolejne</button>
-                </div>
-            }
-        </div>
+                            (click)="clearFilters()">Wyczyść filtry</button>
+                }
+                <button class="map-sheet__to-map"
+                        type="button"
+                        (click)="sheet.set('card')">Mapa ↓</button>
+            </div>
+
+            <div class="map-panel__results">
+                @if (markersCount() && !filteredMarkers().length) {
+                    <div class="map-panel__empty notice-box"
+                         role="status">
+                        <div>
+                            <p><b>
+                                @if (nameQuery()) {
+                                    Brak obiektów o nazwie zawierającej „{{ nameQuery() }}”.
+                                } @else {
+                                    Brak obiektów w wybranych kategoriach.
+                                }
+                            </b></p>
+                            @if (nameQuery()) {
+                                <p>
+                                    @if (selectedCategories().length) {
+                                        Szukano tylko w wybranych kategoriach ({{ selectedCategories().length }}).
+                                    } @else {
+                                        Sprawdź pisownię lub wpisz krótszy fragment nazwy.
+                                    }
+                                </p>
+                            }
+                            <div class="map-panel__empty-actions">
+                                @if (nameQuery()) {
+                                    <button class="btn btn--secondary"
+                                            type="button"
+                                            (click)="clearName()">Wyczyść nazwę</button>
+                                }
+                                @if (selectedCategories().length) {
+                                    <button class="btn btn--primary"
+                                            type="button"
+                                            (click)="clearCategories()">Szukaj we wszystkich kategoriach</button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <ol class="result-list">
+                    @for (result of listedMarkers(); track result.id; let index = $index) {
+                        <li class="result-row"
+                            [class.result-row--selected]="currentResult() === result.id">
+                            <button class="result-row__main"
+                                    type="button"
+                                    [attr.aria-pressed]="currentResult() === result.id"
+                                    (click)="pickResult(result.id)">
+                                <span class="result-row__number"
+                                      [style.background]="currentResult() === result.id ? null : result.color">{{ index + 1 }}</span>
+                                <span class="result-row__text">
+                                    <span class="result-row__title">{{ result.title }}</span>
+                                    @if (result.rock || result.place) {
+                                        <span class="result-row__meta">{{ joinMeta(result.rock, result.place) }}</span>
+                                    }
+                                </span>
+                            </button>
+                            <span class="result-row__side">
+                                @if (result.distance !== undefined) {
+                                    <span class="result-row__distance">{{ formatKm(result.distance) }} km</span>
+                                }
+                                <a class="result-row__directions"
+                                   target="_blank"
+                                   rel="noreferrer"
+                                   [href]="directionsUrl(result)">Dojazd ↗</a>
+                            </span>
+                        </li>
+                    }
+                </ol>
+
+                @if (showMore()) {
+                    <div class="map-panel__more">
+                        <button class="btn btn--outline"
+                                type="button"
+                                (click)="increaseSearchQty()">Pokaż kolejne</button>
+                    </div>
+                }
+            </div>
+        </section>
     </aside>
 
     <div class="map-area">
@@ -217,7 +322,8 @@
                          [activeCategories]="selectedCategories()"
                          [currentResult]="currentResult()"
                          [markerCluster]="!!component().marker_cluster"
-                         (selected)="currentResult.set($event)" />
+                         [infoWindow]="!phone()"
+                         (selected)="onPinSelected($event)" />
             <div class="map-area__controls">
                 <button class="map-control"
                         type="button"

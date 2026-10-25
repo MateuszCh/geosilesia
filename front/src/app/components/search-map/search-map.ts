@@ -5,6 +5,7 @@ import {
     DestroyRef,
     ElementRef,
     OnInit,
+    afterNextRender,
     computed,
     effect,
     inject,
@@ -12,7 +13,7 @@ import {
     signal,
     untracked
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MapData } from '../../models/row.model';
@@ -27,6 +28,8 @@ import { plural } from '../../shared/plural';
 
 /** Below this width the panel sits above the map and the page has to scroll to it. */
 const NARROW_BREAKPOINT = 900;
+/** Below this width the map fills the screen and the results move to a bottom sheet (_map.scss). */
+const PHONE_QUERY = '(max-width: 599.98px)';
 const DEFAULT_RESULTS = 20;
 const MESSAGE_MS = 5000;
 /** Name filtering waits for a short pause in typing, so the map does not redraw on every key. */
@@ -38,6 +41,16 @@ export type SearchMode = 'location' | 'name';
 /** A row of the result list: the marker with its category colour. */
 export interface ResultRow extends MapMarker {
     color: string;
+}
+
+/** The place shown in the phone's bottom sheet. */
+export interface SelectedPlace extends ResultRow {
+    /** "Obiekty geologiczne · TOP 50 nr 2" */
+    tag: string;
+    /** The tag's text colour – yellow is never text, so it falls back to ink. */
+    tagColor: string;
+    /** "górnojurajskie wapienie · Gmina Rędziny · 9,8 km" */
+    meta: string;
 }
 
 export function placesLabel(count: number): string {
@@ -55,7 +68,8 @@ export function placesLabel(count: number): string {
 @Component({
     selector: 'app-search-map',
     templateUrl: './search-map.html',
-    imports: [GeoMap],
+    imports: [GeoMap, RouterLink],
+    host: { '(document:keydown.escape)': 'closeFilters()' },
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SearchMap implements OnInit {
@@ -71,7 +85,12 @@ export class SearchMap implements OnInit {
     readonly selectedCategories = signal<string[]>([]);
     /** Only TOP 50 places (markers with a `top50` number). */
     readonly top50Only = signal(false);
-    readonly categoriesOpen = signal(false);
+    /** Phones: the full-screen filters are open. */
+    readonly filtersOpen = signal(false);
+    /** Phones: the bottom sheet shows the selected place ("card") or the result list. */
+    readonly sheet = signal<'card' | 'list'>('card');
+    /** The phone layout is on – the map then shows no InfoWindow, the sheet takes its place. */
+    readonly phone = signal(false);
     /** The searched point (a "home" pseudo-marker); while set, results are sorted by distance from it. */
     readonly searchLocation = signal<MapMarker | undefined>(undefined);
     readonly currentResult = signal<string | number | undefined>(undefined);
@@ -194,6 +213,34 @@ export class SearchMap implements OnInit {
         return this.searchLocation() ? `${base} · od najbliższych` : base;
     });
 
+    readonly filterCount = computed(
+        () => this.selectedCategories().length + (this.top50Only() ? 1 : 0)
+    );
+
+    readonly selected = computed<SelectedPlace | undefined>(() => {
+        const id = this.currentResult();
+        if (id === undefined) return undefined;
+        // Loose comparison: an id from Mongo is sometimes a number, and from the map a string.
+        const marker = this.filteredMarkers().find(item => item.id == id);
+        if (!marker) return undefined;
+        const active = this.selectedCategories();
+        const byKey = this.categoriesByKey();
+        const color = markerColor(marker, byKey, active);
+        const key = marker.categories?.find(category => active.includes(category)) ?? marker.categories?.[0];
+        const category = key ? byKey.get(key) : undefined;
+        return {
+            ...marker,
+            color,
+            tag: [category?.name, marker.top50 ? `TOP 50 nr ${marker.top50}` : ''].filter(Boolean).join(' · '),
+            tagColor: color === '#f2c200' ? 'var(--ink)' : color,
+            meta: this.joinMeta(
+                marker.rock,
+                marker.place,
+                marker.distance !== undefined ? `${formatKm(marker.distance)} km` : undefined
+            )
+        };
+    });
+
     readonly hasFilters = computed(
         () =>
             this.selectedCategories().length > 0 ||
@@ -208,6 +255,15 @@ export class SearchMap implements OnInit {
     private pendingLocation: string | undefined;
 
     constructor() {
+        afterNextRender(() => {
+            const media = this.doc.defaultView?.matchMedia(PHONE_QUERY);
+            if (!media) return;
+            this.phone.set(media.matches);
+            const onChange = (event: MediaQueryListEvent) => this.phone.set(event.matches);
+            media.addEventListener('change', onChange);
+            this.destroyRef.onDestroy(() => media.removeEventListener('change', onChange));
+        });
+
         effect(() => {
             if (!this.mapsReady() || !this.markersCount() || !this.pendingLocation) return;
             const location = this.pendingLocation;
@@ -280,8 +336,9 @@ export class SearchMap implements OnInit {
         this.allMarkers.set(this.mapService.getFormattedMarkers(markers));
     }
 
+    /** Tablets: the panel stands above the map. Phones keep the map on screen anyway. */
     private get isNarrow(): boolean {
-        return (this.doc.defaultView?.innerWidth ?? 0) < NARROW_BREAKPOINT;
+        return !this.phone() && (this.doc.defaultView?.innerWidth ?? 0) < NARROW_BREAKPOINT;
     }
 
     /** On a narrow screen the panel and the map do not fit side by side – scroll to the map. */
@@ -421,8 +478,12 @@ export class SearchMap implements OnInit {
         this.resultsLimit.update(limit => limit + this.resultsQty);
     }
 
-    toggleCategoriesList(): void {
-        this.categoriesOpen.update(open => !open);
+    openFilters(): void {
+        this.filtersOpen.set(true);
+    }
+
+    closeFilters(): void {
+        this.filtersOpen.set(false);
     }
 
     toggleCategory(category: string): void {
@@ -447,9 +508,15 @@ export class SearchMap implements OnInit {
         this.clearLocation();
     }
 
-    /** Clicking the same result again deselects it. */
-    setCurrentResult(id: string | number): void {
+    /** Clicking the same result again deselects it; on phones a pick goes back to the map. */
+    pickResult(id: string | number): void {
         this.currentResult.update(current => (current === id ? undefined : id));
+        if (this.currentResult() !== undefined) this.sheet.set('card');
         this.scrollToMapIfNarrow();
+    }
+
+    onPinSelected(id: string | number): void {
+        this.currentResult.set(id);
+        this.sheet.set('card');
     }
 }
