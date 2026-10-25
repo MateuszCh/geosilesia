@@ -1,0 +1,89 @@
+// Design tokens of the "GeoSilesia Szlak" design system (variant C of the redesign).
+// Values are copied from the system's tokens.json; names match it one to one, so a token
+// mentioned in the brand book can be found here by name.
+
+// Breakpoints: below $bp-nav the main navigation collapses into the full-screen menu.
+$bp-nav: 1100px;
+$bp-container: 1280px;
+$bp-phone: 600px;
+$bp-tablet: 900px;
+
+@mixin below($width) {
+    @media (max-width: #{$width - 0.02px}) {
+        @content;
+    }
+}
+
+@mixin above($width) {
+    @media (min-width: $width) {
+        @content;
+    }
+}
+
+:root {
+    // Frame
+    --forest: #1e4d2f;
+    --forest-dark: #143621;
+    --forest-line: #2f6644;
+    --on-forest: #ffffff;
+    --on-forest-muted: #d7e6dc;
+
+    // Ink and surfaces
+    --ink: #18201b;
+    --ink-soft: #2b332e;
+    --muted: #4f5a53;
+    --line: #dfe4df;
+    --line-soft: #eef1ee;
+    --surface: #ffffff;
+    --surface-alt: #f3f5f2;
+
+    // Trail colours – for marking things, never for painting them
+    --trail-red: #c8202a;
+    --trail-blue: #1d5fbf;
+    --trail-green: #2d8a3e;
+    --trail-yellow: #f2c200;
+    --trail-black: var(--ink);
+
+    // Category colours outside the five trails
+    --cat-brown: #7a4a1e;
+    --cat-teal: #1c7c74;
+    --cat-purple: #6b3fa0;
+    --cat-orange: #d9741a;
+    --cat-magenta: #b0306a;
+
+    // States
+    --selected: #fbeaea;
+    --notice: #fbf3d6;
+
+    // Map and photo viewer
+    --map-land: #eef3ea;
+    --map-contour: #d3dfcb;
+    --map-water: #9cc3e0;
+    --night: #101612;
+
+    // Type
+    --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    --font-text: 'Barlow', system-ui, sans-serif;
+
+    // Shape
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 10px;
+    --radius-sheet: 14px;
+
+    // Shadows – only for things floating over a photo or the map
+    --shadow-card: 0 2px 4px #18201b14, 0 16px 40px #18201b1f;
+    --shadow-popup: 0 16px 40px #18201b33;
+    --shadow-control: 0 4px 14px #18201b26;
+    --shadow-pin: 0 2px 6px #18201b40;
+
+    // Layout
+    --gutter: 28px;
+    --section-gap: 88px;
+
+    @include below($bp-phone) {
+        --gutter: 16px;
+        --section-gap: 40px;
+    }
+}

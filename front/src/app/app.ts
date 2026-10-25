@@ -12,6 +12,7 @@ import {
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Footer } from './components/footer/footer';
 import { Header } from './components/header/header';
 import { ResourceService } from './core/resource.service';
 import { ScrollService } from './core/scroll.service';
@@ -23,7 +24,7 @@ const PREFETCH_DELAY_MS = 2000;
 @Component({
     selector: 'app-root',
     templateUrl: './app.html',
-    imports: [RouterOutlet, Header],
+    imports: [RouterOutlet, Header, Footer],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class App {

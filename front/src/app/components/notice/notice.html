@@ -1,0 +1,50 @@
+@switch (variant()) {
+    @case ('cytowanie') {
+        <section class="notice notice--citation"
+                 [attr.aria-label]="component().title || 'Wzór cytowania'">
+            @if (component().title) {
+                <h2 class="notice__title">{{ component().title }}</h2>
+            }
+            <div class="notice__box prose"
+                 [innerHTML]="component().text | trusted"></div>
+        </section>
+    }
+    @case ('informacja') {
+        <section class="notice notice--info">
+            <span class="trail-mark trail-mark--lg"
+                  aria-hidden="true"
+                  style="--mark: var(--trail-green)"></span>
+            <div class="notice__body">
+                @if (component().title) {
+                    <h2 class="notice__title notice__title--small">{{ component().title }}</h2>
+                }
+                <div class="prose"
+                     [innerHTML]="component().text | trusted"></div>
+            </div>
+        </section>
+    }
+    @default {
+        <section class="notice notice--warning"
+                 role="note">
+            <svg class="notice__icon"
+                 width="22"
+                 height="22"
+                 viewBox="0 0 24 24"
+                 aria-hidden="true">
+                <path d="M12 3l10 18H2zM12 10v5M12 18h.01"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round" />
+            </svg>
+            <div class="notice__body">
+                @if (component().title) {
+                    <h2 class="notice__title notice__title--small">{{ component().title }}</h2>
+                }
+                <div class="prose"
+                     [innerHTML]="component().text | trusted"></div>
+            </div>
+        </section>
+    }
+}

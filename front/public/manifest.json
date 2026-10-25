@@ -42,8 +42,8 @@
     "scope": ".",
     "display": "standalone",
     "orientation": "portrait-primary",
-    "background_color": "#28293e",
-    "theme_color": "#28293e",
+    "background_color": "#1e4d2f",
+    "theme_color": "#1e4d2f",
     "description": "Geosilesia",
     "dir": "ltr",
     "lang": "pl-PL"

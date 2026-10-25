@@ -1,15 +1,20 @@
-@if (component().text) {
-    <p>{{ component().text }}</p>
-}
-@if (component().categories?.length) {
-    <ul class="markers">
-        @for (category of component().categories; track $index) {
-            <li class="markers__item">
-                <img [src]="category.icon"
-                     alt="ikona kategorii atrakcji geoturystycznych">
-                <p class="markers__item__text"
-                   [innerHTML]="category.text"></p>
-            </li>
-        }
-    </ul>
-}
+<div class="category-list">
+    @if (component().text) {
+        <p class="text-block__p">{{ component().text }}</p>
+    }
+    @if (component().categories?.length) {
+        <ul class="category-list__items">
+            @for (category of component().categories; track $index) {
+                <li class="category-list__item">
+                    @if (category.icon) {
+                        <img class="category-list__icon"
+                             alt=""
+                             [src]="category.icon">
+                    }
+                    <p class="category-list__text prose"
+                       [innerHTML]="category.text"></p>
+                </li>
+            }
+        </ul>
+    }
+</div>

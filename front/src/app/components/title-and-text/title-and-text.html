@@ -1,18 +1,40 @@
-@if (component().title) {
-    <h2>{{ component().title }}</h2>
-}
-@for (row of component().text ?? []; track $index) {
-    <div>
+<div class="text-block">
+    @if (component().title) {
+        <h2 class="h-article">{{ component().title }}</h2>
+    }
+    @for (row of component().text ?? []; track $index) {
         @if (row.paragraph) {
-            <p [innerHTML]="row.paragraph | trusted"
-               [class]="row.paragraph_class ?? ''"></p>
+            @switch (kind(row.paragraph_class)) {
+                @case ('quote') {
+                    <blockquote class="pull-quote">
+                        <span class="pull-quote__bar trail-mark"
+                              aria-hidden="true"></span>
+                        <p class="pull-quote__text"
+                           [innerHTML]="row.paragraph | trusted"></p>
+                    </blockquote>
+                }
+                @case ('lead') {
+                    <p class="text-block__lead prose"
+                       [innerHTML]="row.paragraph | trusted"></p>
+                }
+                @case ('bold') {
+                    <p class="text-block__p text-block__p--bold prose"
+                       [innerHTML]="row.paragraph | trusted"></p>
+                }
+                @default {
+                    <!-- Any other stored class is kept, as the old front end applied it verbatim. -->
+                    <p class="text-block__p prose"
+                       [class]="row.paragraph_class ?? ''"
+                       [innerHTML]="row.paragraph | trusted"></p>
+                }
+            }
         }
         @if (row.list?.length) {
-            <ul class="default-list">
+            <ul class="text-block__list default-list prose">
                 @for (item of row.list; track $index) {
                     <li [innerHTML]="item.item | trusted"></li>
                 }
             </ul>
         }
-    </div>
-}
+    }
+</div>

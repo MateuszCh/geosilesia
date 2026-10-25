@@ -1,16 +1,17 @@
-<div class="literature">
-    <h2 class="literature__heading">{{ component().title }}</h2>
-</div>
-@if (component().items?.length) {
-    <!-- Order as in the CMS. The old template had `orderBy: item.author` here, but the
-         expression referred to a variable outside the loop and was always empty, so the
-         list was never actually sorted. -->
-    <ul class="literature__sources">
-        @for (item of component().items; track $index) {
-            <li>
-                <span>{{ item.author }}</span>
-                <span>{{ item.item }}</span>
-            </li>
-        }
-    </ul>
-}
+<section class="literature"
+         [attr.aria-label]="component().title || 'Literatura'">
+    <h2 class="literature__title">{{ component().title || 'Literatura' }}</h2>
+    @if (component().items?.length) {
+        <!-- Order as in the CMS. -->
+        <ol class="literature__list">
+            @for (item of component().items; track $index) {
+                <li>
+                    @if (item.author) {
+                        <b>{{ item.author }}</b>
+                    }
+                    {{ item.item }}
+                </li>
+            }
+        </ol>
+    }
+</section>

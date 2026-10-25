@@ -1,0 +1,491 @@
+@use 'tokens' as *;
+
+// Reset, typography and the small building blocks shared by every page: the container,
+// buttons, the trail mark, section headings and CMS text.
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-text);
+    font-size: 18px;
+    line-height: 29px;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+    margin: 0;
+}
+
+img {
+    max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    color: var(--forest);
+
+    &:hover {
+        color: var(--forest-dark);
+    }
+}
+
+:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+// One centred container, 1280px wide with a 28px gutter (16px on phones).
+.container {
+    width: 100%;
+    max-width: $bp-container;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+}
+
+// Display type – Barlow Condensed is never set below 17px.
+.display {
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 0.95;
+}
+
+.h-section {
+    font-family: var(--font-display);
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1;
+
+    @include below($bp-phone) {
+        font-size: 34px;
+    }
+}
+
+.h-article {
+    font-family: var(--font-display);
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 1;
+
+    @include below($bp-phone) {
+        font-size: 32px;
+    }
+}
+
+.page-title {
+    font-family: var(--font-display);
+    font-size: 80px;
+    font-weight: 800;
+    line-height: 0.95;
+
+    @include below($bp-tablet) {
+        font-size: 56px;
+    }
+
+    @include below($bp-phone) {
+        font-size: 44px;
+    }
+}
+
+.lead {
+    font-size: 20px;
+    line-height: 31px;
+    color: var(--ink-soft);
+}
+
+.muted {
+    color: var(--muted);
+}
+
+// The trail mark: three stripes, white–colour–white, outlined in ink. Decoration only –
+// always aria-hidden. The colour comes from --mark.
+.trail-mark {
+    --mark: var(--trail-red);
+    display: inline-block;
+    flex-shrink: 0;
+    width: 14px;
+    height: 19px;
+    border: 1px solid var(--ink);
+    border-radius: 2px;
+    background: linear-gradient(
+        #fff 0 33.33%,
+        var(--mark) 33.33% 66.67%,
+        #fff 66.67% 100%
+    );
+    vertical-align: middle;
+
+    &--xs {
+        width: 10px;
+        height: 14px;
+    }
+
+    &--sm {
+        width: 12px;
+        height: 17px;
+    }
+
+    &--logo {
+        width: 20px;
+        height: 27px;
+        border-width: 1.5px;
+        border-radius: 3px;
+    }
+
+    &--lg {
+        width: 22px;
+        height: 30px;
+        border-width: 2px;
+        border-radius: 3px;
+    }
+
+    &--on-forest {
+        border-color: var(--on-forest);
+    }
+}
+
+// Buttons. A link that looks like a button is still an <a>.
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 11px 20px;
+    border: 0;
+    border-radius: var(--radius-md);
+    font-family: var(--font-text);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 22px;
+    text-decoration: none;
+    text-align: center;
+    transition:
+        background-color 0.2s,
+        border-color 0.2s,
+        color 0.2s;
+
+    svg {
+        flex-shrink: 0;
+    }
+
+    &--primary {
+        background: var(--forest);
+        color: var(--on-forest);
+
+        &:hover {
+            background: var(--forest-dark);
+            color: var(--on-forest);
+        }
+    }
+
+    &--secondary {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        color: var(--ink);
+
+        &:hover {
+            border-color: var(--ink);
+            color: var(--ink);
+        }
+    }
+
+    // The "show more" button under lists.
+    &--outline {
+        background: var(--surface);
+        border: 2px solid var(--ink);
+        color: var(--ink);
+
+        &:hover {
+            background: var(--surface-alt);
+            color: var(--ink);
+        }
+    }
+
+    // Only for the TOP 50 route.
+    &--signal {
+        background: var(--trail-red);
+        color: #fff;
+
+        &:hover {
+            background: #a51a22;
+            color: #fff;
+        }
+    }
+
+    &--on-forest {
+        background: #fff;
+        color: var(--forest);
+
+        &:hover {
+            background: var(--on-forest-muted);
+            color: var(--forest);
+        }
+    }
+
+    &--large {
+        min-height: 54px;
+        padding: 0 24px;
+    }
+}
+
+// A text link that leads to another page ("Wszystkie kategorie na mapie →").
+.more-link {
+    color: var(--forest);
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+    color: var(--forest);
+
+    &--red {
+        color: var(--trail-red);
+    }
+}
+
+// Heading row of a section: title (and eyebrow) on the left, a link or a note on the right.
+.section-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+
+    &__titles {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    &__note {
+        max-width: 460px;
+        font-size: 17px;
+        line-height: 27px;
+        color: var(--muted);
+    }
+}
+
+// Source chips on route stops ("artykuł", "www", "galeria").
+.source-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 18px;
+    text-decoration: none;
+
+    &:hover {
+        border-color: var(--ink);
+        color: var(--ink);
+    }
+}
+
+// A set-apart message: no results, offline, notes.
+.notice-box {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    background: var(--notice);
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 23px;
+}
+
+// HTML written in the CMS (paragraphs, lists, links, italics).
+.prose {
+    color: var(--ink-soft);
+
+    a {
+        color: var(--forest);
+        font-weight: 500;
+    }
+
+    ul,
+    ol {
+        margin: 0;
+        padding-left: 22px;
+    }
+
+    li + li {
+        margin-top: 6px;
+    }
+}
+
+// Lists written as "list" repeaters in the CMS.
+.default-list {
+    margin: 0;
+    padding-left: 22px;
+    color: var(--ink-soft);
+
+    li + li {
+        margin-top: 6px;
+    }
+}
+
+// Former CMS classes that may still be stored in paragraph_class.
+.fw-bold {
+    font-weight: 700;
+}
+
+// The photo preview locks page scrolling while it is open.
+.closedScroll {
+    overflow: hidden;
+}
+
+// A bar at the bottom instead of a full-screen overlay: the page arrives rendered by the
+// server, and without JavaScript only interactive elements stop working.
+.noscript {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 110;
+    padding: 8px 16px;
+    background: var(--forest);
+    text-align: center;
+
+    &__text {
+        margin: 0;
+        color: var(--on-forest);
+        font-size: 15px;
+    }
+}
+
+// The view crossfade: the App component removes and re-adds the --in class after each
+// navigation, which restarts the animation.
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade--in {
+    animation: fade-in 0.3s ease-out;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+// A spinner inside a button while it waits (location search).
+.busy {
+    position: relative;
+    color: transparent !important;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: calc(50% - 10px);
+        left: calc(50% - 10px);
+        width: 20px;
+        height: 20px;
+        border: 2px solid currentColor;
+        border-color: #fff #fff transparent transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+}
+
+.button-up {
+    position: fixed;
+    right: 16px;
+    bottom: 24px;
+    z-index: 100;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--forest);
+    color: var(--on-forest);
+    box-shadow: var(--shadow-control);
+    transform: scale(0);
+    transition:
+        transform 0.2s ease-out,
+        background-color 0.2s;
+
+    &.scrolled {
+        transform: scale(1);
+    }
+
+    &:hover {
+        background: var(--forest-dark);
+    }
+
+    body.menu-open & {
+        display: none;
+    }
+}

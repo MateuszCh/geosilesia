@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { TitleAndTextData } from '../../models/row.model';
+import { ParagraphClass, TitleAndTextData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
+
+type ParagraphKind = 'quote' | 'lead' | 'bold' | 'plain';
 
 @Component({
     selector: 'app-title-and-text',
@@ -14,4 +16,19 @@ import { TrustedPipe } from '../../shared/trusted.pipe';
 })
 export class TitleAndText {
     readonly component = input.required<TitleAndTextData>();
+
+    /** `paragraph_class` holds a choice in variant C and a CSS class on older pages. */
+    kind(value: ParagraphClass | undefined): ParagraphKind {
+        switch ((value ?? '').trim()) {
+            case 'cytat':
+                return 'quote';
+            case 'wstęp':
+                return 'lead';
+            case 'pogrubiony':
+            case 'fw-bold':
+                return 'bold';
+            default:
+                return 'plain';
+        }
+    }
 }

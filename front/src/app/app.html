@@ -1,15 +1,26 @@
+<a class="skip-link"
+   href="#tresc">Przejdź do treści</a>
 <app-header />
 <div #page
-     class="fade"
-     id="page">
+     id="tresc"
+     class="site-page">
     <router-outlet />
 </div>
+<app-footer />
 <button class="button-up"
-        id="scroll"
-        aria-label="przewiń do góry"
+        type="button"
+        aria-label="Przewiń do góry"
         [class.scrolled]="scrolled()"
         (click)="scrollToTop()">
-    <img class="button-up__image"
-         alt="przewiń do góry"
-         src="/images/arrow.svg">
+    <svg width="20"
+         height="20"
+         viewBox="0 0 24 24"
+         aria-hidden="true">
+        <path d="M12 19V5M5 12l7-7 7 7"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round" />
+    </svg>
 </button>

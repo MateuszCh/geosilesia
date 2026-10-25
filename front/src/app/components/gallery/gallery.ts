@@ -29,6 +29,8 @@ const CLOSE_MS = 500;
 })
 export class Gallery implements OnInit {
     readonly component = input.required<GalleryData>();
+    /** Normalized path of the album page – used to find the album in the album list. */
+    readonly pageUrl = input('');
 
     /** Order from the CMS; the same order applies to thumbnails and the preview. */
     readonly images = computed<GalleryImage[]>(() =>
