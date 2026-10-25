@@ -20,6 +20,7 @@ be replayed on production later in the same order.
 | `05-top50.js` | `top50` posts from the TOP 50 page text; the page rebuilt from them |
 | `06-content.js` | `page_hero` on content pages, notices, contact, dictionary terms, event places |
 | `07-knowledge-base.js` | `zasob` posts from the 7 section pages; the section pages rebuilt |
+| `check-fallbacks.js` | Read-only: pages and posts that still need a front-end fallback (run after the scripts) |
 | `restore.js` | Restores collections from a backup |
 
 Run from the repository root, e.g. `node scripts/cms/01-definitions.js` (dry run), then
