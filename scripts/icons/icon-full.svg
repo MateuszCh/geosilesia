@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Full-bleed variant for the Apple touch icon and the maskable app icon: the system
+       cuts its own shape, so the mark stays inside the central safe circle (40% radius). -->
+  <rect width="32" height="32" fill="#1e4d2f"/>
+  <rect x="10" y="7" width="12" height="18" rx="1.5" fill="#fff"/>
+  <rect x="10" y="13" width="12" height="6" fill="#c8202a"/>
+</svg>
