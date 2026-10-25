@@ -27,14 +27,27 @@ function loadConfig() {
     return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
-/** Runs `fn(db, ctx)` with an open connection and closes it afterwards. */
+/**
+ * Runs `fn(db, ctx)` with an open connection and closes it afterwards.
+ *
+ * Writing needs the database named on the command line as well (`--apply --db=<name>`),
+ * and it must be the one in config.json – so a config.json copied from another server
+ * cannot silently send the writes to the wrong database.
+ */
 async function withDb(fn) {
     const config = loadConfig();
+    const apply = process.argv.includes("--apply");
+    const named = (process.argv.find(arg => arg.startsWith("--db=")) || "").slice("--db=".length);
+    if (apply && named !== config.dbName) {
+        throw new Error(
+            `--apply writes to "${config.dbName}" (config.json); confirm it with --db=${config.dbName}` +
+                (named ? ` – got --db=${named}` : "")
+        );
+    }
     const client = new MongoClient(config.mongoUrl);
     await client.connect();
     try {
         const db = client.db(config.dbName);
-        const apply = process.argv.includes("--apply");
         return await fn(db, { apply, dbName: config.dbName });
     } finally {
         await client.close();

@@ -1,7 +1,7 @@
 // Step 1: component and post type definitions of variant C.
 //
 //   node scripts/cms/01-definitions.js           # dry run: what would be created or extended
-//   node scripts/cms/01-definitions.js --apply   # writes (after a backup)
+//   node scripts/cms/01-definitions.js --apply --db=<database>   # writes (after a backup)
 //
 // Idempotent: definitions are matched by `type`; a missing one is created with an id from
 // the counter, an existing one only gains the fields it lacks. Nothing is removed. The one

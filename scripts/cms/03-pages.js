@@ -1,6 +1,6 @@
 // Step 3: the two new pages and the new home page.
 //
-//   node scripts/cms/03-pages.js [--apply]
+//   node scripts/cms/03-pages.js [--apply --db=<database>]
 //
 // - `mapa-atrakcji`: the `map` row moves here from the home page, unchanged.
 // - `baza-wiedzy`: page header and the full knowledge base (all sections).

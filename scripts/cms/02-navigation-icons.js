@@ -1,6 +1,6 @@
 // Step 2: the navigation post and the map categories.
 //
-//   node scripts/cms/02-navigation-icons.js [--apply]
+//   node scripts/cms/02-navigation-icons.js [--apply --db=<database>]
 //
 // Navigation: sections without their own address get one (variant C shows sections as
 // plain links), plus the header button and the footer texts. Categories: the colour from

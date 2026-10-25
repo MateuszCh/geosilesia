@@ -1,6 +1,6 @@
 // Step 7: the knowledge base as `zasob` posts, and its seven section pages.
 //
-//   node scripts/cms/07-knowledge-base.js [--apply]
+//   node scripts/cms/07-knowledge-base.js [--apply --db=<database>]
 //
 // Each link in the paragraphs of a section page becomes a post: the link text is the title,
 // the text before the link the publisher or series (`source`), the address `url` – or `file`

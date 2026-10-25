@@ -4,8 +4,10 @@ Node scripts that change the CMS database (frodo's MongoDB) for redesign variant
 `config.json` in the repository root and mirror frodo's write rules (ids from `counters`,
 ms timestamps, posts pushed into their post type, `meta.version` bumped after writes).
 
-Every writing script is a **dry run** unless started with `--apply`, and backs up the
-collections it touches to `tmp/cms-backups/` before writing. All are idempotent, so they can
+Every writing script is a **dry run** unless started with `--apply --db=<database>`, where
+the name must match `dbName` in `config.json` (a guard against writing to the wrong server
+with a copied config). It backs up the collections it touches to `tmp/cms-backups/` before
+writing. All are idempotent, so they can
 be replayed on production later in the same order.
 
 | Script | What it does |
@@ -20,5 +22,5 @@ be replayed on production later in the same order.
 | `07-knowledge-base.js` | `zasob` posts from the 7 section pages; the section pages rebuilt |
 | `restore.js` | Restores collections from a backup |
 
-Run from the repository root, e.g. `node scripts/cms/01-definitions.js` (dry run), then with
-`--apply`.
+Run from the repository root, e.g. `node scripts/cms/01-definitions.js` (dry run), then
+`node scripts/cms/01-definitions.js --apply --db=<database>`.

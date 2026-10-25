@@ -1,6 +1,6 @@
 // Step 4: album fields and the automatic album list.
 //
-//   node scripts/cms/04-albums.js [--apply]
+//   node scripts/cms/04-albums.js [--apply --db=<database>]
 //
 // For every page with a `gallery` row:
 // - `category` and `cover` from its entry in the manual `gallery_list` (only when empty);

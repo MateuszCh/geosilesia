@@ -1,7 +1,7 @@
 // Restores collections from a backup made by a writing script.
 //
 //   node scripts/cms/restore.js tmp/cms-backups/<dir> pages posts   # dry run
-//   node scripts/cms/restore.js tmp/cms-backups/<dir> pages --apply  # replaces the collection
+//   node scripts/cms/restore.js tmp/cms-backups/<dir> pages --apply --db=<database>  # replaces it
 //
 // The collection is emptied and refilled with the backed-up documents, then the content
 // version is bumped so the site drops its caches.
@@ -10,9 +10,9 @@ const fs = require("fs");
 const path = require("path");
 const { withDb, EJSON, bumpContentVersion, ROOT } = require("./lib");
 
-const [dirArg, ...rest] = process.argv.slice(2).filter(arg => arg !== "--apply");
+const [dirArg, ...rest] = process.argv.slice(2).filter(arg => !arg.startsWith("--"));
 if (!dirArg || !rest.length) {
-    console.error("usage: node scripts/cms/restore.js <backup dir> <collection>... [--apply]");
+    console.error("usage: node scripts/cms/restore.js <backup dir> <collection>... [--apply --db=<database>]");
     process.exit(1);
 }
 const dir = path.resolve(ROOT, dirArg);

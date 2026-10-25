@@ -1,6 +1,6 @@
 // Step 6: content pages, the dictionary and older events.
 //
-//   node scripts/cms/06-content.js [--apply]
+//   node scripts/cms/06-content.js [--apply --db=<database>]
 //
 // Pages (every page except the home page, the map, albums, TOP 50 and the knowledge base):
 // - a `page_hero` row on top, titled from the leading `heading` (removed), the first title

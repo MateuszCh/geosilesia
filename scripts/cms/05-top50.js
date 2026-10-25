@@ -1,6 +1,6 @@
 // Step 5: TOP 50 entries as posts, and the TOP 50 page built from them.
 //
-//   node scripts/cms/05-top50.js [--apply]
+//   node scripts/cms/05-top50.js [--apply --db=<database>]
 //
 // The page's numbered paragraphs "N. Name (<a href=…>artykuł, <a href=…>www, …)" become
 // `top50` posts: number, title, links (kind from the label, a numbered label kept as the
