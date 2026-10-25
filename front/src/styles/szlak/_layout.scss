@@ -276,6 +276,11 @@
     > .row + .row {
         margin-top: var(--section-gap);
     }
+
+    // A page that ends with the full-bleed map (the map page) meets the footer without a gap.
+    &:has(> .row[data-row='map']:last-child) {
+        padding-bottom: 0;
+    }
 }
 
 .not-found {
