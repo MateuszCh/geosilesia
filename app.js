@@ -5,6 +5,7 @@ const express = require("express"),
     MongoClient = require("mongodb").MongoClient,
     config = require("./config"),
     seoMeta = require("./shared/seo-meta"),
+    { REDIRECTS } = require("./shared/redirects"),
     { createRenderer } = require("./ssr");
 
 const app = express();
@@ -518,6 +519,8 @@ app.get("/sitemap.xml", (req, res) => {
             pages.forEach(page => {
                 if (!page || !page.pageUrl) return;
                 const pagePath = seoMeta.normalizePath(page.pageUrl);
+                // A redirected address is not a page of its own.
+                if (REDIRECTS[pagePath]) return;
                 const updated = seoMeta.updatedIso(page);
                 const current = byPath.get(pagePath);
                 if (!current || updated > current) byPath.set(pagePath, updated);
@@ -573,6 +576,14 @@ app.get(["/index.html", "/index.csr.html"], (req, res, next) => {
             res.type("html").send(html);
         })
         .catch(next);
+});
+
+// Retired addresses (shared/redirects.js), before the pages: a permanent redirect that
+// keeps the query string.
+app.get(Object.keys(REDIRECTS), (req, res) => {
+    const at = req.originalUrl.indexOf("?");
+    const query = at >= 0 ? req.originalUrl.slice(at) : "";
+    res.redirect(301, REDIRECTS[seoMeta.normalizePath(req.path)] + query);
 });
 
 app.use("/uploads", express.static(`${__dirname}/uploads`));

@@ -1217,12 +1217,17 @@
         font-size: 16px;
         font-weight: 600;
         text-align: left;
+        text-decoration: none;
 
         &:hover {
             border-color: var(--ink);
+            color: var(--ink);
         }
 
-        &[aria-pressed='true'] {
+        // A button on a page with every section, a link on the section pages.
+        &[aria-pressed='true'],
+        &--current,
+        &--current:hover {
             border-color: var(--ink);
             background: var(--ink);
             color: #fff;

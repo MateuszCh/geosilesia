@@ -9,8 +9,8 @@
             @for (section of sections(); track section.name) {
                 <li>
                     <a class="kb-preview__chip"
-                       [routerLink]="link()"
-                       [queryParams]="{ dzial: section.name }">
+                       [routerLink]="section.page ?? link()"
+                       [queryParams]="section.page ? {} : { dzial: section.name }">
                         {{ section.name }}
                         @if (section.items.length) {
                             <span class="kb-preview__count">{{ section.items.length }}</span>
@@ -21,8 +21,7 @@
         </ul>
     </section>
 } @else {
-    <section class="kb"
-             [class.kb--single]="!showNav()">
+    <section class="kb">
         @if (component().title || component().intro) {
             <div class="kb__head">
                 @if (component().title) {
@@ -35,32 +34,39 @@
             </div>
         }
         <div class="kb__body">
-            @if (showNav()) {
-                <nav class="kb__nav"
-                     aria-label="Działy bazy wiedzy">
-                    @for (section of sections(); track section.name) {
+            <nav class="kb__nav"
+                 aria-label="Działy bazy wiedzy">
+                @for (section of sections(); track section.name) {
+                    <ng-template #navContent>
+                        <span class="kb__nav-name">
+                            <span class="trail-mark trail-mark--xs"
+                                  aria-hidden="true"
+                                  [style.--mark]="section.color"></span>
+                            {{ section.name }}
+                        </span>
+                        <span class="kb__nav-count">{{ section.items.length }}</span>
+                    </ng-template>
+                    @if (section.page) {
+                        <a class="kb__nav-button"
+                           [routerLink]="section.page"
+                           [class.kb__nav-button--current]="current()?.name === section.name"
+                           [attr.aria-current]="current()?.name === section.name ? 'page' : null">
+                            <ng-container *ngTemplateOutlet="navContent" />
+                        </a>
+                    } @else {
                         <button class="kb__nav-button"
                                 type="button"
                                 [attr.aria-pressed]="current()?.name === section.name"
                                 (click)="select(section.name)">
-                            <span class="kb__nav-name">
-                                <span class="trail-mark trail-mark--xs"
-                                      aria-hidden="true"
-                                      [style.--mark]="section.color"></span>
-                                {{ section.name }}
-                            </span>
-                            <span class="kb__nav-count">{{ section.items.length }}</span>
+                            <ng-container *ngTemplateOutlet="navContent" />
                         </button>
                     }
-                </nav>
-            }
+                }
+            </nav>
             @if (current(); as section) {
                 <div class="kb__section">
                     <div class="kb__section-head">
-                        <!-- A section page is already titled with the section's name. -->
-                        @if (showNav()) {
-                            <h3 class="kb__section-title">{{ section.name }}</h3>
-                        }
+                        <h2 class="kb__section-title">{{ section.name }}</h2>
                         <span class="kb__section-meta">{{ section.meta }}</span>
                     </div>
                     @if (section.items.length) {

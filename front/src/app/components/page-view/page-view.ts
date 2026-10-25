@@ -109,6 +109,10 @@ export class PageView {
     readonly crumbs = computed(() => this.navigation.trail(this.path()));
     readonly section = computed(() => this.navigation.section(this.path()));
     readonly next = computed(() => this.navigation.next(this.path()));
+    /** The knowledge base lists its sections itself, so its pages need no "Dalej w dziale". */
+    readonly listsSections = computed(() =>
+        this.layout().rows.some(row => row.type === 'knowledge_base' && row.data?.variant !== 'zapowiedź')
+    );
     /**
      * Article pages of a section list the section's pages beside the content; side link
      * cards need the panel too. Pages with a full-width row (dictionary, lists) go without.

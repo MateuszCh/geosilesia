@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContentService } from '../../core/content.service';
 import { internalLink } from '../../core/cms-link';
+import { NavigationService } from '../../core/navigation.service';
 import { formatDate } from '../../core/dates';
 import { KnowledgeSection, ResourcePost, ResourcePostData } from '../../models/post.model';
 import { KnowledgeBaseData } from '../../models/row.model';
@@ -32,13 +34,15 @@ interface ResourceView {
 }
 
 /**
- * The knowledge base, read from `zasob` posts: every section with a section switcher, a
- * single section (the section pages), or – as "zapowiedź" – the list of sections.
+ * The knowledge base, read from `zasob` posts. The full variant lists the sections beside
+ * the open one; on a section page (a section chosen in the CMS) the list links to the other
+ * section pages, found in the navigation by the section's name, so each section has an
+ * address of its own. "zapowiedź" shows only the list of sections.
  */
 @Component({
     selector: 'app-knowledge-base',
     templateUrl: './knowledge-base.html',
-    imports: [RouterLink, TrustedPipe],
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe],
     // Intro and notes are CMS HTML in [innerHTML] – see TitleAndText.
     host: { ngSkipHydration: 'true' },
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -53,17 +57,31 @@ export class KnowledgeBase implements OnInit {
     protected readonly collapsedCount = COLLAPSED;
 
     private readonly content = inject(ContentService);
+    private readonly navigation = inject(NavigationService);
     private readonly route = inject(ActivatedRoute);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly preview = computed(() => this.component().variant === 'zapowiedź');
-    /** One section chosen in the CMS, or all of them with the switcher. */
+    /** The section chosen in the CMS (a section page), or none ("wszystkie"). */
     private readonly fixedSection = computed(() => {
         const section = this.component().section;
         return section && section !== 'wszystkie' ? section : undefined;
     });
-    readonly showNav = computed(() => !this.fixedSection());
     readonly link = computed(() => internalLink(this.component().link) ?? '/');
+
+    /** Section name → its page, from the navigation's subpages of the same name. */
+    private readonly sectionPages = computed(() => {
+        const pages = new Map<string, string>();
+        this.navigation.items().forEach(item =>
+            item.subnav?.forEach(sub => {
+                const link = internalLink(sub.link);
+                if (sub.subtitle && link && SECTIONS.some(section => section.name === sub.subtitle?.trim())) {
+                    pages.set(sub.subtitle.trim(), link);
+                }
+            })
+        );
+        return pages;
+    });
 
     readonly sections = computed(() =>
         SECTIONS.map(section => {
@@ -85,6 +103,7 @@ export class KnowledgeBase implements OnInit {
             const count = items.length;
             return {
                 ...section,
+                page: this.sectionPages().get(section.name),
                 items,
                 meta: [`${count} ${plural(count, 'pozycja', 'pozycje', 'pozycji')}`, updated ? `aktualizacja ${updated}` : '']
                     .filter(Boolean)

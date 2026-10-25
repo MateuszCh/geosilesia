@@ -101,7 +101,7 @@
                         <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
                     </section>
                 }
-                @if (!hasSide() && next(); as nextPage) {
+                @if (!hasSide() && !listsSections() && next(); as nextPage) {
                     <a class="next-card"
                        [routerLink]="nextPage.link">
                         <span class="next-card__label">Dalej w dziale {{ nextPage.section }}</span>
