@@ -229,6 +229,7 @@
 
     &__category-link {
         display: flex;
+        align-items: center;
         justify-content: space-between;
         gap: 12px;
         padding: 14px 16px;
@@ -238,9 +239,12 @@
         font-weight: 600;
         text-decoration: none;
 
+        // The category name may wrap; the count and its arrow stay on one line.
         span {
+            flex-shrink: 0;
             color: var(--muted);
             font-weight: 500;
+            white-space: nowrap;
         }
 
         &:hover {
