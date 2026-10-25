@@ -1,0 +1,60 @@
+<ng-template #crumbsTpl>
+    @if (crumbs().length) {
+        <nav class="crumbs"
+             aria-label="Ścieżka">
+            @for (crumb of crumbs(); track $index) {
+                @if (crumb.link) {
+                    <a class="crumbs__link"
+                       [routerLink]="crumb.link">{{ crumb.title }}</a>
+                } @else {
+                    <span>{{ crumb.title }}</span>
+                }
+                @if (!$last) {
+                    <span aria-hidden="true"> › </span>
+                }
+            }
+        </nav>
+    }
+</ng-template>
+
+<ng-template #bylineTpl>
+    @if (bylineText(); as text) {
+        <p class="page-hero__byline">{{ text }}</p>
+    }
+</ng-template>
+
+@if (hero().image) {
+    <section class="page-hero page-hero--photo">
+        <img class="page-hero__image"
+             [src]="hero().image"
+             [alt]="hero().image_caption ?? ''">
+        <div class="page-hero__overlay container">
+            <div class="page-hero__panel">
+                <ng-container *ngTemplateOutlet="crumbsTpl" />
+                <h1 class="page-hero__title">{{ hero().title }}</h1>
+                <ng-container *ngTemplateOutlet="bylineTpl" />
+            </div>
+            @if (caption(); as text) {
+                <span class="page-hero__caption">{{ text }}</span>
+            }
+        </div>
+    </section>
+    @if (hero().lead) {
+        <div class="container">
+            <div class="page-hero__lead lead prose"
+                 [innerHTML]="hero().lead | trusted"></div>
+        </div>
+    }
+} @else {
+    <section class="page-hero page-hero--plain container">
+        <div class="page-hero__head">
+            <ng-container *ngTemplateOutlet="crumbsTpl" />
+            <h1 class="page-title">{{ hero().title }}</h1>
+            @if (hero().lead) {
+                <div class="lead prose"
+                     [innerHTML]="hero().lead | trusted"></div>
+            }
+        </div>
+        <ng-container *ngTemplateOutlet="bylineTpl" />
+    </section>
+}

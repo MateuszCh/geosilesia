@@ -1,21 +1,95 @@
-@if (component().items) {
-    <dl>
-        @for (item of component().items; track $index) {
-            <div>
-                <dt>{{ item.title }}</dt>
-                @for (row of item.rows ?? []; track $index) {
-                    <dd>
-                        <span>{{ row.text }}</span>
-                        @if (row.list_item?.length) {
-                            <ul class="default-list">
-                                @for (listItem of row.list_item; track $index) {
-                                    <li>{{ listItem.text }}</li>
+<div class="dictionary">
+    <div class="dictionary__search search-field"
+         [class.search-field--filled]="!!query()">
+        <svg class="search-field__icon"
+             width="18"
+             height="18"
+             viewBox="0 0 24 24"
+             aria-hidden="true">
+            <circle cx="10.5"
+                    cy="10.5"
+                    r="6.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2" />
+            <path d="M15.5 15.5L21 21"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round" />
+        </svg>
+        <label class="visually-hidden"
+               for="dictionary-query">Szukaj hasła</label>
+        <input id="dictionary-query"
+               class="search-field__input"
+               type="search"
+               autocomplete="off"
+               [placeholder]="'Szukaj w ' + terms().length + ' ' + entriesLabel(terms().length) + ', np. geopark'"
+               [value]="query()"
+               (input)="query.set($any($event.target).value)">
+    </div>
+
+    <div class="dictionary__body">
+        <nav class="dictionary__index"
+             aria-label="Hasła">
+            @for (term of terms(); track $index) {
+                <a class="dictionary__index-link"
+                   [class.dictionary__index-link--active]="active() === $index"
+                   [href]="'#' + term.id"
+                   (click)="pick($event, $index)">
+                    <span class="trail-mark trail-mark--xs"
+                          aria-hidden="true"
+                          [style.--mark]="term.color"></span>
+                    {{ term.term }}
+                </a>
+            }
+        </nav>
+
+        <div class="dictionary__entries">
+            <dl class="dictionary__list">
+                @for (term of shown(); track term.id) {
+                    <div class="term"
+                         [id]="term.id"
+                         [class.term--active]="active() === term.index">
+                        <span class="trail-mark trail-mark--lg term__mark"
+                              aria-hidden="true"
+                              [style.--mark]="term.color"></span>
+                        <div class="term__body">
+                            <dt class="term__head">
+                                <span class="term__title">{{ term.term }}</span>
+                                @if (term.foreign) {
+                                    <span class="term__foreign">{{ term.foreign }}</span>
                                 }
-                            </ul>
-                        }
-                    </dd>
+                            </dt>
+                            @for (row of term.rows; track $index) {
+                                <dd class="term__text">
+                                    @if (row.text) {
+                                        <p>{{ $first ? capitalize(row.text) : row.text }}</p>
+                                    }
+                                    @if (row.list_item?.length) {
+                                        <ul class="default-list">
+                                            @for (item of row.list_item; track $index) {
+                                                <li>{{ item.text }}</li>
+                                            }
+                                        </ul>
+                                    }
+                                </dd>
+                            }
+                        </div>
+                    </div>
                 }
-            </div>
-        }
-    </dl>
-}
+            </dl>
+            @if (!shown().length) {
+                <div class="notice-box dictionary__empty"
+                     role="status">
+                    <div>
+                        <p class="dictionary__empty-title">Brak haseł dla „{{ query() }}”</p>
+                        <p>Sprawdź pisownię albo wyszukaj w opisach obiektów na mapie.</p>
+                        <button class="btn btn--secondary"
+                                type="button"
+                                (click)="query.set('')">Wyczyść wyszukiwanie</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

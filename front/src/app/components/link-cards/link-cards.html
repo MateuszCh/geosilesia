@@ -1,0 +1,92 @@
+@if (side()) {
+    <section class="side-cards"
+             [attr.aria-label]="component().title || 'Zobacz w terenie'">
+        <h2 class="side-cards__title">{{ component().title || 'Zobacz w terenie' }}</h2>
+        @if (component().intro) {
+            <div class="side-cards__intro prose"
+                 [innerHTML]="component().intro | trusted"></div>
+        }
+        @for (card of cards(); track $index) {
+            <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: card, side: true }" />
+        }
+    </section>
+} @else {
+    <section class="link-cards">
+        <div class="section-head">
+            <div class="section-head__titles">
+                @if (component().title) {
+                    <h2 class="h-section">{{ component().title }}</h2>
+                }
+            </div>
+            @if (component().intro) {
+                <div class="section-head__note prose"
+                     [innerHTML]="component().intro | trusted"></div>
+            }
+        </div>
+        <ul class="link-cards__list">
+            @for (card of cards(); track $index) {
+                <li>
+                    <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: card, side: false }" />
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+<ng-template #linkTpl
+             let-card
+             let-side="side">
+    @if (card.internal) {
+        <a [class]="side ? 'side-card' : 'link-card'"
+           [routerLink]="card.href">
+            <ng-container *ngTemplateOutlet="side ? sideBody : cardBody; context: { $implicit: card }" />
+        </a>
+    } @else {
+        <a [class]="side ? 'side-card' : 'link-card'"
+           target="_blank"
+           rel="noreferrer"
+           [href]="card.href">
+            <ng-container *ngTemplateOutlet="side ? sideBody : cardBody; context: { $implicit: card }" />
+        </a>
+    }
+</ng-template>
+
+<ng-template #cardBody
+             let-card>
+    <span class="link-card__media">
+        @if (card.image) {
+            <img class="link-card__image"
+                 loading="lazy"
+                 alt=""
+                 [src]="card.image">
+        } @else {
+            <span class="link-card__image link-card__image--empty"></span>
+        }
+        <span class="trail-mark trail-mark--lg link-card__mark"
+              aria-hidden="true"
+              [style.--mark]="card.color"></span>
+    </span>
+    <span class="link-card__body">
+        <span class="link-card__title">{{ card.title }}</span>
+        @if (card.description) {
+            <span class="link-card__description">{{ card.description }}</span>
+        }
+        <span class="link-card__more">Czytaj →</span>
+    </span>
+</ng-template>
+
+<ng-template #sideBody
+             let-card>
+    @if (card.image) {
+        <img class="side-card__image"
+             loading="lazy"
+             alt=""
+             [src]="card.image">
+    }
+    <span class="side-card__text">
+        <span class="side-card__title">{{ card.title }}</span>
+        @if (card.description) {
+            <span class="side-card__description">{{ card.description }}</span>
+        }
+    </span>
+</ng-template>

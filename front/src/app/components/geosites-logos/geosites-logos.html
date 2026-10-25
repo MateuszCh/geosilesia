@@ -1,16 +1,31 @@
-@if (component().logos) {
-    <ul class="geosites">
-        @for (logo of component().logos; track $index) {
-            <li>
-                <a class="geosites__link"
-                   target="_blank"
-                   rel="noreferrer"
-                   [href]="logo.link">
-                    <img class="geosites__image"
-                         [src]="logo.image"
-                         [alt]="'przejdź na stronę ' + logo.link">
-                </a>
-            </li>
-        }
-    </ul>
+@if (bases().length) {
+    <section class="databases"
+             aria-labelledby="databases-title">
+        <h2 id="databases-title"
+            class="databases__title">Sprawdź w bazach danych</h2>
+        <ul class="databases__list">
+            @for (base of bases(); track $index) {
+                <li>
+                    <a class="databases__card"
+                       target="_blank"
+                       rel="noreferrer"
+                       [href]="base.link">
+                        @if (base.name) {
+                            <span class="databases__name">
+                                <span class="trail-mark trail-mark--xs"
+                                      aria-hidden="true"
+                                      [style.--mark]="base.color"></span>
+                                {{ base.name }} ↗
+                            </span>
+                        } @else if (base.image) {
+                            <img class="databases__logo"
+                                 [src]="base.image"
+                                 [alt]="base.host">
+                        }
+                        <span class="databases__host">{{ base.host }}</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </section>
 }

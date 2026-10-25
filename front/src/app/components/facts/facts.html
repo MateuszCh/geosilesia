@@ -1,0 +1,17 @@
+<section class="facts"
+         [attr.aria-label]="component().title || 'Liczby'">
+    @if (component().title) {
+        <h2 class="h-article facts__title">{{ component().title }}</h2>
+    }
+    <dl class="facts__list">
+        @for (item of items(); track $index) {
+            <div class="facts__item">
+                <dt class="facts__label">{{ item.label }}</dt>
+                <dd class="facts__value">{{ item.value }}</dd>
+            </div>
+        }
+    </dl>
+    @if (component().source) {
+        <p class="facts__source">{{ component().source }}</p>
+    }
+</section>

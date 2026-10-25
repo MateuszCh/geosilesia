@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { GOOGLE_MAPS_URL } from './map.config';
 import { MapCategory, MapMarker, MapStyleDefinition } from './map.types';
 import { IconPost, MarkerPost } from '../models/post.model';
+import { NEUTRAL_COLOR, categoryLook } from './categories';
 
 /** Earth's radius in km – for computing distances with the haversine formula. */
 const EARTH_RADIUS_KM = 6371;
@@ -155,10 +156,10 @@ export class MapService {
         models: MapMarker[],
         categories: MapCategory[],
         map: google.maps.Map,
-        activeCategories: string[]
+        activeCategories: string[],
+        onSelect: (id: string | number) => void
     ): google.maps.Marker[] {
-        const infoWindow = new google.maps.InfoWindow();
-        const byName = new Map(categories.map(category => [category.category, category]));
+        const byKey = new Map(categories.map(category => [category.category, category]));
         const markers: google.maps.Marker[] = [];
 
         models.forEach(model => {
@@ -169,70 +170,121 @@ export class MapService {
             ) {
                 return;
             }
-            const position = {
-                lat: Number(model.position.lat),
-                lng: Number(model.position.lng)
-            };
-
-            let icon = '';
-            if (!model.type && model.categories?.length) {
-                // A marker in several categories shows the icon of the first one being
-                // filtered by; with no filter, the icon of its first category.
-                const name =
-                    model.categories.find(category => activeCategories.includes(category)) ??
-                    model.categories[0];
-                icon = byName.get(name)?.icon ?? '';
-            }
-
+            const color = model.type === 'home' ? '#1e4d2f' : markerColor(model, byKey, activeCategories);
             const marker = new google.maps.Marker({
-                position,
+                position: {
+                    lat: Number(model.position.lat),
+                    lng: Number(model.position.lng)
+                },
                 map,
-                title: model.title ?? '',
-                icon
+                title: model.title ?? model.address ?? '',
+                icon: this.pinIcon(color, model.type === 'home' ? 20 : 26),
+                zIndex: model.type === 'home' ? 1000 : undefined
             });
             marker.set('id', model.id);
-            marker.addListener('click', () => {
-                infoWindow.setContent(this.infoWindowContent(model));
-                infoWindow.open(map, marker);
-            });
+            marker.set('color', color);
+            if (model.type !== 'home') {
+                marker.addListener('click', () => onSelect(model.id));
+            }
             markers.push(marker);
         });
 
         return markers;
     }
 
-    /**
-     * The info bubble is built from DOM nodes, not from concatenated HTML: titles and
-     * links come from the CMS, so inserted as text they cannot execute as markup.
-     */
-    private infoWindowContent(model: MapMarker): HTMLElement {
-        const container = this.doc.createElement('div');
-        container.className = 'marker-description';
+    /** A pin of the design system: a category-coloured disc with a white ring. */
+    pinIcon(color: string, size: number): google.maps.Icon {
+        const ring = size >= 26 ? 3 : 2.5;
+        const r = size / 2;
+        const svg =
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${size + 4}" height="${size + 4}" viewBox="0 0 ${size + 4} ${size + 4}">` +
+            `<circle cx="${r + 2}" cy="${r + 3}" r="${r}" fill="#18201b" opacity="0.25"/>` +
+            `<circle cx="${r + 2}" cy="${r + 2}" r="${r - ring / 2}" fill="${color}" stroke="#ffffff" stroke-width="${ring}"/>` +
+            '</svg>';
+        return {
+            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+            scaledSize: new google.maps.Size(size + 4, size + 4),
+            anchor: new google.maps.Point(r + 2, r + 2)
+        };
+    }
 
-        const line = (text: string): void => {
-            const paragraph = this.doc.createElement('p');
-            paragraph.className = 'marker-description__text';
-            paragraph.textContent = text;
-            container.appendChild(paragraph);
+    /** A cluster: a trail-red disc with the count, sized by the number of places. */
+    clusterIcon(count: number): google.maps.Icon {
+        const size = count < 10 ? 38 : count < 100 ? 46 : count < 1000 ? 56 : 64;
+        const r = size / 2;
+        const svg =
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${size + 4}" height="${size + 4}" viewBox="0 0 ${size + 4} ${size + 4}">` +
+            `<circle cx="${r + 2}" cy="${r + 3}" r="${r}" fill="#18201b" opacity="0.25"/>` +
+            `<circle cx="${r + 2}" cy="${r + 2}" r="${r - 1.5}" fill="#c8202a" stroke="#ffffff" stroke-width="3"/>` +
+            '</svg>';
+        return {
+            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+            scaledSize: new google.maps.Size(size + 4, size + 4),
+            anchor: new google.maps.Point(r + 2, r + 2)
+        };
+    }
+
+    /**
+     * The object card shown over the selected pin. Built from DOM nodes, not from
+     * concatenated HTML: titles and links come from the CMS, so inserted as text they
+     * cannot execute as markup.
+     */
+    objectCard(model: MapMarker, category: MapCategory | undefined): HTMLElement {
+        const el = (tag: string, className: string, text?: string): HTMLElement => {
+            const node = this.doc.createElement(tag);
+            node.className = className;
+            if (text !== undefined) node.textContent = text;
+            return node;
         };
 
-        line(model.type === 'home' ? (model.address ?? '') : (model.title ?? ''));
-        line(`${model.position.lat}, ${model.position.lng}`);
-
-        if (model.type !== 'home') {
-            if (model.distance !== undefined) {
-                line(`Odległość: ${model.distance.toFixed(2)} km`);
-            }
-            if (model.hyperlink) {
-                const link = this.doc.createElement('a');
-                link.href = model.hyperlink;
-                link.target = '_blank';
-                link.rel = 'noreferrer';
-                link.textContent = 'Więcej';
-                container.appendChild(link);
-            }
+        const card = el('div', 'object-card');
+        if (model.image) {
+            const image = el('img', 'object-card__image') as HTMLImageElement;
+            image.src = model.image;
+            image.alt = '';
+            card.appendChild(image);
         }
-        return container;
+        const body = el('div', 'object-card__body');
+        card.appendChild(body);
+
+        const tagLine = [category?.name, model.top50 ? `TOP 50 nr ${model.top50}` : '']
+            .filter(Boolean)
+            .join(' · ');
+        if (tagLine) {
+            const tag = el('span', 'object-card__tag');
+            const mark = el('span', 'trail-mark trail-mark--xs');
+            mark.setAttribute('aria-hidden', 'true');
+            mark.style.setProperty('--mark', category?.color ?? NEUTRAL_COLOR);
+            tag.append(mark, this.doc.createTextNode(tagLine));
+            tag.style.color = category?.color === '#f2c200' ? '#18201b' : (category?.color ?? '');
+            body.appendChild(tag);
+        }
+        body.appendChild(el('span', 'object-card__title', model.title ?? ''));
+
+        const meta = [
+            model.rock,
+            model.place,
+            model.distance !== undefined ? `${formatKm(model.distance)} km` : ''
+        ]
+            .filter(Boolean)
+            .join(' · ');
+        if (meta) body.appendChild(el('span', 'object-card__meta', meta));
+
+        const actions = el('div', 'object-card__actions');
+        if (model.hyperlink) {
+            const details = el('a', 'btn btn--primary', 'Szczegóły') as HTMLAnchorElement;
+            details.href = model.hyperlink;
+            details.target = '_blank';
+            details.rel = 'noreferrer';
+            actions.appendChild(details);
+        }
+        const directions = el('a', 'btn btn--secondary', 'Dojazd ↗') as HTMLAnchorElement;
+        directions.href = directionsUrl(model);
+        directions.target = '_blank';
+        directions.rel = 'noreferrer';
+        actions.appendChild(directions);
+        body.appendChild(actions);
+        return card;
     }
 
     /**
@@ -258,7 +310,9 @@ export class MapService {
                 category: icon.data.category!,
                 name: icon.data.name,
                 icon: icon.data.icon,
-                count: counts.get(icon.data.category!)!
+                count: counts.get(icon.data.category!)!,
+                color: categoryLook(icon.data).color,
+                shortName: shortCategoryName(icon.data.name ?? icon.data.category!)
             }));
     }
 
@@ -276,9 +330,40 @@ export class MapService {
                 position: {
                     lat: Number(marker.data.lat),
                     lng: Number(marker.data.long)
-                }
+                },
+                rock: marker.data.rock || undefined,
+                image: marker.data.image || undefined,
+                top50: Number(marker.data.top50) || undefined
             }));
     }
+}
+
+/** Distance with a decimal comma: "9,8". */
+export function formatKm(km: number): string {
+    return km.toFixed(1).replace('.', ',');
+}
+
+/** Google Maps route to the place from wherever the user is. */
+export function directionsUrl(model: MapMarker): string {
+    return `https://www.google.com/maps/dir/?api=1&destination=${model.position.lat},${model.position.lng}`;
+}
+
+/** "Obiekty geologiczne" → "Geologiczne"; other names stay as they are. */
+function shortCategoryName(name: string): string {
+    const short = name.replace(/^obiekty\s+/i, '');
+    return short.charAt(0).toLocaleUpperCase('pl') + short.slice(1);
+}
+
+/** Colour of a marker: its first category in the filter, else its first category. */
+export function markerColor(
+    model: MapMarker,
+    byKey: Map<string, MapCategory>,
+    activeCategories: string[]
+): string {
+    const key =
+        model.categories?.find(category => activeCategories.includes(category)) ??
+        model.categories?.[0];
+    return (key && byKey.get(key)?.color) || NEUTRAL_COLOR;
 }
 
 function getIconPosition(icon: IconPost): number {

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- The trail mark (white–red–white) on a forest tile. Edges sit on the 16 px grid, so
+       the 16, 32 and 48 px renderings stay sharp. PNG and ICO copies: scripts/icons. -->
+  <rect width="16" height="16" rx="3.5" fill="#1e4d2f"/>
+  <rect x="4" y="2" width="8" height="12" rx="1" fill="#fff"/>
+  <rect x="4" y="6" width="8" height="4" fill="#c8202a"/>
+</svg>

@@ -1,0 +1,73 @@
+<section class="photos"
+         [class.photos--grid]="grid()">
+    @if (component().title || linkInfo()) {
+        <div class="section-head">
+            <div class="section-head__titles">
+                @if (component().title) {
+                    <h2 class="h-section">{{ component().title }}</h2>
+                }
+            </div>
+            @if (linkInfo(); as info) {
+                <a class="more-link"
+                   [routerLink]="info.href">{{ info.label }} →</a>
+            }
+        </div>
+    }
+    @if (component().intro) {
+        <div class="photos__intro lead prose"
+             [innerHTML]="component().intro | trusted"></div>
+    }
+
+    @if (grid()) {
+        <ul class="photos__grid">
+            @for (photo of photos(); track $index) {
+                <li [class.photos__wide]="$first">
+                    <button class="photos__item"
+                            type="button"
+                            [attr.aria-label]="'Powiększ: ' + photo.title"
+                            (click)="viewerIndex.set($index)">
+                        <img class="photos__image"
+                             alt=""
+                             [attr.loading]="$first ? null : 'lazy'"
+                             [src]="photo.src">
+                        <span class="photos__caption">
+                            <span class="photos__number">{{ $index + 1 }}</span>
+                            <span class="photos__text">
+                                <span class="photos__title">{{ photo.title }}</span>
+                                @if (photo.meta) {
+                                    <span class="photos__meta">{{ photo.meta }}</span>
+                                }
+                            </span>
+                        </span>
+                    </button>
+                </li>
+            }
+        </ul>
+    } @else {
+        <ul class="photos__strip">
+            @for (photo of photos().slice(0, 4); track $index) {
+                <li class="photos__strip-item">
+                    <img class="photos__strip-image"
+                         loading="lazy"
+                         [src]="photo.src"
+                         [alt]="photo.title">
+                    <span class="photos__strip-title">{{ photo.title }}</span>
+                    @if (photo.english) {
+                        <span class="photos__strip-english">{{ photo.english }}</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+@if (viewerIndex() !== undefined) {
+    <app-photo-viewer [photos]="viewerPhotos()"
+                      [index]="viewerIndex()!"
+                      (indexChange)="viewerIndex.set($event)"
+                      [title]="component().title || 'Zdjęcia'"
+                      [backLabel]="'Wróć do zdjęć'"
+                      [moreLink]="linkInfo()?.href"
+                      [moreLabel]="component().link_label || 'Galeria'"
+                      (closed)="viewerIndex.set(undefined)" />
+}

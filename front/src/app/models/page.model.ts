@@ -3,6 +3,8 @@ import { Row } from './row.model';
 /** A document from the `pages` collection. `pageUrl` is the IndexedDB key. */
 export interface Page {
     pageUrl: string;
+    /** CMS label of the page; the fallback page title. */
+    title?: string;
     seoTitle?: string;
     seoDescription?: string;
     /** The CMS stores it as a number of ms, but it may be a Date (BSON) or a digit string. */

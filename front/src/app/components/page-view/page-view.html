@@ -1,58 +1,209 @@
-<main [class.homepage]="displayed()?.pageUrl === '/'">
-    @for (row of displayed()?.rows ?? []; track $index) {
-        <section [id]="'section-' + $index">
-            @switch (row.type) {
-                @case ('homepage_banner') {
-                    <app-homepage-banner [component]="row.data" />
-                }
-                @case ('map') {
-                    <app-search-map [component]="row.data" />
-                }
-                @case ('title_and_text') {
-                    <app-title-and-text [component]="row.data" />
-                }
-                @case ('marker_category_list') {
-                    <app-marker-category-list [component]="row.data" />
-                }
-                @case ('literature') {
-                    <app-literature [component]="row.data" />
-                }
-                @case ('news') {
-                    <app-news [component]="row.data" />
-                }
-                @case ('dictionary') {
-                    <app-dictionary [component]="row.data" />
-                }
-                @case ('footnotes') {
-                    <app-footnotes [component]="row.data" />
-                }
-                @case ('heading') {
-                    <app-heading [component]="row.data" />
-                }
-                @case ('geosites_logos') {
-                    <app-geosites-logos [component]="row.data" />
-                }
-                @case ('tabs') {
-                    <app-tabs [component]="row.data" />
-                }
-                @case ('gallery_list') {
-                    <app-gallery-list [component]="row.data" />
-                }
-                @case ('gallery') {
-                    <app-gallery [component]="row.data" />
-                }
-            }
-        </section>
+<ng-template #rowTpl
+             let-row>
+    @switch (row.type) {
+        @case ('homepage_banner') {
+            <app-homepage-banner [component]="row.data" />
+        }
+        @case ('map') {
+            <app-search-map [component]="row.data"
+                            [standalone]="mapStandalone()" />
+        }
+        @case ('title_and_text') {
+            <app-title-and-text [component]="row.data" />
+        }
+        @case ('marker_category_list') {
+            <app-marker-category-list [component]="row.data" />
+        }
+        @case ('literature') {
+            <app-literature [component]="row.data" />
+        }
+        @case ('news') {
+            <app-news [component]="row.data" />
+        }
+        @case ('dictionary') {
+            <app-dictionary [component]="row.data" />
+        }
+        @case ('footnotes') {
+            <app-footnotes [component]="row.data" />
+        }
+        @case ('heading') {
+            <app-heading [component]="row.data" />
+        }
+        @case ('geosites_logos') {
+            <app-geosites-logos [component]="row.data" />
+        }
+        @case ('tabs') {
+            <app-tabs [component]="row.data" />
+        }
+        @case ('gallery_list') {
+            <app-gallery-list [component]="row.data" />
+        }
+        @case ('notice') {
+            <app-notice [component]="row.data" />
+        }
+        @case ('page_hero') {
+            <!-- Drawn above the content by the page header; a second one is ignored. -->
+        }
+        @case ('map_search') {
+            <app-map-search [component]="row.data" />
+        }
+        @case ('facts') {
+            <app-facts [component]="row.data" />
+        }
+        @case ('category_grid') {
+            <app-category-grid [component]="row.data" />
+        }
+        @case ('top50') {
+            <app-top50 [component]="row.data" />
+        }
+        @case ('link_cards') {
+            <app-link-cards [component]="row.data" />
+        }
+        @case ('photos') {
+            <app-photos [component]="row.data" />
+        }
+        @case ('timeline') {
+            <app-timeline [component]="row.data" />
+        }
+        @case ('numbered_list') {
+            <app-numbered-list [component]="row.data" />
+        }
+        @case ('knowledge_base') {
+            <app-knowledge-base [component]="row.data" />
+        }
+        @case ('contact') {
+            <app-contact [component]="row.data" />
+        }
+        @case ('gallery') {
+            <app-gallery [component]="row.data"
+                         [pageUrl]="path()" />
+        }
     }
-    @if (!displayed()?.rows?.length && loaded()) {
-        <section class="nopage">
-            <h2>Przepraszamy, nie możemy znaleźć tej strony!</h2>
-            <p>Strona prawdopodobnie nie istnieje{{ offlineAvailable ? '...' : '' }}</p>
-            @if (offlineAvailable) {
-                <p style="margin:0">lub nie została wcześniej zapisana jeśli jesteś w trybie offline.</p>
+</ng-template>
+
+<main class="page"
+      [class.page--home]="layout().kind === 'home'"
+      [class.page--album]="layout().kind === 'album'">
+    @if (layout().hero; as hero) {
+        <app-page-hero [hero]="hero"
+                       [crumbs]="crumbs()"
+                       [byline]="layout().byline" />
+    }
+
+    @if (layout().kind === 'content') {
+        <div class="page-body container"
+             [class.page-body--side]="hasSide()">
+            <div class="page-body__main">
+                @for (row of layout().rows; track $index) {
+                    <section class="row"
+                             [id]="'section-' + $index"
+                             [attr.data-row]="row.type">
+                        <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
+                    </section>
+                }
+                @if (!hasSide() && !listsSections() && next(); as nextPage) {
+                    <a class="next-card"
+                       [routerLink]="nextPage.link">
+                        <span class="next-card__label">Dalej w dziale {{ nextPage.section }}</span>
+                        <span class="next-card__title">{{ nextPage.title }}</span>
+                        <span class="next-card__arrow"
+                              aria-hidden="true">→</span>
+                    </a>
+                }
+            </div>
+            @if (hasSide()) {
+                <aside class="page-body__side"
+                       [attr.aria-label]="section() ? 'Dział ' + section()!.title : 'Powiązane'">
+                    @if (section(); as current) {
+                        <nav class="section-nav"
+                             [attr.aria-label]="'Dział ' + current.title">
+                            <span class="section-nav__title">{{ current.title }}</span>
+                            @for (link of current.links; track link.link) {
+                                <a class="section-nav__link"
+                                   [routerLink]="link.link"
+                                   [class.section-nav__link--current]="link.current"
+                                   [attr.aria-current]="link.current ? 'page' : null">{{ link.title }}</a>
+                            }
+                        </nav>
+                    }
+                    @for (row of layout().side; track $index) {
+                        <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
+                    }
+                </aside>
             }
-            <a class="nopage__button"
-               routerLink="/">Przejdź do strony głównej</a>
+        </div>
+    } @else {
+        @for (group of groups(); track $index) {
+            @if (group.length > 1) {
+                <div class="row row-pair">
+                    @for (row of group; track $index) {
+                        <section class="row-pair__item"
+                                 [attr.data-row]="row.type">
+                            <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
+                        </section>
+                    }
+                </div>
+            } @else {
+                <section class="row"
+                         [id]="'section-' + $index"
+                         [attr.data-row]="group[0].type"
+                         [attr.data-variant]="$any(group[0].data)?.variant ?? null">
+                    <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: group[0] }" />
+                </section>
+            }
+        }
+    }
+
+    @if (!displayed()?.rows?.length && !displayed()?.pageUrl && loaded()) {
+        <section class="not-found container">
+            <div class="not-found__text">
+                <span class="eyebrow eyebrow--red">
+                    <span class="trail-mark"
+                          aria-hidden="true"></span>
+                    Błąd 404
+                </span>
+                <h1 class="not-found__title">Przepraszamy, nie możemy znaleźć tej strony!</h1>
+                <p class="lead">Strona prawdopodobnie nie istnieje{{ offlineAvailable ? ' lub nie została wcześniej zapisana, jeśli jesteś w trybie offline' : '' }}.</p>
+                <div class="not-found__actions">
+                    <a class="btn btn--primary btn--large"
+                       routerLink="/">Przejdź do strony głównej</a>
+                    <a class="btn btn--secondary btn--large"
+                       [routerLink]="navigation.cta().link">Szukaj na mapie</a>
+                </div>
+                @if (offline()) {
+                    <div class="notice-box"
+                         role="note">
+                        <svg width="20"
+                             height="20"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01M3 3l18 18"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  stroke-linecap="round" />
+                        </svg>
+                        <span><b>Jesteś offline.</b> Wyświetlamy strony zapisane podczas wcześniejszych wizyt. Mapa i wyszukiwanie zadziałają po odzyskaniu połączenia.</span>
+                    </div>
+                }
+            </div>
+            <nav class="signpost"
+                 aria-label="Drogowskaz">
+                <span class="signpost__post"
+                      aria-hidden="true"></span>
+                <span class="signpost__mark trail-mark"
+                      aria-hidden="true"></span>
+                <a class="signpost__board signpost__board--right signpost__board--1"
+                   routerLink="/">Strona główna</a>
+                <a class="signpost__board signpost__board--left signpost__board--2"
+                   [routerLink]="navigation.cta().link">{{ navigation.cta().label }}</a>
+                @if (top50Link(); as link) {
+                    <a class="signpost__board signpost__board--right signpost__board--3"
+                       [routerLink]="link">TOP 50</a>
+                }
+                <span class="signpost__shadow"
+                      aria-hidden="true"></span>
+            </nav>
         </section>
     }
 </main>

@@ -1,49 +1,154 @@
-<div class="geosilesia">
-    @if (component().tabs?.length) {
-        <ul class="geosilesia__tabs">
-            @for (tabHeading of component().tabs; track $index) {
-                <li class="geosilesia__tabs__item"
-                    (click)="activeTab.set($index)"
-                    [class.geosilesia__tabs__item--selected]="activeTab() === $index">{{ tabHeading.title }}</li>
+<div class="tabs">
+    @if (tabs().length > 1) {
+        <div class="tabs__list"
+             role="tablist"
+             aria-label="Działy strony">
+            @for (tab of tabs(); track $index) {
+                <button class="tabs__tab"
+                        type="button"
+                        role="tab"
+                        [id]="tabId($index)"
+                        [class.tabs__tab--active]="activeTab() === $index"
+                        [attr.aria-selected]="activeTab() === $index"
+                        [attr.aria-controls]="panelId($index)"
+                        [attr.tabindex]="activeTab() === $index ? 0 : -1"
+                        (click)="select($index)"
+                        (keydown)="onTabKey($event, $index)">{{ tab.title }}</button>
             }
-        </ul>
-        <div class="geosilesia__field">
-            @for (tab of component().tabs; track $index) {
-                <div class="geosilesia__field__structure"
-                     [class.geosilesia__field__structure--active]="activeTab() === $index">
-                    @for (row of tab.rows ?? []; track $index) {
-                        <div>
-                            @if (row.heading) {
-                                <h3 class="geosilesia__field__structure__heading">{{ row.heading }}</h3>
+        </div>
+    }
+
+    <div class="tabs__body">
+        @if (toc().length > 1) {
+            <nav class="toc"
+                 aria-label="Na tej stronie">
+                <button class="toc__toggle"
+                        type="button"
+                        [attr.aria-expanded]="tocOpen()"
+                        (click)="tocOpen.set(!tocOpen())">
+                    <span class="trail-mark trail-mark--xs"
+                          aria-hidden="true"></span>
+                    <span>Na tej stronie · {{ toc().length }} {{ sectionsLabel(toc().length) }}</span>
+                    <span aria-hidden="true">{{ tocOpen() ? '▴' : '▾' }}</span>
+                </button>
+                <span class="toc__title">Na tej stronie</span>
+                <ul class="toc__list"
+                    [class.toc__list--open]="tocOpen()">
+                    @for (entry of toc(); track entry.id) {
+                        <li>
+                            <a class="toc__link"
+                               [class.toc__link--current]="currentHeading() === entry.id"
+                               [href]="'#' + entry.id"
+                               (click)="goTo($event, entry.id)">
+                                <span class="trail-mark trail-mark--xs"
+                                      aria-hidden="true"></span>
+                                {{ entry.title }}
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+
+        @for (tab of tabs(); track $index; let tabIndex = $index) {
+            <div class="tabs__panel"
+                 role="tabpanel"
+                 [id]="panelId(tabIndex)"
+                 [attr.aria-labelledby]="tabs().length > 1 ? tabId(tabIndex) : null"
+                 [hidden]="activeTab() !== tabIndex">
+                @for (row of tab.rows ?? []; track $index; let rowIndex = $index) {
+                    <div class="tab-row">
+                        @if (row.heading) {
+                            <h2 class="h-article"
+                                [id]="headingId(tabIndex, rowIndex)">{{ row.heading }}</h2>
+                        }
+                        @for (paragraph of row.paragraphs ?? []; track $index) {
+                            @if (paragraph?.paragraph) {
+                                <p class="text-block__p prose">{{ paragraph?.paragraph }}</p>
                             }
-                            @for (paragraph of row.paragraphs ?? []; track $index) {
-                                <p>{{ paragraph?.paragraph }}</p>
-                            }
-                            @if (row.list?.length) {
-                                <ul class="default-list">
-                                    @for (item of row.list; track $index) {
-                                        <li>{{ item.item }}</li>
+                        }
+                        @if (row.list?.length) {
+                            <ul class="text-block__list default-list">
+                                @for (item of row.list; track $index) {
+                                    <li>{{ item.item }}</li>
+                                }
+                            </ul>
+                        }
+                        @if (row.quote) {
+                            <blockquote class="pull-quote">
+                                <span class="pull-quote__bar trail-mark"
+                                      aria-hidden="true"></span>
+                                <span>
+                                    <p class="pull-quote__text">{{ row.quote }}</p>
+                                    @if (row.quote_author) {
+                                        <footer class="pull-quote__author">{{ row.quote_author }}</footer>
                                     }
-                                </ul>
-                            }
-                            @if (row.image) {
-                                <div [class.geosilesia__field__structure__segment]="!!row.image_footnotes?.length">
-                                    <figure class="geosilesia__field__structure__figure">
-                                        <img class="geosilesia__field__structure__figure__image"
-                                             alt=""
-                                             [src]="row.image">
-                                    </figure>
-                                    @if (row.image_footnotes) {
-                                        <ol class="geosilesia__field__structure__list">
-                                            @for (footnote of row.image_footnotes; track $index) {
-                                                <li>{{ footnote.footnote }}</li>
-                                            }
-                                        </ol>
-                                    }
-                                </div>
-                            }
-                            @for (table of row.table ?? []; track $index) {
-                                <table class="terrain-table">
+                                </span>
+                            </blockquote>
+                        }
+                        @if (row.facts?.length) {
+                            <dl class="tab-facts">
+                                @for (fact of row.facts; track $index) {
+                                    <div class="tab-facts__item">
+                                        <dt class="tab-facts__label">{{ fact.label }}</dt>
+                                        <dd class="tab-facts__value">{{ fact.value }}</dd>
+                                        @if (fact.note) {
+                                            <dd class="tab-facts__note">{{ fact.note }}</dd>
+                                        }
+                                    </div>
+                                }
+                            </dl>
+                        }
+                        @if (row.chart?.length) {
+                            <figure class="bar-chart">
+                                @if (row.chart_title) {
+                                    <figcaption class="bar-chart__title">{{ row.chart_title }}</figcaption>
+                                }
+                                @for (bar of row.chart; track $index) {
+                                    <div class="bar-chart__row">
+                                        <span>{{ bar.label }}</span>
+                                        <span class="bar-chart__track"
+                                              aria-hidden="true">
+                                            <span class="bar-chart__bar"
+                                                  [class.bar-chart__bar--highlight]="bar.highlight"
+                                                  [style.width.%]="barWidth(row.chart, bar.value)"></span>
+                                        </span>
+                                        <span class="bar-chart__value">{{ barValue(bar.value) }}{{ row.chart_unit ? ' ' + row.chart_unit : '' }}</span>
+                                    </div>
+                                }
+                                @if (row.chart_source) {
+                                    <span class="bar-chart__source">{{ row.chart_source }}</span>
+                                }
+                            </figure>
+                        }
+                        @if (row.image) {
+                            <figure class="tab-figure">
+                                <img class="tab-figure__image"
+                                     loading="lazy"
+                                     [src]="row.image"
+                                     [alt]="row.image_description || row.heading || ''">
+                                @if (row.image_description || row.image_footnotes?.length || row.image_author) {
+                                    <figcaption class="tab-figure__caption">
+                                        @if (row.image_description) {
+                                            <span>{{ row.image_description }}</span>
+                                        }
+                                        @if (row.image_footnotes?.length) {
+                                            <ol class="tab-figure__notes">
+                                                @for (footnote of row.image_footnotes; track $index) {
+                                                    <li>{{ footnote.footnote }}</li>
+                                                }
+                                            </ol>
+                                        }
+                                        @if (row.image_author) {
+                                            <span>{{ row.image_author }}</span>
+                                        }
+                                    </figcaption>
+                                }
+                            </figure>
+                        }
+                        @for (table of row.table ?? []; track $index) {
+                            <div class="table-wrap">
+                                <table class="data-table">
                                     @for (colgroup of table.colgroups ?? []; track $index) {
                                         <colgroup [attr.span]="colgroup.colgroup_span"></colgroup>
                                     }
@@ -53,25 +158,39 @@
                                     <tbody>
                                         @for (tableRow of table.rows ?? []; track $index) {
                                             <tr>
-                                                @for (header of tableRow.header ?? []; track $index) {
-                                                    <th class="terrain-table__header"
+                                                @for (header of tableRow.header ?? []; track $index; let first = $first) {
+                                                    <th class="data-table__header"
                                                         [attr.rowspan]="header.rowspan"
                                                         [attr.colspan]="header.colspan"
-                                                        [attr.scope]="header.scope">{{ header.text }}</th>
+                                                        [attr.scope]="header.scope">
+                                                        @if (first && periodColor(header.text); as color) {
+                                                            <span class="period-swatch"
+                                                                  aria-hidden="true"
+                                                                  [style.background]="color"></span>
+                                                        }
+                                                        {{ header.text }}
+                                                    </th>
                                                 }
-                                                @for (cell of tableRow.data ?? []; track $index) {
-                                                    <td class="terrain-table__data"
-                                                        [class.terrain-table__data--right]="$last">{{ cell.text }}</td>
+                                                @for (cell of tableRow.data ?? []; track $index; let first = $first) {
+                                                    <td class="data-table__cell"
+                                                        [class.data-table__cell--right]="$last && !first">
+                                                        @if (first && !tableRow.header?.length && periodColor(cell.text); as color) {
+                                                            <span class="period-swatch"
+                                                                  aria-hidden="true"
+                                                                  [style.background]="color"></span>
+                                                        }
+                                                        {{ cell.text }}
+                                                    </td>
                                                 }
                                             </tr>
                                         }
                                     </tbody>
                                 </table>
-                            }
-                        </div>
-                    }
-                </div>
-            }
-        </div>
-    }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
 </div>

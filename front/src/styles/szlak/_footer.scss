@@ -1,0 +1,95 @@
+@use 'tokens' as *;
+
+.site-page {
+    min-height: 60vh;
+}
+
+.site-footer {
+    background: var(--forest);
+    color: var(--on-forest-muted);
+
+    &__main {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 40px;
+        padding-top: 48px;
+        padding-bottom: 32px;
+
+        @include below($bp-phone) {
+            gap: 24px;
+            padding-top: 24px;
+            padding-bottom: 16px;
+        }
+    }
+
+    &__about {
+        display: flex;
+        flex: 1 1 320px;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    &__text {
+        max-width: 380px;
+        font-size: 16px;
+        line-height: 25px;
+    }
+
+    &__note {
+        font-size: 14px;
+        line-height: 20px;
+    }
+
+    &__nav {
+        display: grid;
+        flex: 2 1 520px;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 24px;
+        font-size: 15px;
+        line-height: 22px;
+
+        @include below($bp-phone) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    &__column {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    &__heading {
+        color: var(--on-forest);
+        font-weight: 700;
+    }
+
+    &__link {
+        color: var(--on-forest-muted);
+
+        &:hover {
+            color: var(--on-forest);
+        }
+    }
+
+    &__trails {
+        display: flex;
+        gap: 6px;
+        padding-bottom: 28px;
+
+        span {
+            width: 40px;
+            height: 6px;
+            background: var(--mark);
+
+            @include below($bp-phone) {
+                width: 32px;
+                height: 5px;
+            }
+        }
+    }
+
+    &__trail--black {
+        outline: 1px solid var(--on-forest-muted);
+    }
+}

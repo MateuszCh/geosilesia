@@ -1,0 +1,33 @@
+<section class="contact">
+    @if (component().person_name || component().email) {
+        <div class="contact__person">
+            <span class="contact__who">
+                @if (component().person_role) {
+                    <span class="contact__role">{{ component().person_role }}</span>
+                }
+                @if (component().person_name) {
+                    <span class="contact__name">{{ component().person_name }}</span>
+                }
+                @if (shownEmail()) {
+                    <span class="contact__email">{{ shownEmail() }}</span>
+                }
+            </span>
+            @if (address()) {
+                <button class="btn btn--on-forest btn--large"
+                        type="button"
+                        (click)="copy()">{{ copied() ? 'Skopiowano' : 'Kopiuj adres' }}</button>
+            }
+        </div>
+    }
+    @if (component().cards?.length) {
+        <ul class="contact__cards">
+            @for (card of component().cards; track $index) {
+                <li class="contact__card">
+                    <span class="contact__card-title">{{ card.title }}</span>
+                    <div class="contact__card-text prose"
+                         [innerHTML]="card.text | trusted"></div>
+                </li>
+            }
+        </ul>
+    }
+</section>

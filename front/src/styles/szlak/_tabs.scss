@@ -1,0 +1,355 @@
+@use 'tokens' as *;
+
+// Tabs of a content page, the "Na tej stronie" list and what tab rows may hold:
+// figures, tables, facts and bar charts.
+
+.tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+
+    &__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        @include below($bp-phone) {
+            flex-wrap: nowrap;
+            margin: 0 calc(-1 * var(--gutter));
+            padding: 0 var(--gutter) 4px;
+            overflow-x: auto;
+        }
+    }
+
+    &__tab {
+        flex-shrink: 0;
+        padding: 13px 20px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        color: var(--ink);
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 22px;
+        transition:
+            border-color 0.2s,
+            background-color 0.2s;
+
+        &:hover {
+            border-color: var(--ink);
+        }
+
+        &--active,
+        &--active:hover {
+            border-color: var(--ink);
+            background: var(--ink);
+            color: #fff;
+        }
+    }
+
+    &__body {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 24px 48px;
+    }
+
+    &__panel {
+        display: flex;
+        flex: 999 1 480px;
+        flex-direction: column;
+        gap: 22px;
+        min-width: 0;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+}
+
+.tab-row {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+
+    .h-article {
+        scroll-margin-top: 24px;
+    }
+
+    & + & {
+        margin-top: 12px;
+    }
+}
+
+.toc {
+    display: flex;
+    flex: 1 1 200px;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 240px;
+    font-size: 16px;
+    line-height: 22px;
+
+    @include above($bp-tablet) {
+        position: sticky;
+        top: 24px;
+    }
+
+    @include below($bp-tablet) {
+        flex-basis: 100%;
+        max-width: none;
+    }
+
+    &__title {
+        padding-bottom: 10px;
+        font-size: 14px;
+        font-weight: 700;
+
+        @include below($bp-tablet) {
+            display: none;
+        }
+    }
+
+    &__toggle {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface-alt);
+        color: var(--ink);
+        font-size: 16px;
+        font-weight: 600;
+        text-align: left;
+
+        span:nth-child(2) {
+            flex: 1;
+        }
+
+        @include below($bp-tablet) {
+            display: flex;
+        }
+    }
+
+    &__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        @include below($bp-tablet) {
+            display: none;
+            padding: 6px 4px 0;
+
+            &--open {
+                display: block;
+            }
+        }
+    }
+
+    &__link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        color: var(--muted);
+        text-decoration: none;
+
+        .trail-mark {
+            opacity: 0;
+        }
+
+        &:hover {
+            color: var(--ink);
+        }
+
+        &--current {
+            color: var(--ink);
+            font-weight: 700;
+
+            .trail-mark {
+                opacity: 1;
+            }
+        }
+    }
+}
+
+.tab-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 8px 0;
+
+    &__image {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: var(--radius-lg);
+        background: var(--surface-alt);
+    }
+
+    &__caption {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 22px;
+    }
+
+    &__notes {
+        margin: 0;
+        padding-left: 20px;
+    }
+}
+
+.tab-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0 16px;
+    margin: 0;
+    padding: 4px 22px 18px;
+    border-radius: var(--radius-lg);
+    background: var(--forest);
+    color: var(--on-forest);
+
+    &__item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding-top: 16px;
+    }
+
+    &__value {
+        order: -1;
+        font-family: var(--font-display);
+        font-size: 44px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    &__label,
+    &__note {
+        color: var(--on-forest-muted);
+        font-size: 15px;
+        line-height: 21px;
+    }
+}
+
+.bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 8px 0;
+    padding: 20px 22px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+
+    &__title {
+        font-family: var(--font-display);
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    &__row {
+        display: grid;
+        // One fixed value column keeps the tracks of all rows the same length; it fits a
+        // unit such as "315 m n.p.m." on one line.
+        grid-template-columns: 170px minmax(0, 1fr) 120px;
+        align-items: center;
+        gap: 12px;
+        font-size: 16px;
+        line-height: 22px;
+
+        @include below($bp-phone) {
+            // The track has a row of its own here, so the value can take what it needs.
+            grid-template-columns: minmax(0, 1fr) auto;
+
+            .bar-chart__track {
+                grid-column: 1 / -1;
+                grid-row: 2;
+            }
+        }
+    }
+
+    &__track {
+        position: relative;
+        height: 14px;
+        border-radius: 3px;
+        background: var(--line-soft);
+    }
+
+    &__bar {
+        position: absolute;
+        inset: 0 auto 0 0;
+        border-radius: 3px;
+        background: var(--trail-green);
+
+        &--highlight {
+            background: var(--trail-red);
+        }
+    }
+
+    &__value {
+        font-family: var(--font-display);
+        font-size: 20px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    &__source {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 20px;
+    }
+}
+
+.table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+}
+
+.data-table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 16px;
+    line-height: 24px;
+
+    tr + tr {
+        border-top: 1px solid var(--line);
+    }
+
+    &__header {
+        padding: 12px 14px;
+        background: var(--surface-alt);
+        font-weight: 700;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    &__cell {
+        padding: 12px 14px;
+        color: var(--ink-soft);
+        vertical-align: top;
+
+        &--right {
+            color: var(--muted);
+        }
+    }
+}
+
+.period-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 8px;
+    border: 1px solid #18201b33;
+    border-radius: 2px;
+    vertical-align: -1px;
+}

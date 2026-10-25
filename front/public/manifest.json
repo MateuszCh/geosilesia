@@ -1,6 +1,6 @@
 {
-    "name": "Geosilesia",
-    "short_name": "Geosilesia",
+    "name": "GeoSilesia",
+    "short_name": "GeoSilesia",
     "icons": [
         {
             "src": "/images/icons/app-icon-48x48.png",
@@ -36,15 +36,21 @@
             "src": "/images/icons/app-icon-512x512.png",
             "type": "image/png",
             "sizes": "512x512"
+        },
+        {
+            "src": "/images/icons/app-icon-maskable-512x512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "maskable"
         }
     ],
     "start_url": "/index.html",
     "scope": ".",
     "display": "standalone",
     "orientation": "portrait-primary",
-    "background_color": "#28293e",
-    "theme_color": "#28293e",
-    "description": "Geosilesia",
+    "background_color": "#1e4d2f",
+    "theme_color": "#1e4d2f",
+    "description": "GeoSilesia",
     "dir": "ltr",
     "lang": "pl-PL"
 }
