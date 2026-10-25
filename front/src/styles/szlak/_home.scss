@@ -72,6 +72,8 @@
         color: var(--on-forest);
 
         @include below($bp-phone) {
+            // In the phone's column layout a 640px basis would apply to the height.
+            flex: none;
             gap: 10px;
             padding: 18px;
         }

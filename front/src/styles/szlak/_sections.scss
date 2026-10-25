@@ -448,9 +448,27 @@
     align-items: stretch;
     gap: 40px;
 
+    // On phones the photo goes between the heading and the route, as in the mockup: the
+    // text block dissolves and every piece gets its place.
     @include below($bp-phone) {
-        flex-direction: column-reverse;
+        flex-direction: column;
         gap: 12px;
+
+        .eyebrow {
+            order: 1;
+        }
+
+        .h-section {
+            order: 2;
+        }
+
+        .prose {
+            order: 3;
+        }
+
+        .route {
+            order: 5;
+        }
     }
 
     &__photo {
@@ -464,6 +482,7 @@
 
         @include below($bp-phone) {
             flex: none;
+            order: 4;
             min-height: 220px;
         }
     }
@@ -519,8 +538,7 @@
         min-width: 0;
 
         @include below($bp-phone) {
-            flex: none;
-            gap: 12px;
+            display: contents;
         }
     }
 
@@ -529,6 +547,7 @@
         margin-top: auto;
 
         @include below($bp-phone) {
+            order: 6;
             align-self: stretch;
             background: var(--surface);
             border: 2px solid var(--ink);
