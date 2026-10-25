@@ -255,14 +255,17 @@
 
     &__row {
         display: grid;
-        grid-template-columns: 170px minmax(0, 1fr) 90px;
+        // One fixed value column keeps the tracks of all rows the same length; it fits a
+        // unit such as "315 m n.p.m." on one line.
+        grid-template-columns: 170px minmax(0, 1fr) 120px;
         align-items: center;
         gap: 12px;
         font-size: 16px;
         line-height: 22px;
 
         @include below($bp-phone) {
-            grid-template-columns: minmax(0, 1fr) 80px;
+            // The track has a row of its own here, so the value can take what it needs.
+            grid-template-columns: minmax(0, 1fr) auto;
 
             .bar-chart__track {
                 grid-column: 1 / -1;
@@ -295,6 +298,7 @@
         font-weight: 700;
         font-variant-numeric: tabular-nums;
         text-align: right;
+        white-space: nowrap;
     }
 
     &__source {

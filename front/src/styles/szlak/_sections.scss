@@ -138,6 +138,8 @@
     &__item {
         display: flex;
         flex-direction: column-reverse;
+        // In column-reverse "end" is the top: the figures line up even when a label wraps.
+        justify-content: flex-end;
         gap: 2px;
         padding: 18px 16px 0 0;
     }
