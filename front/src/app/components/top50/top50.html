@@ -1,0 +1,130 @@
+<ng-template #sourcesTpl
+             let-stop>
+    @if (stop.links.length) {
+        <span class="route__sources">
+            @for (link of stop.links; track $index) {
+                @if (link.internal) {
+                    <a class="source-chip"
+                       [routerLink]="link.href">{{ link.label }}</a>
+                } @else {
+                    <a class="source-chip"
+                       target="_blank"
+                       rel="noreferrer"
+                       [href]="link.href">{{ link.label }}</a>
+                }
+            }
+        </span>
+    }
+</ng-template>
+
+@if (preview()) {
+    <section class="top50-preview">
+        <div class="top50-preview__photo">
+            @if (featured(); as stop) {
+                <img class="top50-preview__image"
+                     loading="lazy"
+                     [src]="stop.image"
+                     [alt]="stop.title">
+                <div class="top50-preview__caption">
+                    <span class="route-stop route-stop--filled route-stop--large">{{ stop.number }}</span>
+                    <span class="top50-preview__caption-text">
+                        <span class="top50-preview__caption-title">{{ stop.title }}</span>
+                        <span class="top50-preview__caption-meta">{{ stop.summary }}</span>
+                    </span>
+                </div>
+            }
+        </div>
+        <div class="top50-preview__text">
+            <span class="eyebrow eyebrow--red">
+                <span class="trail-mark"
+                      aria-hidden="true"></span>
+                Szlak czerwony · TOP 50
+            </span>
+            <h2 class="h-section">{{ component().title || '50 miejsc, które trzeba zobaczyć' }}</h2>
+            @if (component().intro) {
+                <div class="prose"
+                     [innerHTML]="component().intro | trusted"></div>
+            }
+            <ol class="route route--compact">
+                @for (stop of shown(); track stop.id) {
+                    <li class="route__stop">
+                        <span class="route__track">
+                            <span class="route-stop"
+                                  [class.route-stop--filled]="$first">{{ stop.number }}</span>
+                        </span>
+                        @if (link()) {
+                            <a class="route__name"
+                               [class.route__name--first]="$first"
+                               [routerLink]="link()">{{ stop.title }}</a>
+                        } @else {
+                            <span class="route__name"
+                                  [class.route__name--first]="$first">{{ stop.title }}</span>
+                        }
+                    </li>
+                }
+            </ol>
+            @if (link()) {
+                <a class="btn btn--primary top50-preview__button"
+                   [routerLink]="link()">{{ component().link_label || 'Cała trasa TOP 50' }} →</a>
+            }
+        </div>
+    </section>
+} @else {
+    <section class="top50">
+        @if (component().title || component().intro || link()) {
+            <div class="top50__bar">
+                <div class="top50__intro">
+                    @if (component().title) {
+                        <h2 class="h-article">{{ component().title }}</h2>
+                    }
+                    @if (component().intro) {
+                        <div class="lead prose"
+                             [innerHTML]="component().intro | trusted"></div>
+                    }
+                </div>
+                @if (link()) {
+                    <a class="btn btn--signal btn--large"
+                       [routerLink]="link()"
+                       [queryParams]="linkParams()">{{ component().link_label || 'Pokaż wszystkie 50 na mapie' }}</a>
+                }
+            </div>
+        }
+        <ol class="route">
+            @for (stop of shown(); track stop.id) {
+                <li class="route__stop">
+                    <span class="route__track">
+                        <span class="route-stop route-stop--large"
+                              [class.route-stop--filled]="$first">{{ stop.number }}</span>
+                    </span>
+                    <div class="route__body">
+                        <div class="route__text">
+                            <h2 class="route__title">{{ stop.title }}</h2>
+                            @if (stop.description) {
+                                <div class="route__description prose"
+                                     [innerHTML]="stop.description | trusted"></div>
+                            }
+                            <ng-container *ngTemplateOutlet="sourcesTpl; context: { $implicit: stop }" />
+                        </div>
+                        @if (stop.image) {
+                            <img class="route__image"
+                                 loading="lazy"
+                                 alt=""
+                                 [src]="stop.image">
+                        }
+                    </div>
+                </li>
+            }
+        </ol>
+        @if (hasMore()) {
+            <div class="route__more">
+                <span class="route__track">
+                    <span class="trail-mark trail-mark--lg"
+                          aria-hidden="true"></span>
+                </span>
+                <button class="btn btn--outline"
+                        type="button"
+                        (click)="more()">Dalej: miejsca {{ shown().length + 1 }}–{{ stops().length }}</button>
+            </div>
+        }
+    </section>
+}

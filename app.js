@@ -79,16 +79,18 @@ function postsOfType(type) {
     return collections.posts.find({ type }).toArray();
 }
 
-// Replaces the catalogue name in "gallery" rows with the list of files from the files
-// collection. Each gallery gets the result of its own query – previously responses were
-// assigned by index among all galleries while queries were only made for those with
-// a catalogue, so a gallery without one shifted the files of the following ones
-// (visible in /api/appData/).
+// Replaces the catalogue name in "gallery" rows (and in "photos" rows that take their
+// photos from a catalogue) with the list of files from the files collection. Each row gets
+// the result of its own query – previously responses were assigned by index among all
+// galleries while queries were only made for those with a catalogue, so a gallery without
+// one shifted the files of the following ones (visible in /api/appData/).
 function attachGalleries(pages) {
     const galleries = [];
     (pages || []).forEach(page => {
         (page.rows || []).forEach(row => {
-            if (row.type === "gallery" && row.data && row.data.catalogue) {
+            const usesCatalogue =
+                row.type === "gallery" || (row.type === "photos" && row.data && row.data.source === "katalog");
+            if (usesCatalogue && row.data && typeof row.data.catalogue === "string" && row.data.catalogue) {
                 galleries.push(row);
             }
         });

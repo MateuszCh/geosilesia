@@ -1,0 +1,96 @@
+@if (preview()) {
+    <section class="kb-preview">
+        <h2 class="kb-preview__title">{{ component().title || 'Baza wiedzy' }}</h2>
+        @if (component().intro) {
+            <div class="prose"
+                 [innerHTML]="component().intro | trusted"></div>
+        }
+        <ul class="kb-preview__list">
+            @for (section of sections(); track section.name) {
+                <li>
+                    <a class="kb-preview__chip"
+                       [routerLink]="link()"
+                       [queryParams]="{ dzial: section.name }">
+                        {{ section.name }}
+                        @if (section.items.length) {
+                            <span class="kb-preview__count">{{ section.items.length }}</span>
+                        }
+                    </a>
+                </li>
+            }
+        </ul>
+    </section>
+} @else {
+    <section class="kb"
+             [class.kb--single]="!showNav()">
+        @if (component().title || component().intro) {
+            <div class="kb__head">
+                @if (component().title) {
+                    <h2 class="h-article">{{ component().title }}</h2>
+                }
+                @if (component().intro) {
+                    <div class="lead prose"
+                         [innerHTML]="component().intro | trusted"></div>
+                }
+            </div>
+        }
+        <div class="kb__body">
+            @if (showNav()) {
+                <nav class="kb__nav"
+                     aria-label="Działy bazy wiedzy">
+                    @for (section of sections(); track section.name) {
+                        <button class="kb__nav-button"
+                                type="button"
+                                [attr.aria-pressed]="current()?.name === section.name"
+                                (click)="select(section.name)">
+                            <span class="kb__nav-name">
+                                <span class="trail-mark trail-mark--xs"
+                                      aria-hidden="true"
+                                      [style.--mark]="section.color"></span>
+                                {{ section.name }}
+                            </span>
+                            <span class="kb__nav-count">{{ section.items.length }}</span>
+                        </button>
+                    }
+                </nav>
+            }
+            @if (current(); as section) {
+                <div class="kb__section">
+                    <div class="kb__section-head">
+                        <h3 class="kb__section-title">{{ section.name }}</h3>
+                        <span class="kb__section-meta">{{ section.meta }}</span>
+                    </div>
+                    @if (section.items.length) {
+                        <ul class="kb__items">
+                            @for (item of section.items; track item.id; let index = $index) {
+                                <li [hidden]="!expanded() && index >= collapsedCount">
+                                    <a class="kb-card"
+                                       target="_blank"
+                                       rel="noreferrer"
+                                       [href]="item.href">
+                                        @if (item.source) {
+                                            <span class="kb-card__source"
+                                                  [style.color]="section.textColor">{{ item.source }}</span>
+                                        }
+                                        <span class="kb-card__title">{{ item.title }}</span>
+                                        @if (item.note) {
+                                            <span class="kb-card__note">{{ item.note }}</span>
+                                        }
+                                        <span class="kb-card__cta">{{ section.cta }}</span>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                        @if (!expanded() && section.items.length > collapsedCount) {
+                            <button class="btn btn--outline kb__more"
+                                    type="button"
+                                    (click)="expanded.set(true)">Pokaż wszystkie ({{ section.items.length }})</button>
+                        }
+                    } @else if (loaded()) {
+                        <p class="notice-box">W tym dziale nie ma jeszcze materiałów.</p>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+}

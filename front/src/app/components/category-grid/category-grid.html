@@ -1,0 +1,44 @@
+<section class="category-grid">
+    <div class="section-head">
+        <div class="section-head__titles">
+            <h2 class="h-section">{{ component().title || 'Co chcesz zobaczyć?' }}</h2>
+            @if (component().intro) {
+                <div class="section-head__note prose"
+                     [innerHTML]="component().intro | trusted"></div>
+            }
+        </div>
+        <a class="more-link"
+           [routerLink]="mapLink()">{{ component().link_label || 'Wszystkie kategorie na mapie' }} →</a>
+    </div>
+    <ul class="category-grid__list">
+        @for (category of categories(); track category.key) {
+            <li>
+                <a class="category-card"
+                   [routerLink]="mapLink()"
+                   [queryParams]="{ kategoria: category.key }">
+                    <span class="category-card__band"
+                          aria-hidden="true"
+                          [style.background]="category.color"></span>
+                    @if (category.iconUrl) {
+                        <img class="category-card__icon"
+                             alt=""
+                             [src]="category.iconUrl">
+                    } @else if (category.glyph) {
+                        <svg class="category-card__icon"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
+                            <path [attr.d]="category.glyph"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="1.7"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round" />
+                        </svg>
+                    }
+                    <span class="category-card__name">{{ category.name }}</span>
+                    <span class="category-card__count">{{ category.countLabel }}</span>
+                </a>
+            </li>
+        }
+    </ul>
+</section>

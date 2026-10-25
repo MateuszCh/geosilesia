@@ -1,0 +1,37 @@
+<section class="timeline">
+    @if (component().title) {
+        <h2 class="h-article">{{ component().title }}</h2>
+    }
+    @if (component().intro) {
+        <div class="text-block__p prose"
+             [innerHTML]="component().intro | trusted"></div>
+    }
+    <ol class="timeline__list">
+        @for (item of component().items ?? []; track $index) {
+            <li class="timeline__item">
+                <span class="timeline__year">{{ item.year }}</span>
+                <span class="timeline__track">
+                    <span class="timeline__dot"
+                          [class.timeline__dot--highlight]="item.highlight"></span>
+                </span>
+                <span class="timeline__text">
+                    @if (item.link) {
+                        <a class="timeline__title"
+                           [href]="item.link">{{ item.title }}</a>
+                    } @else {
+                        <span class="timeline__title">{{ item.title }}</span>
+                    }
+                    @if (item.note) {
+                        <span class="timeline__note">{{ item.note }}</span>
+                    }
+                </span>
+            </li>
+        }
+    </ol>
+    @if (hasHighlights()) {
+        <div class="timeline__legend">
+            <span><span class="timeline__dot timeline__dot--highlight"></span>województwo śląskie</span>
+            <span><span class="timeline__dot"></span>Polska</span>
+        </div>
+    }
+</section>

@@ -19,7 +19,7 @@ import { ResourceService } from '../../core/resource.service';
 import { SeoService } from '../../core/seo.service';
 import { pageKeyFromUrl } from '../../core/page-key';
 import { NavigationService } from '../../core/navigation.service';
-import { PageLayout, layoutPage } from '../../core/page-layout';
+import { PageLayout, groupRows, layoutPage } from '../../core/page-layout';
 import * as seoMeta from '../../../../../shared/seo-meta';
 import { PageHero } from '../page-hero/page-hero';
 import { Dictionary } from '../dictionary/dictionary';
@@ -33,6 +33,16 @@ import { Literature } from '../literature/literature';
 import { MarkerCategoryList } from '../marker-category-list/marker-category-list';
 import { News } from '../news/news';
 import { Notice } from '../notice/notice';
+import { MapSearch } from '../map-search/map-search';
+import { Facts } from '../facts/facts';
+import { CategoryGrid } from '../category-grid/category-grid';
+import { Top50 } from '../top50/top50';
+import { LinkCards } from '../link-cards/link-cards';
+import { Photos } from '../photos/photos';
+import { Timeline } from '../timeline/timeline';
+import { NumberedList } from '../numbered-list/numbered-list';
+import { KnowledgeBase } from '../knowledge-base/knowledge-base';
+import { Contact } from '../contact/contact';
 import { SearchMap } from '../search-map/search-map';
 import { Tabs } from '../tabs/tabs';
 import { TitleAndText } from '../title-and-text/title-and-text';
@@ -55,6 +65,16 @@ import { TitleAndText } from '../title-and-text/title-and-text';
         MarkerCategoryList,
         News,
         Notice,
+        MapSearch,
+        Facts,
+        CategoryGrid,
+        Top50,
+        LinkCards,
+        Photos,
+        Timeline,
+        NumberedList,
+        KnowledgeBase,
+        Contact,
         SearchMap,
         Tabs,
         TitleAndText
@@ -80,6 +100,8 @@ export class PageView {
             : { kind: 'content', rows: [], side: [], wide: false };
     });
 
+    /** Rows of the home page and albums; the events and knowledge base previews share a line. */
+    readonly groups = computed(() => groupRows(this.layout().rows));
     /** The map is the page's main content (and its title the h1) unless the home banner is above it. */
     readonly mapStandalone = computed(
         () => !this.layout().rows.some(row => row.type === 'homepage_banner')

@@ -10,6 +10,7 @@ import {
 import { ChartBar, TabsData } from '../../models/row.model';
 import { periodColor } from '../../core/categories';
 import { ScrollService } from '../../core/scroll.service';
+import { plural } from '../../shared/plural';
 
 interface TocEntry {
     id: string;
@@ -91,10 +92,7 @@ export class Tabs {
     }
 
     sectionsLabel(count: number): string {
-        if (count === 1) return 'sekcja';
-        const last = count % 10;
-        const lastTwo = count % 100;
-        return last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? 'sekcje' : 'sekcji';
+        return plural(count, 'sekcja', 'sekcje', 'sekcji');
     }
 
     /** Bar length relative to the largest value of the chart. */

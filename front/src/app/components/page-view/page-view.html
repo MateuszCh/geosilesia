@@ -41,6 +41,39 @@
         @case ('notice') {
             <app-notice [component]="row.data" />
         }
+        @case ('page_hero') {
+            <!-- Drawn above the content by the page header; a second one is ignored. -->
+        }
+        @case ('map_search') {
+            <app-map-search [component]="row.data" />
+        }
+        @case ('facts') {
+            <app-facts [component]="row.data" />
+        }
+        @case ('category_grid') {
+            <app-category-grid [component]="row.data" />
+        }
+        @case ('top50') {
+            <app-top50 [component]="row.data" />
+        }
+        @case ('link_cards') {
+            <app-link-cards [component]="row.data" />
+        }
+        @case ('photos') {
+            <app-photos [component]="row.data" />
+        }
+        @case ('timeline') {
+            <app-timeline [component]="row.data" />
+        }
+        @case ('numbered_list') {
+            <app-numbered-list [component]="row.data" />
+        }
+        @case ('knowledge_base') {
+            <app-knowledge-base [component]="row.data" />
+        }
+        @case ('contact') {
+            <app-contact [component]="row.data" />
+        }
         @case ('gallery') {
             <app-gallery [component]="row.data"
                          [pageUrl]="path()" />
@@ -100,12 +133,24 @@
             }
         </div>
     } @else {
-        @for (row of layout().rows; track $index) {
-            <section class="row"
-                     [id]="'section-' + $index"
-                     [attr.data-row]="row.type">
-                <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
-            </section>
+        @for (group of groups(); track $index) {
+            @if (group.length > 1) {
+                <div class="row row-pair">
+                    @for (row of group; track $index) {
+                        <section class="row-pair__item"
+                                 [attr.data-row]="row.type">
+                            <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
+                        </section>
+                    }
+                </div>
+            } @else {
+                <section class="row"
+                         [id]="'section-' + $index"
+                         [attr.data-row]="group[0].type"
+                         [attr.data-variant]="$any(group[0].data)?.variant ?? null">
+                    <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: group[0] }" />
+                </section>
+            }
         }
     }
 

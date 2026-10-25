@@ -1,0 +1,86 @@
+<div class="lightbox"
+     role="dialog"
+     aria-modal="true"
+     [attr.aria-label]="'Podgląd zdjęcia ' + (index() + 1) + ' z ' + photos().length + ': ' + title()">
+    <div class="lightbox__bar">
+        <span class="trail-mark trail-mark--on-forest"
+              aria-hidden="true"
+              [style.--mark]="color()"></span>
+        <span class="lightbox__album">{{ title() }}</span>
+        <span class="lightbox__counter"><b>{{ index() + 1 }}</b> / {{ photos().length }}</span>
+        <button class="lightbox__close"
+                type="button"
+                [attr.aria-label]="'Zamknij podgląd i wróć do: ' + title()"
+                (click)="closed.emit()">
+            <svg width="16"
+                 height="16"
+                 viewBox="0 0 18 18"
+                 aria-hidden="true">
+                <path d="M3 3l12 12M15 3L3 15"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round" />
+            </svg>
+        </button>
+    </div>
+    <div class="lightbox__main">
+        <div class="lightbox__stage"
+             appSwipe
+             (swipeLeft)="next()"
+             (swipeRight)="prev()">
+            <img class="lightbox__image"
+                 [src]="photo()?.src"
+                 [alt]="'Zdjęcie ' + (index() + 1) + ' z ' + photos().length"
+                 aria-describedby="lightbox-description">
+            @if (photos().length > 1) {
+                <button class="lightbox__arrow lightbox__arrow--prev"
+                        type="button"
+                        aria-label="Poprzednie zdjęcie"
+                        (click)="prev()">←</button>
+                <button class="lightbox__arrow lightbox__arrow--next"
+                        type="button"
+                        aria-label="Następne zdjęcie"
+                        (click)="next()">→</button>
+            }
+        </div>
+        <aside class="lightbox__info">
+            @if (section()) {
+                <span class="lightbox__section">{{ section() }}</span>
+            }
+            @if (photo()?.title) {
+                <h2 class="lightbox__title">{{ photo()?.title }}</h2>
+            }
+            <p id="lightbox-description"
+               class="lightbox__description">{{ photo()?.description }}</p>
+            @if (photo()?.author) {
+                <p class="lightbox__author">{{ photo()?.author }}</p>
+            }
+            <div class="lightbox__actions">
+                <button class="btn btn--primary"
+                        type="button"
+                        (click)="closed.emit()">{{ backLabel() }}</button>
+                @if (moreLink()) {
+                    <a class="btn btn--secondary"
+                       [routerLink]="moreLink()">{{ moreLabel() }}</a>
+                }
+            </div>
+        </aside>
+    </div>
+    @if (photos().length > 1) {
+        <div class="lightbox__thumbs"
+             role="group"
+             aria-label="Miniatury">
+            @for (item of photos(); track $index) {
+                <button class="lightbox__thumb"
+                        type="button"
+                        [attr.aria-label]="'Pokaż zdjęcie ' + ($index + 1)"
+                        [attr.aria-current]="$index === index() ? 'true' : null"
+                        (click)="index.set($index)">
+                    <img loading="lazy"
+                         alt=""
+                         [src]="item.src">
+                </button>
+            }
+        </div>
+    }
+</div>

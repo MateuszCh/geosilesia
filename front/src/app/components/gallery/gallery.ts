@@ -1,15 +1,13 @@
 import {
     ChangeDetectionStrategy,
     Component,
-    DOCUMENT,
     DestroyRef,
     OnInit,
     computed,
-    effect,
     inject,
     input,
-    signal,
-    untracked
+    linkedSignal,
+    signal
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -22,19 +20,13 @@ import { NavigationService } from '../../core/navigation.service';
 import { ResourceService } from '../../core/resource.service';
 import { internalLink } from '../../core/cms-link';
 import * as seoMeta from '../../../../../shared/seo-meta';
-import { SwipeDirective } from '../../shared/swipe.directive';
 import { TrustedPipe } from '../../shared/trusted.pipe';
+import { PhotoViewer, ViewerPhoto } from '../photo-viewer/photo-viewer';
+import { plural } from '../../shared/plural';
 
 /** How many photos the album shows before "Pokaż pozostałe". */
 const COLLAPSED_PHOTOS = 12;
 const OTHER_ALBUMS = 4;
-
-function pluralize(count: number, one: string, few: string, many: string): string {
-    if (count === 1) return one;
-    const last = count % 10;
-    const lastTwo = count % 100;
-    return last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? few : many;
-}
 
 /**
  * An album page: header, intro, the photo grid with a dark photo viewer, the TOP 50 entry
@@ -46,11 +38,8 @@ function pluralize(count: number, one: string, few: string, many: string): strin
     // CMS HTML in <p [innerHTML]>: if an editor puts a block element in it (<p>, <div>,
     // <ul>), the browser rearranges the server-sent DOM and hydration breaks. So the
     // component re-renders in the browser; the content is in the HTML for robots anyway.
-    host: {
-        ngSkipHydration: 'true',
-        '(document:keydown)': 'onKeyDown($event)'
-    },
-    imports: [RouterLink, SwipeDirective, TrustedPipe],
+    host: { ngSkipHydration: 'true' },
+    imports: [RouterLink, TrustedPipe, PhotoViewer],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Gallery implements OnInit {
@@ -72,16 +61,24 @@ export class Gallery implements OnInit {
     );
 
     readonly current = signal<number | undefined>(undefined);
+    /** The viewer's own copy of the open photo; it browses without touching `current`. */
+    readonly viewerIndex = linkedSignal(() => this.current() ?? 0);
     readonly showAll = signal(false);
+
+    readonly viewerPhotos = computed<ViewerPhoto[]>(() =>
+        this.images().map(image => ({
+            src: image.src,
+            description: image.title || image.description,
+            author: image.author
+        }))
+    );
 
     private readonly albums = signal<AlbumSummary[]>([]);
     private readonly top50Posts = signal<{ number: number; title: string; urls: string[] }[]>([]);
 
     private readonly navigation = inject(NavigationService);
     private readonly resource = inject(ResourceService);
-    private readonly doc = inject(DOCUMENT);
     private readonly destroyRef = inject(DestroyRef);
-    private returnFocus: HTMLElement | null = null;
 
     readonly crumbs = computed(() =>
         this.navigation.trail(this.pageUrl()).filter(crumb => !!crumb.link)
@@ -125,21 +122,12 @@ export class Gallery implements OnInit {
         const dates = [data.published, updated ? `ostatnia aktualizacja ${updated}` : '']
             .filter(Boolean)
             .join(', ');
-        return [count ? `${count} ${pluralize(count, 'zdjęcie', 'zdjęcia', 'zdjęć')} i rycin` : '', data.author, dates]
+        return [count ? `${count} ${plural(count, 'zdjęcie', 'zdjęcia', 'zdjęć')} i rycin` : '', data.author, dates]
             .filter(Boolean)
             .join(' · ');
     });
 
-    constructor() {
-        // Leaving the page with the preview open must not leave scrolling locked.
-        effect(() => {
-            const open = this.current() !== undefined;
-            untracked(() => this.doc.body.classList.toggle('closedScroll', open));
-        });
-    }
-
     ngOnInit(): void {
-        this.destroyRef.onDestroy(() => this.doc.body.classList.remove('closedScroll'));
         forkJoin({
             albums: this.resource.loadAlbums(),
             top50: this.resource.loadPostsFromNetwork<Top50PostData>('top50')
@@ -160,49 +148,18 @@ export class Gallery implements OnInit {
     }
 
     photosLabel(count: number): string {
-        return pluralize(count, 'zdjęcie', 'zdjęcia', 'zdjęć');
+        return plural(count, 'zdjęcie', 'zdjęcia', 'zdjęć');
     }
 
     albumsLabel(count: number): string {
-        return pluralize(count, 'album', 'albumy', 'albumów');
+        return plural(count, 'album', 'albumy', 'albumów');
     }
 
     open(index: number): void {
-        this.returnFocus = this.doc.activeElement as HTMLElement | null;
         this.current.set(index);
-        // Focus moves into the dialog, to its close button.
-        setTimeout(() => this.doc.querySelector<HTMLElement>('.lightbox__close')?.focus());
     }
 
     close(): void {
         this.current.set(undefined);
-        this.returnFocus?.focus();
-        this.returnFocus = null;
-    }
-
-    next(): void {
-        const count = this.images().length;
-        this.current.update(index => (index === undefined ? index : (index + 1) % count));
-    }
-
-    prev(): void {
-        const count = this.images().length;
-        this.current.update(index => (index === undefined ? index : (index - 1 + count) % count));
-    }
-
-    onKeyDown(event: KeyboardEvent): void {
-        if (this.current() === undefined || event.defaultPrevented) return;
-        switch (event.key) {
-            case 'ArrowLeft':
-                this.prev();
-                break;
-            case 'ArrowRight':
-                this.next();
-                break;
-            case 'Escape':
-                this.close();
-                break;
-            default:
-        }
     }
 }

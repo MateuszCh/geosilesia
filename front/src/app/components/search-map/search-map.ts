@@ -6,9 +6,11 @@ import {
     ElementRef,
     OnInit,
     computed,
+    effect,
     inject,
     input,
-    signal
+    signal,
+    untracked
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -21,6 +23,7 @@ import { ResourceService } from '../../core/resource.service';
 import { ScrollService } from '../../core/scroll.service';
 import { GeoMap } from '../geo-map/geo-map';
 import { foldText } from '../../shared/fold-text';
+import { plural } from '../../shared/plural';
 
 /** Below this width the panel sits above the map and the page has to scroll to it. */
 const NARROW_BREAKPOINT = 900;
@@ -37,12 +40,8 @@ export interface ResultRow extends MapMarker {
     color: string;
 }
 
-/** Polish plural of "miejsce": 1 miejsce, 2–4 miejsca, 5+ miejsc. */
 export function placesLabel(count: number): string {
-    if (count === 1) return 'miejsce';
-    const last = count % 10;
-    const lastTwo = count % 100;
-    return last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? 'miejsca' : 'miejsc';
+    return plural(count, 'miejsce', 'miejsca', 'miejsc');
 }
 
 /**
@@ -50,7 +49,8 @@ export function placesLabel(count: number): string {
  * sorted by distance) and the map with category-coloured pins and an object card.
  *
  * Query parameters preselect filters, so other pages can link into the map:
- * `?kategoria=<category key>`, `?nazwa=<text>`, `?top50=1`.
+ * `?kategoria=<category key>`, `?nazwa=<text>`, `?top50=1`, and `?lokalizacja=<place>`
+ * (or `moja` for the user's position), which runs once the map script has loaded.
  */
 @Component({
     selector: 'app-search-map',
@@ -204,6 +204,24 @@ export class SearchMap implements OnInit {
 
     private resultsQty = DEFAULT_RESULTS;
     private dataLoaded = false;
+    /** A location passed in the address, searched as soon as the map can geocode it. */
+    private pendingLocation: string | undefined;
+
+    constructor() {
+        effect(() => {
+            if (!this.mapsReady() || !this.markersCount() || !this.pendingLocation) return;
+            const location = this.pendingLocation;
+            this.pendingLocation = undefined;
+            untracked(() => {
+                if (location === 'moja') {
+                    this.useMyLocation();
+                } else {
+                    this.locationInput.set(location);
+                    this.search(new Event('submit'));
+                }
+            });
+        });
+    }
     private messageTimer: ReturnType<typeof setTimeout> | undefined;
     private nameTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -219,6 +237,11 @@ export class SearchMap implements OnInit {
         const category = params.get('kategoria');
         if (category) this.selectedCategories.set([category]);
         if (params.get('top50')) this.top50Only.set(true);
+        const location = params.get('lokalizacja')?.trim();
+        if (location) {
+            this.pendingLocation = location;
+            if (location !== 'moja') this.locationInput.set(location);
+        }
         const name = params.get('nazwa');
         if (name) {
             this.searchMode.set('name');

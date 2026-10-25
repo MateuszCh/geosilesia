@@ -50,7 +50,8 @@
         }
 
         @include below($bp-phone) {
-            inset: 12px 12px 12px 12px;
+            inset: 12px;
+            width: auto;
             padding: 0;
             flex-direction: column-reverse;
             flex-wrap: nowrap;

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { LiteratureData } from '../../models/row.model';
+import { plural } from '../../shared/plural';
 
 /** Lists longer than this are shown shortened, with a button for the rest. */
 const COLLAPSE_ABOVE = 10;
@@ -18,8 +19,6 @@ export class Literature {
     readonly collapsible = computed(() => this.items().length > COLLAPSE_ABOVE);
 
     positionsLabel(count: number): string {
-        const last = count % 10;
-        const lastTwo = count % 100;
-        return last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? 'pozycje' : 'pozycji';
+        return plural(count, 'pozycja', 'pozycje', 'pozycji');
     }
 }

@@ -17,6 +17,7 @@ import { ResourceService } from '../../core/resource.service';
 import { AlbumSummary } from '../../models/post.model';
 import { GalleryListData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
+import { plural } from '../../shared/plural';
 
 interface AlbumCard {
     link: string;
@@ -102,9 +103,6 @@ export class GalleryList implements OnInit {
     }
 
     albumsLabel(count: number): string {
-        const last = count % 10;
-        const lastTwo = count % 100;
-        if (count === 1) return 'album';
-        return last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? 'albumy' : 'albumów';
+        return plural(count, 'album', 'albumy', 'albumów');
     }
 }

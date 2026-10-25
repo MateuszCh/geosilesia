@@ -16,6 +16,7 @@ import { MONTHS_SHORT, dateParts, toDate } from '../../core/dates';
 import { EventPost } from '../../models/post.model';
 import { NewsData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
+import { plural } from '../../shared/plural';
 
 const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_PREVIEW = 3;
@@ -155,11 +156,7 @@ export class News implements OnInit {
 
     readonly countLabel = computed(() => {
         const count = this.events().length;
-        if (!count) return '';
-        const last = count % 10;
-        const lastTwo = count % 100;
-        const word = count === 1 ? 'wpis' : last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? 'wpisy' : 'wpisów';
-        return `${count} ${word} w archiwum`;
+        return count ? `${count} ${plural(count, 'wpis', 'wpisy', 'wpisów')} w archiwum` : '';
     });
 
     private readonly resource = inject(ResourceService);

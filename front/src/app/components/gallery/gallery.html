@@ -131,83 +131,11 @@
 </article>
 
 @if (current() !== undefined) {
-    <div class="lightbox"
-         role="dialog"
-         aria-modal="true"
-         [attr.aria-label]="'Podgląd zdjęcia ' + (current()! + 1) + ' z ' + images().length + ': ' + (component().title ?? '')">
-        <div class="lightbox__bar">
-            <span class="trail-mark trail-mark--on-forest"
-                  aria-hidden="true"
-                  [style.--mark]="category()?.color ?? 'var(--trail-red)'"></span>
-            <span class="lightbox__album">{{ component().title }}</span>
-            <span class="lightbox__counter"><b>{{ current()! + 1 }}</b> / {{ images().length }}</span>
-            <button class="lightbox__close"
-                    type="button"
-                    aria-label="Zamknij podgląd i wróć do albumu"
-                    (click)="close()">
-                <svg width="16"
-                     height="16"
-                     viewBox="0 0 18 18"
-                     aria-hidden="true">
-                    <path d="M3 3l12 12M15 3L3 15"
-                          stroke="currentColor"
-                          stroke-width="2.4"
-                          stroke-linecap="round" />
-                </svg>
-            </button>
-        </div>
-        <div class="lightbox__main">
-            <div class="lightbox__stage"
-                 appSwipe
-                 (swipeLeft)="next()"
-                 (swipeRight)="prev()">
-                <img class="lightbox__image"
-                     [src]="images()[current()!]?.src"
-                     [alt]="'Zdjęcie ' + (current()! + 1) + ' z ' + images().length"
-                     aria-describedby="lightbox-description">
-                @if (images().length > 1) {
-                    <button class="lightbox__arrow lightbox__arrow--prev"
-                            type="button"
-                            aria-label="Poprzednie zdjęcie"
-                            (click)="prev()">←</button>
-                    <button class="lightbox__arrow lightbox__arrow--next"
-                            type="button"
-                            aria-label="Następne zdjęcie"
-                            (click)="next()">→</button>
-                }
-            </div>
-            <aside class="lightbox__info">
-                <span class="lightbox__section">Galeria{{ category() ? ' · ' + category()!.label : '' }}</span>
-                <p id="lightbox-description"
-                   class="lightbox__description">{{ images()[current()!]?.title || images()[current()!]?.description }}</p>
-                @if (images()[current()!]?.author) {
-                    <p class="lightbox__author">{{ images()[current()!]?.author }}</p>
-                }
-                <div class="lightbox__actions">
-                    <button class="btn btn--primary"
-                            type="button"
-                            (click)="close()">Wróć do albumu</button>
-                    @if (galleryLink()) {
-                        <a class="btn btn--secondary"
-                           [routerLink]="galleryLink()">Wszystkie albumy</a>
-                    }
-                </div>
-            </aside>
-        </div>
-        <div class="lightbox__thumbs"
-             role="group"
-             aria-label="Miniatury">
-            @for (image of images(); track image.id; let index = $index) {
-                <button class="lightbox__thumb"
-                        type="button"
-                        [attr.aria-label]="'Pokaż zdjęcie ' + (index + 1)"
-                        [attr.aria-current]="index === current() ? 'true' : null"
-                        (click)="current.set(index)">
-                    <img loading="lazy"
-                         alt=""
-                         [src]="image.src">
-                </button>
-            }
-        </div>
-    </div>
+    <app-photo-viewer [photos]="viewerPhotos()"
+                      [(index)]="viewerIndex"
+                      [title]="component().title ?? ''"
+                      [section]="'Galeria' + (category() ? ' · ' + category()!.label : '')"
+                      [color]="category()?.color ?? 'var(--trail-red)'"
+                      [moreLink]="galleryLink()"
+                      (closed)="close()" />
 }
