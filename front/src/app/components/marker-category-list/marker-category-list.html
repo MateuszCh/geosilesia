@@ -6,24 +6,9 @@
         <ul class="category-list__items">
             @for (item of items(); track $index) {
                 <li class="category-list__item"
-                    [class.category-list__item--band]="item.look"
-                    [style.--band]="item.look?.color">
-                    @if (item.look?.iconUrl) {
-                        <img class="category-list__icon"
-                             alt=""
-                             [src]="item.look!.iconUrl">
-                    } @else if (item.look?.glyph) {
-                        <svg class="category-list__icon"
-                             viewBox="0 0 24 24"
-                             aria-hidden="true">
-                            <path [attr.d]="item.look!.glyph"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  stroke-width="1.7"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round" />
-                        </svg>
-                    } @else if (item.icon) {
+                    [class.category-list__item--band]="item.color"
+                    [style.--band]="item.color">
+                    @if (item.icon) {
                         <img class="category-list__icon"
                              alt=""
                              [src]="item.icon">

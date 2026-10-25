@@ -224,10 +224,8 @@ const changedPostTypes = [
         ["rock", "Skała lub rodzaj obiektu", "text"],
         ["top50", "Numer w TOP 50", "number"]
     ]),
-    pt("icon", "Ikona", "Ikony", [
-        ["color", "Kolor kategorii", "select", TRAIL_COLORS],
-        ["line_icon", "Ikona liniowa", "file"]
-    ]),
+    // The category's line icon is its existing `icon` field (an SVG since step 12).
+    pt("icon", "Ikona", "Ikony", [["color", "Kolor kategorii", "select", TRAIL_COLORS]]),
     pt("wydarzenie", "Wydarzenie", "Wydarzenia", [
         ["place", "Miejsce lub organizator", "text"],
         ["event_date", "Data wydarzenia", "date"]

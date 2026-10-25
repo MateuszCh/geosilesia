@@ -35,12 +35,10 @@ export interface IconPostData {
     /** Internal key the markers refer to – it does not always match the name. */
     category?: string;
     name?: string;
-    /** PNG pin of the old map. */
+    /** The category's line icon (SVG from the design system's "Ikony" group). */
     icon?: string;
     position?: number;
     color?: TrailColorName | string;
-    /** SVG glyph from the design system's "Ikony" group. */
-    line_icon?: string;
 }
 
 export interface NavSubItem {

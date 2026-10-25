@@ -198,12 +198,11 @@
         object-fit: contain;
     }
 
-    // The line icon of a map category (an <svg> or an uploaded SVG).
+    // The line icon of a map category.
     &__item--band &__icon {
         width: 30px;
         height: 30px;
         margin: 0 3px;
-        color: var(--ink);
     }
 
     &__text {

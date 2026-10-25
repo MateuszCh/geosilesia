@@ -45,6 +45,9 @@ withDb(async db => {
 
     const icons = await db.collection("posts").find({ type: "icon" }).toArray();
     icons.filter(icon => !(icon.data && icon.data.color)).forEach(icon => issues.push(`icon "${icon.title}": no colour`));
+    icons
+        .filter(icon => !/\.svg$/i.test((icon.data && icon.data.icon) || ""))
+        .forEach(icon => issues.push(`icon "${icon.title}": no SVG line icon in "icon"`));
 
     const nav = await db.collection("posts").findOne({ type: "navigation" });
     const data = (nav && nav.data) || {};

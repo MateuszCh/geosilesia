@@ -20,76 +20,24 @@ export const TRAIL_COLORS: Record<TrailColorName, string> = {
 /** Fallback for a missing or unknown colour – neutral, never mistaken for a category. */
 export const NEUTRAL_COLOR = '#4f5a53';
 
-/** Ten category glyphs of the "Ikony" asset group: 24×24, single stroke. */
-export const CATEGORY_GLYPHS = {
-    geologiczne: 'M3 7h18M3 12h18M3 17h18M7 7l2 5M15 12l-2 5M17 7l1 5',
-    geomorfologiczne: 'M2 20l7-12 4 6 3-4 6 10z',
-    wodne: 'M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z',
-    poprzemyslowe: 'M6 21l4-14h4l4 14M8 14h8M7 18h10M12 7V5M9 5a3 3 0 0 1 6 0',
-    podziemne: 'M3 21v-9a9 9 0 0 1 18 0v9M7 21v-8a5 5 0 0 1 10 0v8M2 21h20',
-    uzdrowiska: 'M4 20V8h16v12M4 12h16M4 16h16M8 8V5M16 8V5M2 20h20',
-    muzea: 'M3 10l9-6 9 6M5 10v9M9.5 10v9M14.5 10v9M19 10v9M3 21h18',
-    szlaki: 'M6 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM18 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM8 19h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7',
-    widokowe: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6z',
-    wydarzenia: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'
-} as const;
-
-export type GlyphName = keyof typeof CATEGORY_GLYPHS;
-
-/**
- * Front-end fallback until the `icon` posts get their `color` field: keyed by the
- * internal `category` key, which markers refer to and which does not always match the
- * category name ("Obiekty wodne" is "geostanowiska międzynarodowe").
- */
-const BY_CATEGORY_KEY: Record<string, { color: TrailColorName; glyph: GlyphName }> = {
-    'geostanowiska projektowane': { color: 'czerwony', glyph: 'geologiczne' },
-    'geostanowiska inne': { color: 'zielony', glyph: 'geomorfologiczne' },
-    'geostanowiska międzynarodowe': { color: 'niebieski', glyph: 'wodne' },
-    'obiekty poprzemysłowe': { color: 'czarny', glyph: 'poprzemyslowe' },
-    'trasy podziemne': { color: 'brązowy', glyph: 'podziemne' },
-    'uzdrowiska i obiekty lecznicze': { color: 'turkusowy', glyph: 'uzdrowiska' },
-    'muzea, ośrodki edukacyjne i dinoparki': { color: 'fioletowy', glyph: 'muzea' },
-    'ścieżki tematyczne': { color: 'żółty', glyph: 'szlaki' },
-    'punkty widokowe': { color: 'pomarańczowy', glyph: 'widokowe' },
-    'imprezy tematyczne': { color: 'różowy', glyph: 'wydarzenia' }
-};
-
-/** The glyph follows the colour when the key is unknown – the pairs are fixed in the design system. */
-const GLYPH_BY_COLOR: Record<TrailColorName, GlyphName> = {
-    czerwony: 'geologiczne',
-    zielony: 'geomorfologiczne',
-    niebieski: 'wodne',
-    czarny: 'poprzemyslowe',
-    brązowy: 'podziemne',
-    turkusowy: 'uzdrowiska',
-    fioletowy: 'muzea',
-    żółty: 'szlaki',
-    pomarańczowy: 'widokowe',
-    różowy: 'wydarzenia'
-};
-
 export function colorByName(name: string | undefined): string | undefined {
     return name ? TRAIL_COLORS[name.trim().toLowerCase() as TrailColorName] : undefined;
 }
 
 export interface CategoryLook {
     color: string;
-    /** Inline glyph path; used when the post has no uploaded `line_icon`. */
-    glyph?: string;
-    /** Uploaded SVG from the CMS; takes precedence over the built-in glyph. */
+    /** The category's icon file from the CMS (`icon` field) – an SVG line icon in variant C. */
     iconUrl?: string;
 }
 
-/** Colour and glyph of a map category: the CMS fields first, the key map as a fallback. */
+/**
+ * Colour and icon of a map category, both from its `icon` post: the front end keeps no
+ * colours or icons of its own, so the CMS is the only place to change them.
+ */
 export function categoryLook(icon: IconPostData | undefined): CategoryLook {
-    const byKey = icon?.category ? BY_CATEGORY_KEY[icon.category.trim().toLowerCase()] : undefined;
-    const colorName = (icon?.color?.trim().toLowerCase() as TrailColorName | undefined) ?? byKey?.color;
-    const color = colorByName(colorName) ?? NEUTRAL_COLOR;
-    const glyphName = byKey?.glyph ?? (colorName ? GLYPH_BY_COLOR[colorName] : undefined);
     return {
-        color,
-        glyph: glyphName ? CATEGORY_GLYPHS[glyphName] : undefined,
-        iconUrl: icon?.line_icon || undefined
+        color: colorByName(icon?.color) ?? NEUTRAL_COLOR,
+        iconUrl: icon?.icon || undefined
     };
 }
 

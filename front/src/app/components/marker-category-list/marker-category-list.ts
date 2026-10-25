@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContentService } from '../../core/content.service';
-import { CategoryLook, categoryLook } from '../../core/categories';
+import { colorByName } from '../../core/categories';
 import { IconPostData } from '../../models/post.model';
 import { MarkerCategoryListData } from '../../models/row.model';
 
 /**
  * Descriptions of the map categories. Each row entry picks an icon file in the CMS – the
- * same PNG as the category's `icon` post – so the entry is matched to its category by that
- * file and drawn as on the map: the category colour and line icon. An icon that belongs to
- * no category is shown as it is.
+ * same file as the category's `icon` post – so the entry is matched to its category by that
+ * file and gets the category colour as a band, as on the home page cards. An icon that
+ * belongs to no category is shown without one.
  */
 @Component({
     selector: 'app-marker-category-list',
@@ -23,7 +23,8 @@ import { MarkerCategoryListData } from '../../models/row.model';
 export class MarkerCategoryList implements OnInit {
     readonly component = input.required<MarkerCategoryListData>();
 
-    private readonly looks = signal(new Map<string, CategoryLook>());
+    /** Category colour by the category's icon file. */
+    private readonly colors = signal(new Map<string, string>());
     private readonly content = inject(ContentService);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -31,7 +32,7 @@ export class MarkerCategoryList implements OnInit {
         (this.component().categories ?? []).map(category => ({
             text: category.text ?? '',
             icon: category.icon,
-            look: this.looks().get(iconKey(category.icon))
+            color: this.colors().get(iconKey(category.icon))
         }))
     );
 
@@ -40,11 +41,11 @@ export class MarkerCategoryList implements OnInit {
             .posts<IconPostData>('icon')
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(icons =>
-                this.looks.set(
+                this.colors.set(
                     new Map(
                         icons
-                            .filter(icon => icon.data?.icon)
-                            .map(icon => [iconKey(icon.data.icon), categoryLook(icon.data)] as const)
+                            .map(icon => [iconKey(icon.data?.icon), colorByName(icon.data?.color)] as const)
+                            .filter((entry): entry is readonly [string, string] => !!entry[0] && !!entry[1])
                     )
                 )
             );
