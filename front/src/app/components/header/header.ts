@@ -11,6 +11,7 @@ import { NavigationEnd, NavigationStart, Router, RouterLink } from '@angular/rou
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationService } from '../../core/navigation.service';
+import { NavItem, NavSubItem } from '../../models/post.model';
 import { internalLink } from '../../core/cms-link';
 
 @Component({
@@ -18,7 +19,7 @@ import { internalLink } from '../../core/cms-link';
     templateUrl: './header.html',
     imports: [RouterLink],
     host: {
-        '(document:keydown.escape)': 'closeMenu()'
+        '(document:keydown.escape)': 'onEscape()'
     },
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -35,6 +36,13 @@ export class Header implements OnInit {
     ];
 
     readonly menuOpen = signal(false);
+    /** Index of the desktop section whose subpage list is open from its button; -1 = none. */
+    readonly openNav = signal(-1);
+    /**
+     * After a click on a section or subpage link the pointer still hovers the list on the
+     * new page; hover stays off until the pointer leaves the navigation.
+     */
+    readonly hoverOff = signal(false);
     /** Index of the expanded section in the mobile menu; -1 = none. */
     readonly openSection = signal(-1);
     readonly currentPath = signal('/');
@@ -52,7 +60,10 @@ export class Header implements OnInit {
                 filter(event => event instanceof NavigationStart),
                 takeUntilDestroyed(this.destroyRef)
             )
-            .subscribe(() => this.closeMenu());
+            .subscribe(() => {
+                this.closeMenu();
+                this.openNav.set(-1);
+            });
 
         // The active item is computed only after NavigationEnd: on NavigationStart
         // router.url still points to the previous page (the router commits the URL
@@ -101,6 +112,32 @@ export class Header implements OnInit {
         if (!name) return;
         this.closeMenu();
         void this.router.navigate([this.navigation.cta().link], { queryParams: { nazwa: name } });
+    }
+
+    /** Subpages that have an address and a name. */
+    subLinks(item: NavItem): NavSubItem[] {
+        return (item.subnav ?? []).filter(sub => sub.link && sub.subtitle);
+    }
+
+    toggleNav(index: number): void {
+        this.openNav.update(open => (open === index ? -1 : index));
+    }
+
+    /** The list opened from the button closes once the focus leaves its section. */
+    onNavFocusOut(index: number, event: FocusEvent): void {
+        const item = event.currentTarget as HTMLElement;
+        if (this.openNav() === index && !item.contains(event.relatedTarget as Node | null)) {
+            this.openNav.set(-1);
+        }
+    }
+
+    onEscape(): void {
+        const open = this.openNav();
+        if (open >= 0) {
+            this.openNav.set(-1);
+            this.doc.getElementById(`site-subnav-toggle-${open}`)?.focus();
+        }
+        this.closeMenu();
     }
 
     toggleSection(index: number): void {

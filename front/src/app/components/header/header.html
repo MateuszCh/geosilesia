@@ -8,14 +8,63 @@
             <span class="logo__text">GeoSilesia</span>
         </a>
         @if (navigation.items().length) {
+            <!-- Sections with subpages open a list on hover; the arrow button opens it from
+                 the keyboard and on touch screens. -->
             <nav class="site-nav"
-                 aria-label="Główna nawigacja">
-                @for (item of navigation.items(); track $index) {
+                 aria-label="Główna nawigacja"
+                 [class.site-nav--hover-off]="hoverOff()"
+                 (mouseleave)="hoverOff.set(false)">
+                @for (item of navigation.items(); track $index; let i = $index) {
                     @if (navigation.sectionLink(item); as link) {
-                        <a class="site-nav__link"
-                           [routerLink]="link"
-                           [class.site-nav__link--active]="navigation.isSectionActive(item, currentPath())"
-                           [attr.aria-current]="navigation.isSectionActive(item, currentPath()) ? 'true' : null">{{ item.title }}</a>
+                        @let subs = subLinks(item);
+                        <div class="site-nav__item"
+                             [class.site-nav__item--open]="openNav() === i"
+                             (focusout)="onNavFocusOut(i, $event)">
+                            <a class="site-nav__link"
+                               [class.site-nav__link--has-menu]="subs.length"
+                               [routerLink]="link"
+                               (click)="hoverOff.set(true)"
+                               [class.site-nav__link--active]="navigation.isSectionActive(item, currentPath())"
+                               [attr.aria-current]="navigation.isSectionActive(item, currentPath()) ? 'true' : null">{{ item.title }}</a>
+                            @if (subs.length) {
+                                <button class="site-nav__toggle"
+                                        type="button"
+                                        [id]="'site-subnav-toggle-' + i"
+                                        [attr.aria-expanded]="openNav() === i"
+                                        [attr.aria-controls]="'site-subnav-' + i"
+                                        (click)="toggleNav(i)">
+                                    <span class="visually-hidden">Podstrony: {{ item.title }}</span>
+                                    <svg width="12"
+                                         height="12"
+                                         viewBox="0 0 24 24"
+                                         aria-hidden="true">
+                                        <path d="M6 9l6 6 6-6"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              stroke-width="2.6"
+                                              stroke-linecap="round"
+                                              stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+                                <ul class="site-nav__menu"
+                                    [id]="'site-subnav-' + i">
+                                    @for (sub of subs; track $index) {
+                                        <li>
+                                            <a class="site-nav__menu-link"
+                                               [routerLink]="internalLink(sub.link)"
+                                               (click)="hoverOff.set(true)"
+                                               [class.site-nav__menu-link--current]="navigation.isCurrent(sub.link, currentPath())"
+                                               [attr.aria-current]="navigation.isCurrent(sub.link, currentPath()) ? 'page' : null">
+                                                <span class="trail-mark trail-mark--xs"
+                                                      aria-hidden="true"
+                                                      [style.--mark]="markColors[$index % markColors.length]"></span>
+                                                {{ sub.subtitle }}
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </div>
                     }
                 }
             </nav>

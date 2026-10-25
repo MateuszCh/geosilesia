@@ -154,6 +154,107 @@
             border-bottom-color: var(--trail-red);
             font-weight: 700;
         }
+
+        // The arrow button sits right after the name.
+        &--has-menu {
+            padding-right: 3px;
+        }
+    }
+
+    // ---- Subpage lists ----
+
+    &__item {
+        position: relative;
+        display: flex;
+    }
+
+    &__toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        margin-right: 6px;
+        padding: 0;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        background: transparent;
+        color: var(--muted);
+
+        svg {
+            transition: transform 0.2s;
+        }
+
+        &:hover {
+            color: var(--ink);
+        }
+    }
+
+    &__menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 30;
+        display: none;
+        min-width: 250px;
+        margin: 0;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        background: var(--surface);
+        box-shadow: var(--shadow-card);
+        list-style: none;
+    }
+
+    &__item--open &__menu {
+        display: block;
+    }
+
+    &__item--open &__toggle svg {
+        transform: rotate(180deg);
+    }
+
+    // Hover only where there is a pointer to hover with; touch screens use the button.
+    @media (hover: hover) {
+        &__item:hover &__menu {
+            display: block;
+        }
+
+        &__item:hover &__toggle svg {
+            transform: rotate(180deg);
+        }
+
+        &__item:hover &__link {
+            border-bottom-color: var(--trail-red);
+        }
+
+        // Right after a click in a list, until the pointer leaves the navigation.
+        &--hover-off &__item:hover:not(.site-nav__item--open) &__menu {
+            display: none;
+        }
+    }
+
+    &__menu-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 10px;
+        border-radius: var(--radius-md);
+        color: var(--ink);
+        font-size: 15px;
+        line-height: 21px;
+        text-decoration: none;
+        white-space: nowrap;
+
+        &:hover {
+            background: var(--surface-alt);
+            color: var(--ink);
+        }
+
+        &--current,
+        &--current:hover {
+            background: var(--selected);
+            font-weight: 700;
+        }
     }
 }
 
