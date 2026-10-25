@@ -128,8 +128,10 @@ function pageData(pageUrl) {
 
 // Albums for the gallery list and the "Inne albumy" section: every page with a "gallery"
 // row. Variant C keeps the category, cover and "hidden" flag on the album itself; albums
-// not migrated yet take them from the manual gallery_list (and an album missing from that
-// list counts as hidden, as on the old site).
+// not migrated yet take the category and cover from the manual gallery_list. An album
+// whose "hidden" flag was never set is hidden only while the list is kept by hand ("ręcznie")
+// and the album is not on it – as on the old site. In the "automatycznie" mode it is shown,
+// otherwise a new album would stay invisible until someone also added it to the manual list.
 function galleriesList() {
     return Promise.all([
         collections.pages
@@ -138,9 +140,11 @@ function galleriesList() {
         collections.pages.find({ "rows.type": "gallery_list" }, { projection: { rows: 1 } }).toArray()
     ]).then(([albumPages, listPages]) => {
         const listed = new Map();
+        let automatic = false;
         listPages.forEach(page =>
             (page.rows || []).forEach(row => {
                 if (row.type !== "gallery_list" || !row.data) return;
+                if (row.data.mode === "automatycznie") automatic = true;
                 (row.data.galleries || []).forEach(entry => {
                     const key = entry && entry.link ? seoMeta.normalizePath(decodePath(entry.link.replace(/^https?:\/\/[^/]+/, ""))) : "";
                     if (key && !listed.has(key)) listed.set(key, { entry, order: listed.size });
@@ -158,7 +162,7 @@ function galleriesList() {
                 category: gallery.category || (manual && manual.entry.category) || "",
                 cover: gallery.cover || (manual && manual.entry.image) || "",
                 catalogue: typeof gallery.catalogue === "string" ? gallery.catalogue : "",
-                hidden: typeof gallery.hidden === "boolean" ? gallery.hidden : !manual,
+                hidden: typeof gallery.hidden === "boolean" ? gallery.hidden : !automatic && !manual,
                 updated: page.updated,
                 order: manual ? manual.order : Number.MAX_SAFE_INTEGER
             };
