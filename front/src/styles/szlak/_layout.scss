@@ -184,28 +184,28 @@
     }
 }
 
-.section-nav {
+.section-bar {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-
-    &__title {
-        padding-bottom: 8px;
-        font-size: 14px;
-        font-weight: 700;
-        line-height: 20px;
-    }
+    flex-wrap: wrap;
+    gap: 8px;
 
     &__link {
         display: flex;
-        padding: 12px 14px;
+        padding: 10px 16px;
         border: 1px solid var(--line);
         border-radius: var(--radius-md);
+        background: var(--surface);
         color: var(--ink);
         font-size: 16px;
         font-weight: 600;
         line-height: 22px;
         text-decoration: none;
+
+        @include below($bp-phone) {
+            padding: 8px 12px;
+            font-size: 15px;
+            line-height: 20px;
+        }
 
         &:hover {
             border-color: var(--ink);

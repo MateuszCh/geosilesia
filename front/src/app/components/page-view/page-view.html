@@ -94,6 +94,17 @@
         <div class="page-body container"
              [class.page-body--side]="hasSide()">
             <div class="page-body__main">
+                @if (sectionBar(); as current) {
+                    <nav class="section-bar"
+                         [attr.aria-label]="'Dział ' + current.title">
+                        @for (link of current.links; track link.link) {
+                            <a class="section-bar__link"
+                               [routerLink]="link.link"
+                               [class.section-bar__link--current]="link.current"
+                               [attr.aria-current]="link.current ? 'page' : null">{{ link.title }}</a>
+                        }
+                    </nav>
+                }
                 @for (row of layout().rows; track $index) {
                     <section class="row"
                              [id]="'section-' + $index"
@@ -101,7 +112,7 @@
                         <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
                     </section>
                 }
-                @if (!hasSide() && !listsSections() && next(); as nextPage) {
+                @if (!listsSections() && next(); as nextPage) {
                     <a class="next-card"
                        [routerLink]="nextPage.link">
                         <span class="next-card__label">Dalej w dziale {{ nextPage.section }}</span>
@@ -113,19 +124,7 @@
             </div>
             @if (hasSide()) {
                 <aside class="page-body__side"
-                       [attr.aria-label]="section() ? 'Dział ' + section()!.title : 'Powiązane'">
-                    @if (section(); as current) {
-                        <nav class="section-nav"
-                             [attr.aria-label]="'Dział ' + current.title">
-                            <span class="section-nav__title">{{ current.title }}</span>
-                            @for (link of current.links; track link.link) {
-                                <a class="section-nav__link"
-                                   [routerLink]="link.link"
-                                   [class.section-nav__link--current]="link.current"
-                                   [attr.aria-current]="link.current ? 'page' : null">{{ link.title }}</a>
-                            }
-                        </nav>
-                    }
+                       aria-label="Powiązane">
                     @for (row of layout().side; track $index) {
                         <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
                     }

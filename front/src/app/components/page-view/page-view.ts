@@ -109,17 +109,19 @@ export class PageView {
     readonly crumbs = computed(() => this.navigation.trail(this.path()));
     readonly section = computed(() => this.navigation.section(this.path()));
     readonly next = computed(() => this.navigation.next(this.path()));
-    /** The knowledge base lists its sections itself, so its pages need no "Dalej w dziale". */
+    /** The knowledge base lists its sections itself – its pages get no section bar or "Dalej". */
     readonly listsSections = computed(() =>
         this.layout().rows.some(row => row.type === 'knowledge_base' && row.data?.variant !== 'zapowiedź')
     );
     /**
-     * Article pages of a section list the section's pages beside the content; side link
-     * cards need the panel too. Pages with a full-width row (dictionary, lists) go without.
+     * Every page of a section links to all of the section's pages in a bar under its header,
+     * as in the mockup – the same on article pages and on pages with full-width rows.
      */
-    readonly hasSide = computed(
-        () => (!this.layout().wide && !!this.section()) || this.layout().side.length > 0
+    readonly sectionBar = computed(() =>
+        this.layout().kind === 'content' && !this.listsSections() ? this.section() : undefined
     );
+    /** The side panel only holds link cards set to "lista boczna". */
+    readonly hasSide = computed(() => this.layout().side.length > 0);
     readonly top50Link = computed(() => {
         const item = this.navigation.items().find(entry => /top\s*50/i.test(entry.title ?? ''));
         return item ? this.navigation.sectionLink(item) : undefined;
