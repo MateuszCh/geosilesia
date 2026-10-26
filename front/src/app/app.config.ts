@@ -1,8 +1,11 @@
 import {
     ApplicationConfig,
+    inject,
     isDevMode,
+    provideAppInitializer,
     provideBrowserGlobalErrorListeners
 } from '@angular/core';
+import { ViewportScroller } from '@angular/common';
 import {
     provideRouter,
     withComponentInputBinding,
@@ -24,9 +27,12 @@ export const appConfig: ApplicationConfig = {
             routes,
             // The resolver result goes straight into the page component's `page` input.
             withComponentInputBinding(),
-            // Equivalent of $window.scrollTo(0, 0) on $routeChangeSuccess.
-            withInMemoryScrolling({ scrollPositionRestoration: 'top' })
+            // Equivalent of $window.scrollTo(0, 0) on $routeChangeSuccess; a link with a
+            // fragment ("#top50-12") scrolls to that element instead.
+            withInMemoryScrolling({ scrollPositionRestoration: 'top', anchorScrolling: 'enabled' })
         ),
+        // ...with a little room above it.
+        provideAppInitializer(() => inject(ViewportScroller).setOffset([0, 24])),
         provideHttpClient(withFetch()),
         // Hydration takes over the server-rendered DOM. The HTTP transfer cache replays the
         // API responses from the render at startup, so the client's first view matches the

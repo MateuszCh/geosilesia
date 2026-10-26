@@ -21,10 +21,17 @@
     <section class="top50-preview">
         <div class="top50-preview__photo">
             @if (featured(); as stop) {
-                <img class="top50-preview__image"
-                     loading="lazy"
-                     [src]="stop.image"
-                     [alt]="stop.title">
+                @if (stop.image) {
+                    <img class="top50-preview__image"
+                         loading="lazy"
+                         [src]="stop.image"
+                         [alt]="stop.title">
+                } @else {
+                    <span class="top50-preview__no-photo"
+                          aria-hidden="true">
+                        <span class="trail-mark"></span>
+                    </span>
+                }
                 <div class="top50-preview__caption">
                     <span class="route-stop route-stop--filled route-stop--large">{{ stop.number }}</span>
                     <div class="top50-preview__caption-text">
@@ -45,20 +52,26 @@
                 <div class="prose"
                      [innerHTML]="component().intro | trusted"></div>
             }
-            <ol class="route route--compact">
+            <!-- Pointing at a place shows it beside; a click opens the route at that place. -->
+            <ol class="route route--compact"
+                (pointerenter)="preload()">
                 @for (stop of shown(); track stop.id) {
-                    <li class="route__stop">
+                    @let current = stop === featured();
+                    <li class="route__stop"
+                        (mouseenter)="point(stop)"
+                        (focusin)="point(stop)">
                         <span class="route__track">
                             <span class="route-stop"
-                                  [class.route-stop--filled]="$first">{{ stop.number }}</span>
+                                  [class.route-stop--filled]="current">{{ stop.number }}</span>
                         </span>
                         @if (link()) {
                             <a class="route__name"
-                               [class.route__name--first]="$first"
-                               [routerLink]="link()">{{ stop.title }}</a>
+                               [class.route__name--current]="current"
+                               [routerLink]="link()"
+                               [fragment]="stopId(stop)">{{ stop.title }}</a>
                         } @else {
                             <span class="route__name"
-                                  [class.route__name--first]="$first">{{ stop.title }}</span>
+                                  [class.route__name--current]="current">{{ stop.title }}</span>
                         }
                     </li>
                 }

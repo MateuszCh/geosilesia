@@ -376,6 +376,9 @@
                 height: 38px;
                 margin: 8px 0;
                 font-size: 18px;
+                transition:
+                    background-color 0.15s,
+                    color 0.15s;
             }
         }
 
@@ -397,7 +400,8 @@
         line-height: 23px;
         text-decoration: none;
 
-        &--first {
+        // The place the home page preview shows beside the list.
+        &--current {
             font-weight: 700;
         }
 
@@ -516,6 +520,22 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+    }
+
+    // A place without a photo: the trail mark above the caption.
+    &__no-photo {
+        position: absolute;
+        inset: 0 0 110px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .trail-mark {
+            width: 44px;
+            height: 60px;
+            border-width: 2px;
+            border-radius: 4px;
+        }
     }
 
     &__caption {
