@@ -1031,9 +1031,14 @@
         line-height: 1.1;
     }
 
-    a.timeline__title:hover {
-        color: var(--ink);
-        text-decoration: underline;
+    // Linked titles look like the others, as in the mockup; the link shows on hover.
+    a.timeline__title {
+        text-decoration: none;
+
+        &:hover {
+            color: var(--ink);
+            text-decoration: underline;
+        }
     }
 
     &__note {

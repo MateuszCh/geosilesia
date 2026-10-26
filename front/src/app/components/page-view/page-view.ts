@@ -120,33 +120,37 @@ export class PageView {
     readonly listsSections = computed(() =>
         this.layout().rows.some(row => row.type === 'knowledge_base' && row.data?.variant !== 'zapowiedź')
     );
-    /**
-     * Every page of a section links to all of the section's pages in a bar under its header,
-     * as in the mockup – the same on article pages and on pages with full-width rows.
-     */
+    /** The section's pages, wherever a page shows them. */
     readonly sectionBar = computed(() =>
         this.layout().kind === 'content' && !this.listsSections() ? this.section() : undefined
     );
-    /** Inside a light header band the section bar stands above the title, as in the mockups. */
-    readonly mainSectionBar = computed(() =>
-        this.layout().header?.style === 'light' ? undefined : this.sectionBar()
-    );
     /**
-     * "Dalej w dziale" stands beside the text on article pages (tabs) and on pages that
-     * already have a side column, as in the mockup of an article; elsewhere under the text.
+     * Where the section's pages show, as in the mockups: in a light header band above the
+     * title (the dictionary pages), as a menu beside the text of a page that has nothing
+     * else there (Położenie, Rzeźba terenu), and not at all beside a page's own side column
+     * (Budowa geologiczna, Skarby natury).
      */
-    readonly sideNext = computed(() => {
-        const { side, rows } = this.layout();
-        const beside = side.length > 0 || rows.some(row => row.type === 'tabs');
-        return beside && !this.listsSections() ? this.next() : undefined;
+    readonly sideMenu = computed(() => {
+        const { header, side } = this.layout();
+        return header?.style !== 'light' && side.length === 0 ? this.sectionBar() : undefined;
     });
-    readonly mainNext = computed(() => (!this.sideNext() && !this.listsSections() ? this.next() : undefined));
+    /** "Dalej w dziale" closes the side column of an article with tabs (Budowa geologiczna). */
+    readonly sideNext = computed(() => {
+        const { header, side, rows } = this.layout();
+        const article = header?.style !== 'light' && side.length > 0 && rows.some(row => row.type === 'tabs');
+        return article ? this.next() : undefined;
+    });
     /** The author and dates of a page whose header band does not show them. */
     readonly bylineBelow = computed(() =>
         this.layout().header?.bylineBelow ? bylineText(this.layout().byline) : ''
     );
-    /** The side column: link cards set to "lista boczna", the databases and "Dalej w dziale". */
-    readonly hasSide = computed(() => this.layout().side.length > 0 || !!this.sideNext());
+    /** The byline closes the literature box (Słowa kluczowe) or else the side column (Geoparki). */
+    readonly literatureByline = computed(() =>
+        this.layout().rows.some(row => row.type === 'literature') ? this.bylineBelow() : ''
+    );
+    readonly sideByline = computed(() => (this.literatureByline() ? '' : this.bylineBelow()));
+    /** The side column: side rows, the section menu and "Dalej w dziale". */
+    readonly hasSide = computed(() => this.layout().side.length > 0 || !!this.sideMenu() || !!this.sideNext());
     readonly top50Link = computed(() => {
         const item = this.navigation.items().find(entry => /top\s*50/i.test(entry.title ?? ''));
         return item ? this.navigation.sectionLink(item) : undefined;

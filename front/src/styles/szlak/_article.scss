@@ -138,6 +138,12 @@
             color: var(--ink);
         }
     }
+
+    &__byline {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 20px;
+    }
 }
 
 .footnotes {

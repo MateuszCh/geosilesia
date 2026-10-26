@@ -382,6 +382,44 @@
     }
 }
 
+// The section's pages beside the text (Położenie, Rzeźba terenu).
+.section-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    &__title {
+        padding-bottom: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 20px;
+    }
+
+    &__link {
+        display: flex;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        color: var(--ink);
+        font-weight: 600;
+        line-height: 22px;
+        text-decoration: none;
+
+        &:hover {
+            border-color: var(--ink);
+            color: var(--ink);
+        }
+
+        &--current,
+        &--current:hover {
+            border-color: var(--ink);
+            background: var(--ink);
+            color: #fff;
+            font-weight: 700;
+        }
+    }
+}
+
 .next-card {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;

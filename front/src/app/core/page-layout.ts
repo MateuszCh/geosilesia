@@ -103,10 +103,12 @@ export function isFullWidth(row: Row): boolean {
 
 /**
  * Rows beside the text: link cards set to "lista boczna" and, as in the mockups, the geosite
- * databases and a quote standing on its own (the motto of "Skarby natury").
+ * databases, a quote standing on its own (the motto of "Skarby natury") and the "A ponadto"
+ * box of a numbered list (see withMoreBeside).
  */
 function isSideRow(row: Row): boolean {
     if (row.type === 'link_cards') return row.data?.variant === 'lista boczna';
+    if (row.type === 'numbered_list') return !row.data?.items?.length && !!row.data?.more_items?.length;
     if (row.type === 'title_and_text') {
         const text = row.data?.text ?? [];
         return !row.data?.title && text.length === 1 && text[0].paragraph_class === 'cytat' && !text[0].list?.length;
@@ -177,6 +179,18 @@ function mergeLegacyNotices(rows: Row[]): Row[] {
         result.push(row);
     }
     return result;
+}
+
+/** The "A ponadto" items of a numbered list go beside the text in a box of their own. */
+function withMoreBeside(rows: Row[]): Row[] {
+    return rows.flatMap(row => {
+        if (row.type !== 'numbered_list' || !row.data?.items?.length || !row.data.more_items?.length) return [row];
+        const { more_title, more_items, ...list } = row.data;
+        return [
+            { ...row, data: list },
+            { type: 'numbered_list', data: { more_title, more_items } }
+        ];
+    });
 }
 
 function heroFromRow(row: Row | undefined): { hero: PageHeroData; consumed: 'row' | 'title' } | undefined {
@@ -272,7 +286,7 @@ export function layoutPage(page: Page | undefined): PageLayout {
             : parsed;
 
     const header = headerOf(hero, rows);
-    rows = header.rows;
+    rows = withMoreBeside(header.rows);
 
     return {
         kind: 'content',

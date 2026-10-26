@@ -12,6 +12,8 @@ const COLLAPSE_ABOVE = 4;
 })
 export class Literature {
     readonly component = input.required<LiteratureData>();
+    /** The page's author and dates, at the bottom of the box, as in the mockup of the dictionary. */
+    readonly byline = input('');
     readonly expanded = signal(false);
     protected readonly collapsedCount = 3;
 

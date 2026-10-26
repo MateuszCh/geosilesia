@@ -1,8 +1,8 @@
 <section class="albums">
     <div class="albums__bar">
-        @if (component().intro) {
+        @if (intro()) {
             <div class="albums__intro lead prose"
-                 [innerHTML]="component().intro | trusted"></div>
+                 [innerHTML]="intro() | trusted"></div>
         } @else if (albums().length) {
             <p class="albums__intro lead">{{ albums().length }} {{ albumsLabel(albums().length) }} fotograficznych z terenu.</p>
         }

@@ -25,4 +25,7 @@
                     (click)="expanded.set(!expanded())">{{ expanded() ? 'Zwiń listę' : 'Pokaż wszystkie ' + items().length }}</button>
         }
     }
+    @if (byline()) {
+        <p class="literature__byline">{{ byline() }}</p>
+    }
 </section>

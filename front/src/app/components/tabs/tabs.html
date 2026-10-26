@@ -19,7 +19,7 @@
     }
 
     <div class="tabs__body">
-        @if (toc().length > 1) {
+        @if (showToc() && toc().length > 1) {
             <nav class="toc"
                  aria-label="Na tej stronie">
                 <button class="toc__toggle"
@@ -67,7 +67,18 @@
                                 <p class="text-block__p prose">{{ paragraph?.paragraph }}</p>
                             }
                         }
-                        @if (row.list?.length) {
+                        @if (isChipList(row.list)) {
+                            <ul class="chip-list">
+                                @for (item of row.list; track $index) {
+                                    <li class="chip-list__item">
+                                        <span class="trail-mark trail-mark--sm"
+                                              aria-hidden="true"
+                                              [style.--mark]="chipColors[$index % chipColors.length]"></span>
+                                        {{ item.item }}
+                                    </li>
+                                }
+                            </ul>
+                        } @else if (row.list?.length) {
                             <ul class="text-block__list default-list">
                                 @for (item of row.list; track $index) {
                                     <li>{{ item.item }}</li>

@@ -15,7 +15,8 @@
             <app-marker-category-list [component]="row.data" />
         }
         @case ('literature') {
-            <app-literature [component]="row.data" />
+            <app-literature [component]="row.data"
+                            [byline]="literatureByline()" />
         }
         @case ('news') {
             <app-news [component]="row.data" />
@@ -35,7 +36,8 @@
             <app-geosites-logos [component]="row.data" />
         }
         @case ('tabs') {
-            <app-tabs [component]="row.data" />
+            <app-tabs [component]="row.data"
+                      [showToc]="!sideMenu()" />
         }
         @case ('gallery_list') {
             <app-gallery-list [component]="row.data" />
@@ -114,9 +116,6 @@
         <div class="page-body container"
              [class.page-body--side]="hasSide()">
             <div class="page-body__main">
-                @if (mainSectionBar(); as current) {
-                    <app-section-bar [section]="current" />
-                }
                 @for (row of layout().rows; track $index) {
                     <section class="row"
                              [id]="'section-' + $index"
@@ -124,24 +123,25 @@
                         <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
                     </section>
                 }
-                @if (mainNext(); as nextPage) {
-                    <ng-container *ngTemplateOutlet="nextTpl; context: { $implicit: nextPage }" />
-                }
-                @if (!hasSide() && bylineBelow()) {
-                    <p class="page-body__byline">{{ bylineBelow() }}</p>
+                @if (!hasSide() && sideByline()) {
+                    <p class="page-body__byline">{{ sideByline() }}</p>
                 }
             </div>
             @if (hasSide()) {
                 <aside class="page-body__side"
                        aria-label="Powiązane">
+                    @if (sideMenu(); as current) {
+                        <app-section-bar form="menu"
+                                         [section]="current" />
+                    }
                     @for (row of layout().side; track $index) {
                         <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
                     }
                     @if (sideNext(); as nextPage) {
                         <ng-container *ngTemplateOutlet="nextTpl; context: { $implicit: nextPage }" />
                     }
-                    @if (bylineBelow()) {
-                        <p class="page-body__byline">{{ bylineBelow() }}</p>
+                    @if (sideByline()) {
+                        <p class="page-body__byline">{{ sideByline() }}</p>
                     }
                 </aside>
             }

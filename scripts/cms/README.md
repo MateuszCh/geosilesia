@@ -28,6 +28,7 @@ be replayed on production later in the same order.
 | `13-knowledge-base-sections.js` | Section pages get the knowledge base's header; links to the retired `baza-wiedzy` page point at its redirect target (`shared/redirects.js`); the page is removed |
 | `14-side-cards.js` | The column beside the text on Geostanowiska (database names, a map card) and Geoparki (a Geopark Północnej Jury card) |
 | `15-mockup-layout.js` | Nine pages laid out as in the mockups: header bands, header photos (off on Położenie, Geoparki and TOP 50, on for Rzeźba terenu), leads in the header, "Co warto wiedzieć", side lists and cards, the Żytko quote, figure colours, the gallery lead |
+| `16-mockup-texts.js` | The mockups' shorter texts on eight pages (`--only=` picks pages); "A ponadto" as short items beside the list; Położenie's extreme points as figures; the fossils as a table; `{albumy}` in the gallery intro becomes the album count. Maps, tables, charts and map legends stay |
 | `check-fallbacks.js` | Read-only: pages and posts that still need a front-end fallback (run after the scripts) |
 | `restore.js` | Restores collections from a backup |
 

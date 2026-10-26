@@ -29,6 +29,8 @@ interface TocEntry {
 })
 export class Tabs {
     readonly component = input.required<TabsData>();
+    /** No "Na tej stronie" beside a section menu, as in the mockups of Położenie and Rzeźba terenu. */
+    readonly showToc = input(true);
     readonly activeTab = signal(0);
     readonly tocOpen = signal(false);
     readonly currentHeading = signal<string | undefined>(undefined);
@@ -95,6 +97,19 @@ export class Tabs {
 
     sectionsLabel(count: number): string {
         return plural(count, 'sekcja', 'sekcje', 'sekcji');
+    }
+
+    protected readonly chipColors = [
+        'var(--trail-red)',
+        'var(--trail-blue)',
+        'var(--trail-green)',
+        'var(--trail-yellow)',
+        'var(--trail-black)'
+    ];
+
+    /** A list of a few short names reads as chips, as in the mockups; sentences stay a list. */
+    isChipList(list: { item?: string }[] | undefined): boolean {
+        return !!list && list.length > 1 && list.every(entry => !!entry.item && entry.item.length <= 40);
     }
 
     /** A figure's own trail colour; ink when none is set. */

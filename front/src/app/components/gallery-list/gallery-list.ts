@@ -87,6 +87,16 @@ export class GalleryList implements OnInit {
         })).filter(category => category.count)
     );
 
+    /**
+     * The intro from the CMS; "{albumy}" in it becomes the album count ("48 albumów"), so the
+     * lead of the mockup ("48 albumów fotograficznych z terenu: …") stays true.
+     */
+    readonly intro = computed(() => {
+        const intro = this.component().intro ?? '';
+        const count = this.albums().length;
+        return intro.replace(/\{albumy\}/g, `${count} ${this.albumsLabel(count)}`);
+    });
+
     readonly shown = computed(() => {
         const selected = this.selected();
         return selected ? this.albums().filter(album => album.categoryKey === selected) : this.albums();

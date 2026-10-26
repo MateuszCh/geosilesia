@@ -235,6 +235,30 @@
         line-height: 21px;
     }
 
+    // Four figures (the extreme points of "Położenie") stand two by two, each headed by its
+    // side in red, as in the mockup.
+    &:has(> :nth-child(4):last-child) {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+
+        .tab-facts__item {
+            padding: 14px 16px;
+        }
+
+        .tab-facts__label {
+            order: -2;
+            color: var(--trail-red);
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 20px;
+        }
+
+        .tab-facts__value {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+    }
+
     // A single figure stands out: forest, the figure beside its description.
     &--single {
         display: block;
@@ -353,6 +377,29 @@
         color: var(--muted);
         font-size: 14px;
         line-height: 20px;
+    }
+}
+
+// A list of short names as chips with trail marks (the groups of minerals, the factors of
+// the landscape), as in the mockups.
+.chip-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        font-size: 17px;
+        font-weight: 600;
+        line-height: 22px;
     }
 }
 
