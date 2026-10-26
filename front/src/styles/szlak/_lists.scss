@@ -504,6 +504,31 @@
     flex-direction: column;
     gap: 12px;
 
+    // Beside the text: a box like the side cards, the databases one under another.
+    .page-body__side & {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+
+        .databases__title {
+            font-size: 24px;
+            line-height: 1.05;
+        }
+
+        .databases__list {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 8px;
+        }
+
+        .databases__card {
+            padding: 12px 14px;
+        }
+
+        .databases__name {
+            font-size: 18px;
+        }
+    }
+
     &__title {
         font-family: var(--font-display);
         font-size: 26px;

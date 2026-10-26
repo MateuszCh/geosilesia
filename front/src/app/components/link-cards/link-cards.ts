@@ -25,11 +25,15 @@ export class LinkCards {
             .filter(item => item.title && item.link)
             .map(item => {
                 const internal = !isExternalLink(item.link);
+                // An internal link may carry a query ("/mapa-atrakcji?kategoria=…"); the router
+                // needs it apart from the path.
+                const [path, query = ''] = (internal ? internalLink(item.link)! : item.link!).split('?');
                 return {
                     title: item.title!,
                     description: item.description,
                     image: item.image || undefined,
-                    href: internal ? internalLink(item.link)! : item.link!,
+                    href: internal ? path : item.link!,
+                    params: internal ? Object.fromEntries(new URLSearchParams(query)) : {},
                     internal,
                     color: colorByName(item.color) ?? 'var(--trail-red)'
                 };

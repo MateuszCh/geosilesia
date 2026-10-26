@@ -82,8 +82,9 @@ export function isFullWidth(row: Row): boolean {
     return FULL_WIDTH.includes(row.type);
 }
 
+/** Rows beside the text: link cards set to "lista boczna" and, as in the mockup, the geosite databases. */
 function isSideRow(row: Row): boolean {
-    return row.type === 'link_cards' && row.data?.variant === 'lista boczna';
+    return (row.type === 'link_cards' && row.data?.variant === 'lista boczna') || row.type === 'geosites_logos';
 }
 
 /** A title_and_text row without the byline paragraph; undefined when nothing is left. */

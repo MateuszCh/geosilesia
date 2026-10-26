@@ -38,7 +38,8 @@
              let-side="side">
     @if (card.internal) {
         <a [class]="side ? 'side-card' : 'link-card'"
-           [routerLink]="card.href">
+           [routerLink]="card.href"
+           [queryParams]="card.params">
             <ng-container *ngTemplateOutlet="side ? sideBody : cardBody; context: { $implicit: card }" />
         </a>
     } @else {
