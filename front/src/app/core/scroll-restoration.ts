@@ -3,7 +3,7 @@ import { ViewportScroller, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, NavigationStart, Router, Scroll } from '@angular/router';
 import { filter, take } from 'rxjs/operators';
 
-/** How long a restored position waits for the page below it to load. */
+/** How long a restored position is held while the page around it loads. */
 const KEEP_FOR_MS = 5000;
 const STORE_KEY = 'scroll-positions';
 /** Addresses remembered in the tab; the oldest go first. */
@@ -17,12 +17,14 @@ const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home
  *
  * Within the app the router remembers the position (scrollPositionRestoration: 'enabled'),
  * but it scrolls only once, right after the page renders – while TOP 50, counts or news may
- * still be loading and the page is too short to reach that point. So the position is kept
- * while the page grows, until it is reached, the reader moves the page, or five seconds pass.
+ * still be loading: the page may be too short to reach that point, or grow above it later and
+ * move what the reader saw down. So the position is held whenever the page changes height,
+ * until the reader moves the page or five seconds pass.
  *
- * Links in CMS text and other sites leave the app: coming back loads the page anew (unless
- * the browser kept it in its back/forward cache) and the router remembers nothing. For that
- * the positions are also kept in the tab's sessionStorage, by address.
+ * Going to another site leaves the app: coming back loads the page anew (unless the browser
+ * kept it in its back/forward cache) and the router remembers nothing. For that the positions
+ * are also kept in the tab's sessionStorage, by address. A reload is not a way back: it
+ * always opens the page at the top.
  */
 export function provideScrollRestoration(): EnvironmentProviders {
     return provideAppInitializer(() => {
@@ -36,11 +38,8 @@ export function provideScrollRestoration(): EnvironmentProviders {
 
         const keep = (top: number) => {
             release?.();
-            const apply = () => {
-                scroller.scrollToPosition([0, top], { behavior: 'instant' });
-                if (Math.abs(view.scrollY - top) < 2) stop();
-            };
-            const observer = new ResizeObserver(() => apply());
+            const apply = () => scroller.scrollToPosition([0, top], { behavior: 'instant' });
+            const observer = new ResizeObserver(apply);
             const timer = setTimeout(() => stop(), KEEP_FOR_MS);
             const onReader = (event: Event) => {
                 if (movesPage(event)) stop();
@@ -58,14 +57,20 @@ export function provideScrollRestoration(): EnvironmentProviders {
             apply();
         };
 
+        let back = false;
         router.events.subscribe(event => {
             if (event instanceof NavigationStart) {
                 release?.();
+                back = event.navigationTrigger === 'popstate';
                 // Before the first navigation ends there is no page yet, only the address
                 // whose remembered position is about to be restored.
                 if (router.navigated) savePosition(view, router.url, view.scrollY);
-            } else if (event instanceof Scroll && event.position) {
-                keep(event.position[1]);
+            } else if (event instanceof Scroll && back) {
+                // The router knows only the pages this document showed. After a reload, back
+                // leads within the same document to pages the one before it showed.
+                const top = event.position?.[1] ?? readPositions(view)[router.url];
+                // After the router's own scroll, which knowing no position goes to the top.
+                if (top) setTimeout(() => keep(top));
             }
         });
 
@@ -74,7 +79,7 @@ export function provideScrollRestoration(): EnvironmentProviders {
         const entry = view.performance.getEntriesByType('navigation')[0] as
             | PerformanceNavigationTiming
             | undefined;
-        if (entry?.type === 'back_forward' || entry?.type === 'reload') {
+        if (entry?.type === 'back_forward') {
             router.events
                 .pipe(
                     filter(event => event instanceof NavigationEnd),
