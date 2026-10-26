@@ -446,6 +446,25 @@
     }
 }
 
+// The note closing the TOP 50 route: a light box in the route's column, as in the mockup.
+.page-body__main > .row[data-row='top50'] + .row[data-row='title_and_text'] {
+    width: 100%;
+    max-width: 944px;
+    margin: 0 auto;
+
+    .text-block {
+        padding: 20px 22px;
+        border-radius: var(--radius-lg);
+        background: var(--surface-alt);
+    }
+
+    .text-block__p {
+        color: var(--ink-soft);
+        font-size: 17px;
+        line-height: 27px;
+    }
+}
+
 .top50-preview {
     display: flex;
     flex-wrap: wrap;

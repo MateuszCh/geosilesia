@@ -9,7 +9,7 @@
 // The backup keeps every removed text.
 //
 // Pages (--only= keys): skarby, geostanowiska, geoparki, slownik, budowa, polozenie,
-// rzezba, galeria. Also, as in the mockups: "A ponadto" of Skarby natury as seven short
+// rzezba, galeria, top50. Also, as in the mockups: "A ponadto" of Skarby natury as seven short
 // items beside the list, figures and chart of Rzeźba terenu without "n.p.m.", the extreme points of
 // Położenie as four figures, the fossils of Budowa geologiczna as a table, literature
 // headed "Literatura", and the album count in the gallery lead ("{albumy}" in the intro).
@@ -96,6 +96,13 @@ const TERMS = [
     ["Atrakcja geoturystyczna", "Atrakcja geoturystyczna", "To element lub aktywność wykorzystujące dziedzictwo geologiczne, zagospodarowane na potrzeby turystyki i geoedukacji oraz generujące ruch turystyczny (Dryglas i Miśkiewicz, 2014)."],
     ["Produkt geoturystyczny", "Produkt geoturystyczny", "Obejmuje materialne i niematerialne dobra oraz usługi tworzone przez człowieka na bazie geodziedzictwa, nabywane, doświadczane lub współtworzone przez turystów (Dryglas i Miśkiewicz, 2014)."]
 ];
+
+/** The note under the TOP 50 route: plain text with a link to the map, as in the mockup. */
+const TOP50_NOTE = {
+    start: "W zakładce GeoŚląsk, w sekcji „Skarby natury”",
+    paragraph:
+        'W zakładce GeoŚląsk, w sekcji „Skarby natury”, znajdziesz przegląd wyjątkowych obiektów przyrody nieożywionej oraz dziedzictwa górniczo-przemysłowego. Więcej atrakcji geoturystycznych odkryjesz w <a href="/mapa-atrakcji"><b>serwisie mapowym GeoSilesia</b></a>.'
+};
 
 const GALLERY_INTRO = {
     from: "<p>Albumy fotograficzne z terenu: skały, minerały, jaskinie, kopalnie, tężnie i kamień w architekturze.</p>",
@@ -231,7 +238,8 @@ const PAGES = {
     budowa: "budowa-geologiczna-wojewodztwa-slaskiego",
     polozenie: "polozenie-wojewodztwa-slaskiego",
     rzezba: "rzezba-terenu-wojewodztwa-slaskiego",
-    galeria: "geosilesia-galeria"
+    galeria: "geosilesia-galeria",
+    top50: "geosilesia-top-atrakcje-geoturystyczne"
 };
 
 // ---- Changes ----
@@ -319,6 +327,16 @@ function dictionaryTerms(rows, { note }) {
             return { ...item, title: term, rows: [{ text: definition, list_item: [] }] };
         });
         return { ...r, data: { ...r.data, items } };
+    });
+}
+
+function top50Note(rows, { note }) {
+    return rows.map(r => {
+        const text = r && r.type === "title_and_text" ? r.data.text || [] : [];
+        const at = text.findIndex(t => plain(t.paragraph).startsWith(TOP50_NOTE.start));
+        if (at < 0 || text[at].paragraph === TOP50_NOTE.paragraph) return r;
+        note(`note under the route: plain text (was bold), "serwisie mapowym GeoSilesia" links to /mapa-atrakcji`);
+        return { ...r, data: { ...r.data, text: text.map((t, i) => (i === at ? { ...t, paragraph: TOP50_NOTE.paragraph } : t)) } };
     });
 }
 
@@ -417,7 +435,8 @@ const CHANGES = {
     budowa: [tabRows("budowa")],
     polozenie: [tabRows("polozenie")],
     rzezba: [tabRows("rzezba")],
-    galeria: [galleryIntro]
+    galeria: [galleryIntro],
+    top50: [top50Note]
 };
 
 withDb(async (db, { apply, dbName }) => {
