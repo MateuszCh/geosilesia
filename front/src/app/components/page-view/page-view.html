@@ -24,7 +24,9 @@
         @case ('dictionary') {
             <app-dictionary [component]="row.data"
                             [(query)]="dictionaryQuery"
-                            [searchInHeader]="layout().header?.searchCount !== undefined" />
+                            [searchInHeader]="layout().header?.searchCount !== undefined"
+                            [literature]="dictionaryLiterature()?.data"
+                            [byline]="literatureByline()" />
         }
         @case ('footnotes') {
             <app-footnotes [component]="row.data" />
@@ -117,11 +119,13 @@
              [class.page-body--side]="hasSide()">
             <div class="page-body__main">
                 @for (row of layout().rows; track $index) {
-                    <section class="row"
-                             [id]="'section-' + $index"
-                             [attr.data-row]="row.type">
-                        <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
-                    </section>
+                    @if (row !== dictionaryLiterature()) {
+                        <section class="row"
+                                 [id]="'section-' + $index"
+                                 [attr.data-row]="row.type">
+                            <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
+                        </section>
+                    }
                 }
                 @if (!hasSide() && sideByline()) {
                     <p class="page-body__byline">{{ sideByline() }}</p>

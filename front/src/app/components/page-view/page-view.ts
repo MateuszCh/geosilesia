@@ -144,6 +144,12 @@ export class PageView {
     readonly bylineBelow = computed(() =>
         this.layout().header?.bylineBelow ? bylineText(this.layout().byline) : ''
     );
+    /** Literature right after the dictionary closes the column of its terms, as in the mockup. */
+    readonly dictionaryLiterature = computed(() => {
+        const rows = this.layout().rows;
+        const next = rows[rows.findIndex(row => row.type === 'dictionary') + 1];
+        return rows.some(row => row.type === 'dictionary') && next?.type === 'literature' ? next : undefined;
+    });
     /** The byline closes the literature box (Słowa kluczowe) or else the side column (Geoparki). */
     readonly literatureByline = computed(() =>
         this.layout().rows.some(row => row.type === 'literature') ? this.bylineBelow() : ''

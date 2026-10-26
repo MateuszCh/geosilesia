@@ -66,6 +66,11 @@
                     </div>
                 </div>
             }
+            @if (literature(); as literature) {
+                <app-literature class="dictionary__literature"
+                                [component]="literature"
+                                [byline]="byline()" />
+            }
         </div>
     </div>
 </div>

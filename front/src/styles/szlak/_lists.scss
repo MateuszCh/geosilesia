@@ -412,6 +412,11 @@
         line-height: 1.1;
     }
 
+    &__literature {
+        display: block;
+        margin-top: 40px;
+    }
+
     &__empty {
         > div {
             display: flex;

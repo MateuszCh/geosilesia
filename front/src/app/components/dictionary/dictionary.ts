@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, DOCUMENT, computed, inject, input, model, signal } from '@angular/core';
-import { DictionaryData, DictionaryItem } from '../../models/row.model';
+import { DictionaryData, DictionaryItem, LiteratureData } from '../../models/row.model';
 import { ScrollService } from '../../core/scroll.service';
 import { foldText } from '../../shared/fold-text';
 import { DictionarySearch } from './dictionary-search';
+import { Literature } from '../literature/literature';
 
 /** Trail colours of the term marks, in turn. */
 const MARK_COLORS = [
@@ -39,7 +40,7 @@ export function splitTerm(item: DictionaryItem): { term: string; foreign: string
 @Component({
     selector: 'app-dictionary',
     templateUrl: './dictionary.html',
-    imports: [DictionarySearch],
+    imports: [DictionarySearch, Literature],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Dictionary {
@@ -47,6 +48,9 @@ export class Dictionary {
     /** Two-way: the page header holds the field when the light band shows it. */
     readonly query = model('');
     readonly searchInHeader = input(false);
+    /** The page's literature, under the terms in their column, as in the mockup. */
+    readonly literature = input<LiteratureData | undefined>();
+    readonly byline = input('');
     readonly active = signal(-1);
 
     private readonly doc = inject(DOCUMENT);
