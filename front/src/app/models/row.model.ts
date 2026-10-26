@@ -96,6 +96,8 @@ export interface HeadingData {
 }
 
 export interface GeositesLogosData {
+    /** Not in the spec: the heading above the databases ("Sprawdź w bazach PIG-PIB"). */
+    title?: string;
     /** Variant C: `name` of the database, shown with its domain instead of the logo alone. */
     logos?: { link?: string; image?: string; name?: string }[];
 }
@@ -206,6 +208,8 @@ export interface PageHeroData {
      * the dictionary pages, dark (forest) on "Położenie"; empty = none.
      */
     variant?: 'jasne' | 'ciemne' | string;
+    /** Not in the spec: a line above the title in place of the breadcrumbs ("Szlak czerwony"). */
+    eyebrow?: string;
 }
 
 export interface MapSearchData {
@@ -230,6 +234,8 @@ export interface CategoryGridData {
 }
 
 export interface Top50Data {
+    /** Not in the spec: the line above the title of the preview ("Szlak czerwony · TOP 50"). */
+    eyebrow?: string;
     title?: string;
     intro?: string;
     variant?: 'lista' | 'zapowiedź' | string;
@@ -266,6 +272,9 @@ export interface TimelineData {
     title?: string;
     intro?: string;
     items?: { year?: string; title?: string; note?: string; highlight?: boolean; link?: string }[];
+    /** Not in the spec: the legend of highlighted and other points. */
+    legend_highlight?: string;
+    legend_other?: string;
 }
 
 export interface NumberedListData {

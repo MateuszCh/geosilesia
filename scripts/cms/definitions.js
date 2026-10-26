@@ -23,7 +23,9 @@ const newComponents = [
         ["updated", "Ostatnia aktualizacja", "date"],
         // Not in the spec: the band of a header without a photo, as in the mockups (light
         // on the dictionary pages, forest on "Położenie"); empty = a plain title.
-        ["variant", "Tło nagłówka bez zdjęcia", "select", ";jasne;ciemne"]
+        ["variant", "Tło nagłówka bez zdjęcia", "select", ";jasne;ciemne"],
+        // Not in the spec: a line above the title in place of the breadcrumbs ("Szlak czerwony").
+        ["eyebrow", "Nadtytuł", "text"]
     ]),
     def("map_search", "Wyszukiwarka atrakcji", [
         ["title", "Tytuł", "text"],
@@ -46,6 +48,8 @@ const newComponents = [
         ["link_label", "Napis odnośnika", "text"]
     ]),
     def("top50", "TOP 50", [
+        // Not in the spec: the line above the title of the preview ("Szlak czerwony · TOP 50").
+        ["eyebrow", "Nadtytuł", "text"],
         ["title", "Tytuł", "text"],
         ["intro", "Wstęp", "textarea"],
         ["variant", "Wariant", "select", "lista;zapowiedź"],
@@ -83,7 +87,10 @@ const newComponents = [
             ["note", "Dopisek", "text"],
             ["highlight", "W regionie", "checkbox"],
             ["link", "Adres", "text"]
-        ]]
+        ]],
+        // Not in the spec: the legend under the timeline.
+        ["legend_highlight", "Legenda: punkty wyróżnione", "text"],
+        ["legend_other", "Legenda: pozostałe punkty", "text"]
     ]),
     def("numbered_list", "Lista numerowana", [
         ["title", "Tytuł", "text"],
@@ -193,6 +200,8 @@ const changedComponents = [
         ["items", "Items", "repeater", [["title_en", "Odpowiednik obcojęzyczny", "text"]]]
     ]),
     def("geosites_logos", "Loga geostanowisk", [
+        // Not in the spec: the heading above the databases.
+        ["title", "Nagłówek", "text"],
         ["logos", "Logos", "repeater", [["name", "Nazwa bazy", "text"]]]
     ])
 ];
@@ -240,6 +249,8 @@ const changedPostTypes = [
         ["cta_link", "Adres przycisku", "text"],
         ["footer_text", "Opis w stopce", "textarea"],
         ["footer_note", "Dopisek w stopce", "text"],
+        // Not in the spec: the heading of the other albums on every album page.
+        ["albums_more_title", "Nagłówek innych albumów na stronie albumu", "text"],
         ["nav", "Nav", "repeater", [["subnav", "Subnav", "repeater", [["hide_in_footer", "Ukryj w stopce", "checkbox"]]]]]
     ])
 ];

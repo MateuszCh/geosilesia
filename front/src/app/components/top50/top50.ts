@@ -11,8 +11,8 @@ import {
     input,
     signal
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { NgTemplateOutlet, ViewportScroller } from '@angular/common';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContentService } from '../../core/content.service';
 import { internalLink, isExternalLink } from '../../core/cms-link';
@@ -31,8 +31,6 @@ interface Stop {
     image?: string;
     description?: string;
     links: { label: string; href: string; internal: boolean }[];
-    /** "artykuł · www · galeria" – the preview caption. */
-    summary: string;
 }
 
 /**
@@ -69,11 +67,16 @@ export class Top50 implements OnInit {
     readonly preview = computed(() => this.component().variant === 'zapowiedź');
     readonly stops = signal<Stop[]>([]);
     private readonly expanded = signal(false);
+    /** The place pointed at in the preview list (mouse or keyboard); stays when the pointer leaves. */
+    private readonly pointed = signal<Stop | undefined>(undefined);
+    private preloaded = false;
 
     private readonly content = inject(ContentService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly doc = inject(DOCUMENT);
     private readonly injector = inject(Injector);
+    private readonly route = inject(ActivatedRoute);
+    private readonly scroller = inject(ViewportScroller);
 
     /** The link may carry a query ("/mapa-atrakcji?top50=1"); the router needs it apart. */
     private readonly parsedLink = computed(() => {
@@ -97,31 +100,61 @@ export class Top50 implements OnInit {
 
     readonly hasMore = computed(() => !this.limit() && !this.expanded() && this.stops().length > FIRST_STOPS);
 
-    /** The photo of the preview: the first stop that has one. */
-    readonly featured = computed(() => this.stops().find(stop => stop.image));
+    /** The place the preview shows: the one pointed at in the list, else the first with a photo. */
+    readonly featured = computed(
+        () => this.pointed() ?? this.stops().find(stop => stop.image) ?? this.stops()[0]
+    );
 
     ngOnInit(): void {
         this.content
             .posts<Top50PostData>('top50')
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(posts =>
+            .subscribe(posts => {
                 this.stops.set(
                     posts
-                        .map(post => {
-                            const links = chips(post.data?.links);
-                            return {
-                                id: post.id,
-                                number: Number(post.data?.number) || 0,
-                                title: post.title ?? '',
-                                image: post.data?.image || undefined,
-                                description: post.data?.description || undefined,
-                                links,
-                                summary: links.map(link => link.label).join(' · ')
-                            };
-                        })
+                        .map(post => ({
+                            id: post.id,
+                            number: Number(post.data?.number) || 0,
+                            title: post.title ?? '',
+                            image: post.data?.image || undefined,
+                            description: post.data?.description || undefined,
+                            links: chips(post.data?.links)
+                        }))
                         .sort((a, b) => a.number - b.number)
-                )
-            );
+                );
+                this.revealTarget();
+            });
+    }
+
+    point(stop: Stop): void {
+        this.pointed.set(stop);
+    }
+
+    /**
+     * Loads the photos of the listed places once the pointer reaches the list, so that the
+     * photo changes together with the caption.
+     */
+    preload(): void {
+        if (this.preloaded) return;
+        this.preloaded = true;
+        this.shown().forEach(stop => {
+            if (stop.image) new Image().src = stop.image;
+        });
+    }
+
+    /**
+     * A place of the home page preview opens the list at that place ("#top50-12"), past the
+     * first 15 too. The router scrolls to it when the list is already there; this covers the
+     * list that arrives later.
+     */
+    private revealTarget(): void {
+        const target = this.route.snapshot.fragment;
+        const number = Number(/^top50-(\d+)$/.exec(target ?? '')?.[1]);
+        if (this.preview() || !number) return;
+        const index = this.stops().findIndex(stop => stop.number === number);
+        if (index === -1) return;
+        if (index >= FIRST_STOPS) this.expanded.set(true);
+        afterNextRender(() => this.scroller.scrollToAnchor(target!), { injector: this.injector });
     }
 
     /**

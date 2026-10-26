@@ -59,6 +59,8 @@ export interface NavigationPostData {
     cta_link?: string;
     footer_text?: string;
     footer_note?: string;
+    /** Not in the spec: the heading of the other albums on every album page. */
+    albums_more_title?: string;
 }
 
 export interface EventPostData {

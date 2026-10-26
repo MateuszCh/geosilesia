@@ -217,7 +217,12 @@ function headerOf(data: PageHeroData, rows: Row[]): { header: PageHeader; rows: 
           : data.variant === 'ciemne'
             ? 'dark'
             : 'plain';
-    const header: PageHeader = { data, style, bylineBelow: style === 'light' || style === 'dark' };
+    const header: PageHeader = {
+        data,
+        style,
+        eyebrow: data.eyebrow?.trim() || undefined,
+        bylineBelow: style === 'light' || style === 'dark'
+    };
     const first = rows[0];
 
     if (first?.type === 'facts' && (style === 'light' || style === 'dark')) {
@@ -227,7 +232,7 @@ function headerOf(data: PageHeroData, rows: Row[]): { header: PageHeader; rows: 
         header.searchCount = first.data?.items?.length ?? 0;
     } else if (first?.type === 'top50' && first.data?.variant !== 'zapowiedź' && first.data?.link && style === 'plain') {
         header.action = { label: first.data.link_label || 'Pokaż wszystkie 50 na mapie', link: first.data.link };
-        header.eyebrow = 'Szlak czerwony';
+        header.eyebrow ??= 'Szlak czerwony';
         rows = [{ ...first, data: { ...first.data, link: undefined } }, ...rows.slice(1)];
     }
     return { header, rows };

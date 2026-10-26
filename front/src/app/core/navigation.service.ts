@@ -60,6 +60,7 @@ export class NavigationService {
 
     readonly footerText = computed(() => this.data()?.footer_text || DEFAULT_FOOTER_TEXT);
     readonly footerNote = computed(() => this.data()?.footer_note || '');
+    readonly albumsMoreTitle = computed(() => this.data()?.albums_more_title || 'Inne albumy');
 
     /** One column per section with subpages; subpages marked hide_in_footer are left out. */
     readonly footerColumns = computed<FooterColumn[]>(() =>
