@@ -20,6 +20,7 @@ import {
 import { provideServiceWorker } from '@angular/service-worker';
 import { routes } from './app.routes';
 import { provideScrollRestoration } from './core/scroll-restoration';
+import { provideInternalLinks } from './core/internal-links';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -39,6 +40,8 @@ export const appConfig: ApplicationConfig = {
         provideAppInitializer(() => inject(ViewportScroller).setOffset([0, 24])),
         // Back/forward also once the rest of the page has loaded, and after leaving the app.
         provideScrollRestoration(),
+        // Plain links to the site's pages (CMS text) open in the app too.
+        provideInternalLinks(),
         provideHttpClient(withFetch()),
         // Hydration takes over the server-rendered DOM. The HTTP transfer cache replays the
         // API responses from the render at startup, so the client's first view matches the

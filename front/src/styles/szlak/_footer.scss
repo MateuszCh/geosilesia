@@ -2,6 +2,11 @@
 
 .site-page {
     min-height: 60vh;
+
+    // "Przejdź do treści" moves the focus here; the whole page needs no outline.
+    &:focus {
+        outline: none;
+    }
 }
 
 .site-footer {
