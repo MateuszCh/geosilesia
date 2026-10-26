@@ -8,8 +8,9 @@ const KEEP_FOR_MS = 5000;
 const STORE_KEY = 'scroll-positions';
 /** Addresses remembered in the tab; the oldest go first. */
 const STORE_LIMIT = 50;
-/** Anything the reader does to move the page ends the wait. */
-const READER_EVENTS = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
+/** What the reader does to move the page up or down; any of it ends the wait. */
+const READER_EVENTS = ['wheel', 'touchmove', 'keydown'] as const;
+const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 
 /**
  * Back and forward return the reader to where they were on the page.
@@ -41,14 +42,17 @@ export function provideScrollRestoration(): EnvironmentProviders {
             };
             const observer = new ResizeObserver(() => apply());
             const timer = setTimeout(() => stop(), KEEP_FOR_MS);
+            const onReader = (event: Event) => {
+                if (movesPage(event)) stop();
+            };
             const stop = () => {
                 observer.disconnect();
                 clearTimeout(timer);
-                READER_EVENTS.forEach(type => view.removeEventListener(type, stop));
+                READER_EVENTS.forEach(type => view.removeEventListener(type, onReader));
                 release = undefined;
             };
             release = stop;
-            READER_EVENTS.forEach(type => view.addEventListener(type, stop, { passive: true }));
+            READER_EVENTS.forEach(type => view.addEventListener(type, onReader, { passive: true }));
             // Again whenever the page changes height.
             observer.observe(view.document.body);
             apply();
@@ -82,6 +86,18 @@ export function provideScrollRestoration(): EnvironmentProviders {
                 });
         }
     });
+}
+
+/**
+ * Only a move up or down counts. A sideways swipe is how a Mac trackpad goes back, and its
+ * last wheel events still reach the page after it has changed; the mouse's back button
+ * sends a click. Both used to end the wait while the page was still growing, leaving the
+ * reader just above the footer.
+ */
+function movesPage(event: Event): boolean {
+    if (event instanceof WheelEvent) return Math.abs(event.deltaY) > Math.abs(event.deltaX);
+    if (event instanceof KeyboardEvent) return SCROLL_KEYS.has(event.key);
+    return true;
 }
 
 function readPositions(view: Window): Record<string, number> {
