@@ -92,14 +92,30 @@
         line-height: 22px;
         color: var(--muted);
     }
+
+    // Beside the text the quote is smaller, as in the mockup of "Skarby natury".
+    .page-body__side & {
+        gap: 14px;
+        margin: 0;
+
+        .pull-quote__bar {
+            width: 16px;
+        }
+
+        .pull-quote__text {
+            font-size: 28px;
+            line-height: 1.08;
+        }
+    }
 }
 
 .literature {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-top: 20px;
-    border-top: 2px solid var(--ink);
+    padding: 22px 24px;
+    border-radius: var(--radius-lg);
+    background: var(--surface-alt);
 
     &__title {
         font-family: var(--font-display);
@@ -121,6 +137,12 @@
         b {
             color: var(--ink);
         }
+    }
+
+    &__byline {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 20px;
     }
 }
 

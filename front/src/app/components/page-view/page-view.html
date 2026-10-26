@@ -15,13 +15,18 @@
             <app-marker-category-list [component]="row.data" />
         }
         @case ('literature') {
-            <app-literature [component]="row.data" />
+            <app-literature [component]="row.data"
+                            [byline]="literatureByline()" />
         }
         @case ('news') {
             <app-news [component]="row.data" />
         }
         @case ('dictionary') {
-            <app-dictionary [component]="row.data" />
+            <app-dictionary [component]="row.data"
+                            [(query)]="dictionaryQuery"
+                            [searchInHeader]="layout().header?.searchCount !== undefined"
+                            [literature]="dictionaryLiterature()?.data"
+                            [byline]="literatureByline()" />
         }
         @case ('footnotes') {
             <app-footnotes [component]="row.data" />
@@ -33,7 +38,8 @@
             <app-geosites-logos [component]="row.data" />
         }
         @case ('tabs') {
-            <app-tabs [component]="row.data" />
+            <app-tabs [component]="row.data"
+                      [showToc]="!sideMenu()" />
         }
         @case ('gallery_list') {
             <app-gallery-list [component]="row.data" />
@@ -81,13 +87,31 @@
     }
 </ng-template>
 
+<ng-template #nextTpl
+             let-nextPage>
+    <a class="next-card"
+       [routerLink]="nextPage.link">
+        <span class="next-card__label">Dalej w dziale {{ nextPage.section }}</span>
+        <span class="next-card__title">{{ nextPage.title }}</span>
+        <span class="next-card__arrow"
+              aria-hidden="true">→</span>
+    </a>
+</ng-template>
+
 <main class="page"
       [class.page--home]="layout().kind === 'home'"
       [class.page--album]="layout().kind === 'album'">
-    @if (layout().hero; as hero) {
-        <app-page-hero [hero]="hero"
+    @if (layout().header; as header) {
+        <app-page-hero [header]="header"
                        [crumbs]="crumbs()"
-                       [byline]="layout().byline" />
+                       [byline]="layout().byline"
+                       [section]="header.style === 'light' ? sectionBar() : undefined">
+            @if (header.searchCount !== undefined) {
+                <app-dictionary-search class="page-hero__search"
+                                       [count]="header.searchCount"
+                                       [(query)]="dictionaryQuery" />
+            }
+        </app-page-hero>
     }
 
     @if (layout().kind === 'content') {
@@ -95,39 +119,33 @@
              [class.page-body--side]="hasSide()">
             <div class="page-body__main">
                 @for (row of layout().rows; track $index) {
-                    <section class="row"
-                             [id]="'section-' + $index"
-                             [attr.data-row]="row.type">
-                        <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
-                    </section>
+                    @if (row !== dictionaryLiterature()) {
+                        <section class="row"
+                                 [id]="'section-' + $index"
+                                 [attr.data-row]="row.type">
+                            <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
+                        </section>
+                    }
                 }
-                @if (!hasSide() && !listsSections() && next(); as nextPage) {
-                    <a class="next-card"
-                       [routerLink]="nextPage.link">
-                        <span class="next-card__label">Dalej w dziale {{ nextPage.section }}</span>
-                        <span class="next-card__title">{{ nextPage.title }}</span>
-                        <span class="next-card__arrow"
-                              aria-hidden="true">→</span>
-                    </a>
+                @if (!hasSide() && sideByline()) {
+                    <p class="page-body__byline">{{ sideByline() }}</p>
                 }
             </div>
             @if (hasSide()) {
                 <aside class="page-body__side"
-                       [attr.aria-label]="section() ? 'Dział ' + section()!.title : 'Powiązane'">
-                    @if (section(); as current) {
-                        <nav class="section-nav"
-                             [attr.aria-label]="'Dział ' + current.title">
-                            <span class="section-nav__title">{{ current.title }}</span>
-                            @for (link of current.links; track link.link) {
-                                <a class="section-nav__link"
-                                   [routerLink]="link.link"
-                                   [class.section-nav__link--current]="link.current"
-                                   [attr.aria-current]="link.current ? 'page' : null">{{ link.title }}</a>
-                            }
-                        </nav>
+                       aria-label="Powiązane">
+                    @if (sideMenu(); as current) {
+                        <app-section-bar form="menu"
+                                         [section]="current" />
                     }
                     @for (row of layout().side; track $index) {
                         <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
+                    }
+                    @if (sideNext(); as nextPage) {
+                        <ng-container *ngTemplateOutlet="nextTpl; context: { $implicit: nextPage }" />
+                    }
+                    @if (sideByline()) {
+                        <p class="page-body__byline">{{ sideByline() }}</p>
                     }
                 </aside>
             }

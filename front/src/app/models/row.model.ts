@@ -116,6 +116,8 @@ export interface TabFact {
     value?: string;
     label?: string;
     note?: string;
+    /** Not in the spec: the colour of the figure, as in the mockup of "Rzeźba terenu". */
+    color?: TrailColorName | string;
 }
 
 export interface ChartBar {
@@ -199,6 +201,11 @@ export interface PageHeroData {
     published?: string | number;
     /** Empty = the date the page was last saved. */
     updated?: string | number;
+    /**
+     * Not in the spec: the band of a header without a photo, as in the mockups – light on
+     * the dictionary pages, dark (forest) on "Położenie"; empty = none.
+     */
+    variant?: 'jasne' | 'ciemne' | string;
 }
 
 export interface MapSearchData {

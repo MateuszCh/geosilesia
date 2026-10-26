@@ -1,28 +1,43 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Crumb } from '../../core/navigation.service';
-import { Byline } from '../../core/page-layout';
-import { PageHeroData } from '../../models/row.model';
+import { Crumb, SectionLinks } from '../../core/navigation.service';
+import { Byline, PageHeader } from '../../core/page-layout';
+import { internalLink } from '../../core/cms-link';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { photoCredit } from '../../shared/photo-credit';
+import { Facts } from '../facts/facts';
+import { SectionBar } from '../section-bar/section-bar';
+
+/** "Ryszard Chybiorz · 03.06.2026 · ostatnia aktualizacja 05.10.2026" */
+export function bylineText(byline: Byline | undefined): string {
+    if (!byline) return '';
+    return [byline.author, byline.published, byline.updated ? `ostatnia aktualizacja ${byline.updated}` : '']
+        .filter(Boolean)
+        .join(' · ');
+}
 
 /**
- * Header of a content page: a photo band with the title on a forest panel, or – without a
- * photo – a plain title block. Text never sits directly on the photo.
+ * Header of a content page, in one of the mockups' four forms: a photo band with the title
+ * on a forest panel (text never sits directly on the photo), a light band with the
+ * section's pages above the title, a dark band with the page's figures, or a plain title.
  */
 @Component({
     selector: 'app-page-hero',
     templateUrl: './page-hero.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe],
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, Facts, SectionBar],
     // The lead is CMS HTML in [innerHTML] – see TitleAndText.
     host: { ngSkipHydration: 'true' },
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PageHero {
-    readonly hero = input.required<PageHeroData>();
+    readonly header = input.required<PageHeader>();
     readonly crumbs = input<Crumb[]>([]);
     readonly byline = input<Byline | undefined>();
+    /** The section's pages – shown inside the light band only. */
+    readonly section = input<SectionLinks | undefined>();
+
+    readonly hero = computed(() => this.header().data);
 
     readonly caption = computed(() => {
         const { image_caption: caption, image_author: author } = this.hero();
@@ -30,16 +45,14 @@ export class PageHero {
         return [text, photoCredit(author)].filter(Boolean).join(' · ');
     });
 
-    /** "Ryszard Chybiorz · 03.06.2026 · ostatnia aktualizacja 05.10.2026" */
-    readonly bylineText = computed(() => {
-        const byline = this.byline();
-        if (!byline) return '';
-        return [
-            byline.author,
-            byline.published,
-            byline.updated ? `ostatnia aktualizacja ${byline.updated}` : ''
-        ]
-            .filter(Boolean)
-            .join(' · ');
+    readonly bylineText = computed(() => (this.header().bylineBelow ? '' : bylineText(this.byline())));
+
+    /** The action link may carry a query ("/mapa-atrakcji?top50=1"); the router needs it apart. */
+    readonly action = computed(() => {
+        const action = this.header().action;
+        const link = internalLink(action?.link);
+        if (!action || !link) return undefined;
+        const [path, query = ''] = link.split('?');
+        return { label: action.label, path, params: Object.fromEntries(new URLSearchParams(query)) };
     });
 }

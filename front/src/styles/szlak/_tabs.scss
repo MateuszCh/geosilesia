@@ -60,6 +60,7 @@
         flex-direction: column;
         gap: 22px;
         min-width: 0;
+        max-width: 760px;
 
         &[hidden] {
             display: none;
@@ -206,34 +207,92 @@
 
 .tab-facts {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 0 16px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
     margin: 0;
-    padding: 4px 22px 18px;
-    border-radius: var(--radius-lg);
-    background: var(--forest);
-    color: var(--on-forest);
 
     &__item {
         display: flex;
         flex-direction: column;
-        gap: 2px;
-        padding-top: 16px;
+        gap: 4px;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
     }
 
     &__value {
         order: -1;
         font-family: var(--font-display);
-        font-size: 44px;
+        font-size: 40px;
         font-weight: 800;
         line-height: 1;
     }
 
     &__label,
     &__note {
-        color: var(--on-forest-muted);
+        color: var(--muted);
         font-size: 15px;
         line-height: 21px;
+    }
+
+    // Four figures (the extreme points of "Położenie") stand two by two, each headed by its
+    // side in red, as in the mockup.
+    &:has(> :nth-child(4):last-child) {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+
+        .tab-facts__item {
+            padding: 14px 16px;
+        }
+
+        .tab-facts__label {
+            order: -2;
+            color: var(--trail-red);
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 20px;
+        }
+
+        .tab-facts__value {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+    }
+
+    // A single figure stands out: forest, the figure beside its description.
+    &--single {
+        display: block;
+
+        .tab-facts__item {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 18px;
+            padding: 22px 24px;
+            border: 0;
+            background: var(--forest);
+            color: var(--on-forest);
+        }
+
+        .tab-facts__value {
+            font-size: 64px;
+
+            @include below($bp-phone) {
+                font-size: 48px;
+            }
+        }
+
+        .tab-facts__label {
+            flex: 1 1 240px;
+            color: var(--on-forest);
+            font-size: 18px;
+            line-height: 27px;
+        }
+
+        .tab-facts__note {
+            flex-basis: 100%;
+            color: var(--on-forest-muted);
+        }
     }
 }
 
@@ -292,6 +351,19 @@
         }
     }
 
+    // One highlighted bar is the subject: forest and bold against muted references.
+    &__row--subject {
+        font-weight: 700;
+
+        .bar-chart__bar {
+            background: var(--forest);
+        }
+    }
+
+    &__row--reference .bar-chart__bar {
+        background: #7f9a88;
+    }
+
     &__value {
         font-family: var(--font-display);
         font-size: 20px;
@@ -305,6 +377,29 @@
         color: var(--muted);
         font-size: 14px;
         line-height: 20px;
+    }
+}
+
+// A list of short names as chips with trail marks (the groups of minerals, the factors of
+// the landscape), as in the mockups.
+.chip-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        font-size: 17px;
+        font-weight: 600;
+        line-height: 22px;
     }
 }
 

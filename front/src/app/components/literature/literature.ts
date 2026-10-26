@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input, signal } from '@an
 import { LiteratureData } from '../../models/row.model';
 import { plural } from '../../shared/plural';
 
-/** Lists longer than this are shown shortened, with a button for the rest. */
-const COLLAPSE_ABOVE = 10;
+/** Lists longer than this are shown shortened, with a button for the rest – as in the mockups. */
+const COLLAPSE_ABOVE = 4;
 
 @Component({
     selector: 'app-literature',
@@ -12,8 +12,10 @@ const COLLAPSE_ABOVE = 10;
 })
 export class Literature {
     readonly component = input.required<LiteratureData>();
+    /** The page's author and dates, at the bottom of the box, as in the mockup of the dictionary. */
+    readonly byline = input('');
     readonly expanded = signal(false);
-    protected readonly collapsedCount = 5;
+    protected readonly collapsedCount = 3;
 
     readonly items = computed(() => (this.component().items ?? []).filter(item => item.author || item.item));
     readonly collapsible = computed(() => this.items().length > COLLAPSE_ABOVE);

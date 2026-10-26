@@ -21,7 +21,9 @@ import { pageKeyFromUrl } from '../../core/page-key';
 import { NavigationService } from '../../core/navigation.service';
 import { PageLayout, groupRows, layoutPage } from '../../core/page-layout';
 import * as seoMeta from '../../../../../shared/seo-meta';
-import { PageHero } from '../page-hero/page-hero';
+import { PageHero, bylineText } from '../page-hero/page-hero';
+import { SectionBar } from '../section-bar/section-bar';
+import { DictionarySearch } from '../dictionary/dictionary-search';
 import { Dictionary } from '../dictionary/dictionary';
 import { Footnotes } from '../footnotes/footnotes';
 import { Gallery } from '../gallery/gallery';
@@ -54,7 +56,9 @@ import { TitleAndText } from '../title-and-text/title-and-text';
         NgTemplateOutlet,
         RouterLink,
         PageHero,
+        SectionBar,
         Dictionary,
+        DictionarySearch,
         Footnotes,
         Gallery,
         GalleryList,
@@ -100,6 +104,9 @@ export class PageView {
             : { kind: 'content', rows: [], side: [], wide: false };
     });
 
+    /** The dictionary's search; the light header band may hold the field. */
+    readonly dictionaryQuery = signal('');
+
     /** Rows of the home page and albums; the events and knowledge base previews share a line. */
     readonly groups = computed(() => groupRows(this.layout().rows));
     /** The map is the page's main content (and its title the h1) unless the home banner is above it. */
@@ -109,17 +116,47 @@ export class PageView {
     readonly crumbs = computed(() => this.navigation.trail(this.path()));
     readonly section = computed(() => this.navigation.section(this.path()));
     readonly next = computed(() => this.navigation.next(this.path()));
-    /** The knowledge base lists its sections itself, so its pages need no "Dalej w dziale". */
+    /** The knowledge base lists its sections itself – its pages get no section bar or "Dalej". */
     readonly listsSections = computed(() =>
         this.layout().rows.some(row => row.type === 'knowledge_base' && row.data?.variant !== 'zapowiedź')
     );
-    /**
-     * Article pages of a section list the section's pages beside the content; side link
-     * cards need the panel too. Pages with a full-width row (dictionary, lists) go without.
-     */
-    readonly hasSide = computed(
-        () => (!this.layout().wide && !!this.section()) || this.layout().side.length > 0
+    /** The section's pages, wherever a page shows them. */
+    readonly sectionBar = computed(() =>
+        this.layout().kind === 'content' && !this.listsSections() ? this.section() : undefined
     );
+    /**
+     * Where the section's pages show, as in the mockups: in a light header band above the
+     * title (the dictionary pages), as a menu beside the text of a page that has nothing
+     * else there (Położenie, Rzeźba terenu), and not at all beside a page's own side column
+     * (Budowa geologiczna, Skarby natury).
+     */
+    readonly sideMenu = computed(() => {
+        const { header, side } = this.layout();
+        return header?.style !== 'light' && side.length === 0 ? this.sectionBar() : undefined;
+    });
+    /** "Dalej w dziale" closes the side column of an article with tabs (Budowa geologiczna). */
+    readonly sideNext = computed(() => {
+        const { header, side, rows } = this.layout();
+        const article = header?.style !== 'light' && side.length > 0 && rows.some(row => row.type === 'tabs');
+        return article ? this.next() : undefined;
+    });
+    /** The author and dates of a page whose header band does not show them. */
+    readonly bylineBelow = computed(() =>
+        this.layout().header?.bylineBelow ? bylineText(this.layout().byline) : ''
+    );
+    /** Literature right after the dictionary closes the column of its terms, as in the mockup. */
+    readonly dictionaryLiterature = computed(() => {
+        const rows = this.layout().rows;
+        const next = rows[rows.findIndex(row => row.type === 'dictionary') + 1];
+        return rows.some(row => row.type === 'dictionary') && next?.type === 'literature' ? next : undefined;
+    });
+    /** The byline closes the literature box (Słowa kluczowe) or else the side column (Geoparki). */
+    readonly literatureByline = computed(() =>
+        this.layout().rows.some(row => row.type === 'literature') ? this.bylineBelow() : ''
+    );
+    readonly sideByline = computed(() => (this.literatureByline() ? '' : this.bylineBelow()));
+    /** The side column: side rows, the section menu and "Dalej w dziale". */
+    readonly hasSide = computed(() => this.layout().side.length > 0 || !!this.sideMenu() || !!this.sideNext());
     readonly top50Link = computed(() => {
         const item = this.navigation.items().find(entry => /top\s*50/i.test(entry.title ?? ''));
         return item ? this.navigation.sectionLink(item) : undefined;
@@ -155,6 +192,7 @@ export class PageView {
 
         this.displayed.set(resolved);
         this.loaded.set(false);
+        this.dictionaryQuery.set('');
 
         // The resolver returned content from IndexedDB so the page appears immediately –
         // now the network version is fetched. Without offline mode the resolver already

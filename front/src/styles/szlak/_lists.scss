@@ -412,6 +412,11 @@
         line-height: 1.1;
     }
 
+    &__literature {
+        display: block;
+        margin-top: 40px;
+    }
+
     &__empty {
         > div {
             display: flex;
@@ -503,6 +508,11 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+
+    // Beside the text: the databases one under another.
+    .page-body__side & .databases__list {
+        grid-template-columns: minmax(0, 1fr);
+    }
 
     &__title {
         font-family: var(--font-display);

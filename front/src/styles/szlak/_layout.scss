@@ -126,11 +126,159 @@
         max-width: 760px;
     }
 
+    // The dictionary pages: a light band with the section's pages above the title and the
+    // figures or the search on the right.
+    &--light {
+        border-bottom: 1px solid var(--line);
+        background: var(--surface-alt);
+
+        // The lead gives way to the figures or the search beside it, as in the mockups.
+        .page-hero__head {
+            flex: 1 1 420px;
+            max-width: 820px;
+        }
+
+        .page-hero__lead-text {
+            font-size: 21px;
+            line-height: 32px;
+
+            @include below($bp-phone) {
+                font-size: 18px;
+                line-height: 28px;
+            }
+        }
+    }
+
+    &__band {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding-top: 44px;
+        padding-bottom: 28px;
+
+        @include below($bp-phone) {
+            padding-top: 28px;
+            padding-bottom: 24px;
+        }
+    }
+
+    &__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px 32px;
+    }
+
+    // "Położenie": a forest band holding the page's figures.
+    &--dark {
+        background: var(--forest);
+        color: var(--on-forest);
+
+        .page-hero__band {
+            gap: 22px;
+            padding-top: 40px;
+            padding-bottom: 36px;
+        }
+
+        .crumbs {
+            color: var(--on-forest-muted);
+        }
+
+        .page-hero__title {
+            @include above($bp-tablet) {
+                font-size: 76px;
+            }
+        }
+
+        .page-hero__lead-text {
+            max-width: 760px;
+            color: var(--on-forest);
+        }
+    }
+
     &__byline {
         font-size: 15px;
         line-height: 22px;
         color: var(--muted);
     }
+}
+
+// Figures in a header band: on the right of the light band, under the title in the dark one.
+.page-hero__facts {
+    .facts__list {
+        border-top: 0;
+    }
+
+    .page-hero--light & {
+        .facts__list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 28px;
+        }
+
+        .facts__item {
+            max-width: 200px;
+            padding: 0;
+        }
+
+        .facts__value {
+            font-size: 56px;
+        }
+
+        @include below($bp-phone) {
+            .facts__list {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .facts__value {
+                font-size: 44px;
+            }
+        }
+    }
+
+    .page-hero--dark & {
+        .facts__list {
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            border-top: 1px solid var(--forest-line);
+
+            @include below($bp-phone) {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .facts__item {
+            padding: 16px 16px 4px 0;
+        }
+
+        .facts__value {
+            font-size: 44px;
+        }
+
+        .facts__label,
+        .facts__source {
+            color: var(--on-forest-muted);
+        }
+    }
+}
+
+.page-hero__search {
+    flex: 0 1 380px;
+    max-width: 100%;
+
+    .dictionary__search {
+        width: 100%;
+        height: 54px;
+        border: 2px solid var(--ink);
+        padding-left: 13px;
+    }
+}
+
+.page-body__byline {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 20px;
 }
 
 .page-body {
@@ -161,15 +309,27 @@
 
     &__side {
         display: flex;
-        flex: 1 1 260px;
+        flex: 1 1 280px;
         flex-direction: column;
         gap: 16px;
-        max-width: 300px;
+        max-width: 340px;
 
         @include below($bp-tablet) {
             max-width: none;
         }
     }
+}
+
+// The album list's lead continues the title, as in the mockup of the gallery.
+.page-body:has(> .page-body__main > .row:first-child[data-row='gallery_list']) {
+    padding-top: 12px;
+}
+
+// Beside a side column the text keeps the mockups' width; an article with tabs has its
+// "Na tej stronie" list in the same column and the places of "Skarby natury" open their
+// photos beside the text, so these take what is left.
+.page-body--side .page-body__main:not(:has(> .row[data-row='tabs'], .numbered__body)) {
+    max-width: 780px;
 }
 
 // Article rows keep a comfortable reading width when the page has no side panel.
@@ -184,7 +344,46 @@
     }
 }
 
-.section-nav {
+.section-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    &__link {
+        display: flex;
+        padding: 10px 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        color: var(--ink);
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 22px;
+        text-decoration: none;
+
+        @include below($bp-phone) {
+            padding: 8px 12px;
+            font-size: 15px;
+            line-height: 20px;
+        }
+
+        &:hover {
+            border-color: var(--ink);
+            color: var(--ink);
+        }
+
+        &--current,
+        &--current:hover {
+            border-color: var(--ink);
+            background: var(--ink);
+            color: #fff;
+            font-weight: 700;
+        }
+    }
+}
+
+// The section's pages beside the text (Położenie, Rzeźba terenu).
+.section-menu {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -202,7 +401,6 @@
         border: 1px solid var(--line);
         border-radius: var(--radius-md);
         color: var(--ink);
-        font-size: 16px;
         font-weight: 600;
         line-height: 22px;
         text-decoration: none;

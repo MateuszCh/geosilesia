@@ -1,32 +1,8 @@
 <div class="dictionary">
-    <div class="dictionary__search search-field"
-         [class.search-field--filled]="!!query()">
-        <svg class="search-field__icon"
-             width="18"
-             height="18"
-             viewBox="0 0 24 24"
-             aria-hidden="true">
-            <circle cx="10.5"
-                    cy="10.5"
-                    r="6.5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2" />
-            <path d="M15.5 15.5L21 21"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round" />
-        </svg>
-        <label class="visually-hidden"
-               for="dictionary-query">Szukaj hasła</label>
-        <input id="dictionary-query"
-               class="search-field__input"
-               type="search"
-               autocomplete="off"
-               [placeholder]="'Szukaj w ' + terms().length + ' ' + entriesLabel(terms().length) + ', np. geopark'"
-               [value]="query()"
-               (input)="query.set($any($event.target).value)">
-    </div>
+    @if (!searchInHeader()) {
+        <app-dictionary-search [count]="terms().length"
+                               [(query)]="query" />
+    }
 
     <div class="dictionary__body">
         <nav class="dictionary__index"
@@ -89,6 +65,11 @@
                                 (click)="query.set('')">Wyczyść wyszukiwanie</button>
                     </div>
                 </div>
+            }
+            @if (literature(); as literature) {
+                <app-literature class="dictionary__literature"
+                                [component]="literature"
+                                [byline]="byline()" />
             }
         </div>
     </div>

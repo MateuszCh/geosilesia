@@ -1,4 +1,15 @@
-@if (side()) {
+@if (side() && form() === 'figure') {
+    @let card = cards()[0];
+    <section class="side-figure"
+             [attr.aria-label]="component().title || card.title">
+        @if (component().title) {
+            <h2 class="side-cards__title">{{ component().title }}</h2>
+        }
+        <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: card, form: 'figure' }" />
+    </section>
+} @else if (side() && form() === 'card') {
+    <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: cards()[0], form: 'card' }" />
+} @else if (side()) {
     <section class="side-cards"
              [attr.aria-label]="component().title || 'Zobacz w terenie'">
         <h2 class="side-cards__title">{{ component().title || 'Zobacz w terenie' }}</h2>
@@ -7,7 +18,7 @@
                  [innerHTML]="component().intro | trusted"></div>
         }
         @for (card of cards(); track $index) {
-            <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: card, side: true }" />
+            <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: card, form: 'list' }" />
         }
     </section>
 } @else {
@@ -26,7 +37,7 @@
         <ul class="link-cards__list">
             @for (card of cards(); track $index) {
                 <li>
-                    <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: card, side: false }" />
+                    <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: card, form: 'cards' }" />
                 </li>
             }
         </ul>
@@ -35,20 +46,43 @@
 
 <ng-template #linkTpl
              let-card
-             let-side="side">
+             let-form="form">
+    @let body = form === 'list' ? sideBody : form === 'figure' ? figureBody : form === 'card' ? forestBody : cardBody;
+    @let linkClass = form === 'list' ? 'side-card' : form === 'figure' ? 'side-figure__link' : form === 'card' ? 'next-card next-card--side' : 'link-card';
     @if (card.internal) {
-        <a [class]="side ? 'side-card' : 'link-card'"
-           [routerLink]="card.href">
-            <ng-container *ngTemplateOutlet="side ? sideBody : cardBody; context: { $implicit: card }" />
+        <a [class]="linkClass"
+           [routerLink]="card.href"
+           [queryParams]="card.params">
+            <ng-container *ngTemplateOutlet="body; context: { $implicit: card }" />
         </a>
     } @else {
-        <a [class]="side ? 'side-card' : 'link-card'"
+        <a [class]="linkClass"
            target="_blank"
            rel="noreferrer"
            [href]="card.href">
-            <ng-container *ngTemplateOutlet="side ? sideBody : cardBody; context: { $implicit: card }" />
+            <ng-container *ngTemplateOutlet="body; context: { $implicit: card }" />
         </a>
     }
+</ng-template>
+
+<ng-template #figureBody
+             let-card>
+    <img class="side-figure__image"
+         loading="lazy"
+         alt=""
+         [src]="card.image">
+    <span class="side-figure__text">
+        <b>{{ card.title }}</b>
+        @if (card.description) {
+            — {{ card.description }}
+        }
+    </span>
+</ng-template>
+
+<ng-template #forestBody
+             let-card>
+    <span class="next-card__label">{{ card.title }} →</span>
+    <span class="next-card__title">{{ cardTitle() }}</span>
 </ng-template>
 
 <ng-template #cardBody
