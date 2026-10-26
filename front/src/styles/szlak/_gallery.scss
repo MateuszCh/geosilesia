@@ -9,9 +9,8 @@
 
     &__bar {
         display: flex;
-        flex-wrap: wrap;
-        align-items: flex-end;
-        justify-content: space-between;
+        flex-direction: column;
+        align-items: flex-start;
         gap: 24px;
     }
 

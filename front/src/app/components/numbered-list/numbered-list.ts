@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { NumberedListData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { photoCredit } from '../../shared/photo-credit';
@@ -16,6 +16,11 @@ export class NumberedList {
     readonly component = input.required<NumberedListData>();
     /** The first place starts open. */
     readonly open = signal<number | undefined>(0);
+    /** Items without titles are plain numbered points ("Co warto wiedzieć"), not places to open. */
+    readonly points = computed(() => {
+        const items = this.component().items ?? [];
+        return items.length > 0 && items.every(item => !item.title && item.text);
+    });
 
     protected readonly photoCredit = photoCredit;
 

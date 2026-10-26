@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, DOCUMENT, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DOCUMENT, computed, inject, input, model, signal } from '@angular/core';
 import { DictionaryData, DictionaryItem } from '../../models/row.model';
 import { ScrollService } from '../../core/scroll.service';
 import { foldText } from '../../shared/fold-text';
+import { DictionarySearch } from './dictionary-search';
 
 /** Trail colours of the term marks, in turn. */
 const MARK_COLORS = [
@@ -38,11 +39,14 @@ export function splitTerm(item: DictionaryItem): { term: string; foreign: string
 @Component({
     selector: 'app-dictionary',
     templateUrl: './dictionary.html',
+    imports: [DictionarySearch],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Dictionary {
     readonly component = input.required<DictionaryData>();
-    readonly query = signal('');
+    /** Two-way: the page header holds the field when the light band shows it. */
+    readonly query = model('');
+    readonly searchInHeader = input(false);
     readonly active = signal(-1);
 
     private readonly doc = inject(DOCUMENT);
@@ -80,10 +84,5 @@ export class Dictionary {
 
     capitalize(text: string): string {
         return text.charAt(0).toLocaleUpperCase('pl') + text.slice(1);
-    }
-
-    entriesLabel(count: number): string {
-        if (count === 1) return 'haśle';
-        return 'hasłach';
     }
 }

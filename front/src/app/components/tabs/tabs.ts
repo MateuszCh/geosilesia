@@ -8,7 +8,7 @@ import {
     signal
 } from '@angular/core';
 import { ChartBar, TabsData } from '../../models/row.model';
-import { periodColor } from '../../core/categories';
+import { colorByName, periodColor } from '../../core/categories';
 import { ScrollService } from '../../core/scroll.service';
 import { plural } from '../../shared/plural';
 
@@ -46,6 +46,8 @@ export class Tabs {
             .map((row, rowIndex) => ({ id: this.headingId(tabIndex, rowIndex), title: row.heading ?? '' }))
             .filter(entry => entry.title);
     });
+    /** The heading picked in "Na tej stronie"; the first one until then, as in the mockup. */
+    readonly current = computed(() => this.currentHeading() ?? this.toc()[0]?.id);
 
     tabId(index: number): string {
         return `tab-${index}`;
@@ -93,6 +95,20 @@ export class Tabs {
 
     sectionsLabel(count: number): string {
         return plural(count, 'sekcja', 'sekcje', 'sekcji');
+    }
+
+    /** A figure's own trail colour; ink when none is set. */
+    factColor(name: string | undefined): string | null {
+        return colorByName(name) ?? null;
+    }
+
+    /**
+     * One highlighted bar is the subject compared with the rest (the region's mean height
+     * against Europe and Poland): forest against muted bars. Several highlighted bars mark
+     * a group instead (state borders among the others): red against green.
+     */
+    isComparison(bars: ChartBar[] | undefined): boolean {
+        return (bars ?? []).filter(bar => bar.highlight).length === 1;
     }
 
     /** Bar length relative to the largest value of the chart. */

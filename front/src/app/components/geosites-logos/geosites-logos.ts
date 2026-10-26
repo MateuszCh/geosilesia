@@ -35,4 +35,11 @@ export class GeositesLogos {
                 color: MARK_COLORS[index % MARK_COLORS.length]
             }))
     );
+
+    /** "Sprawdź w bazach PIG-PIB" as in the mockup – as long as every database is the institute's. */
+    readonly title = computed(() => {
+        const bases = this.bases();
+        const institute = bases.length > 0 && bases.every(base => /(^|\.)pgi\.gov\.pl$/.test(base.host));
+        return institute ? 'Sprawdź w bazach PIG-PIB' : 'Sprawdź w bazach danych';
+    });
 }

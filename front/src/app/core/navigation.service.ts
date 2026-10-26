@@ -24,6 +24,11 @@ export interface FooterColumn {
     links: { title: string; link: string }[];
 }
 
+export interface SectionLinks {
+    title: string;
+    links: { title: string; link: string; current: boolean }[];
+}
+
 /** Path of a CMS link in the form the router uses: leading slash, no trailing one. */
 function pathOf(link: string | undefined): string | undefined {
     const absolute = internalLink(link);
@@ -140,8 +145,8 @@ export class NavigationService {
         return [];
     }
 
-    /** The section a page belongs to, with all its subpages – the side navigation of content pages. */
-    section(path: string): { title: string; links: { title: string; link: string; current: boolean }[] } | undefined {
+    /** The section a page belongs to, with all its subpages – the section bar of content pages. */
+    section(path: string): SectionLinks | undefined {
         const item = this.items().find(entry => entry.subnav?.some(sub => pathOf(sub.link) === path));
         if (!item?.title) return undefined;
         return {

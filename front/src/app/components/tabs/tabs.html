@@ -37,7 +37,7 @@
                     @for (entry of toc(); track entry.id) {
                         <li>
                             <a class="toc__link"
-                               [class.toc__link--current]="currentHeading() === entry.id"
+                               [class.toc__link--current]="current() === entry.id"
                                [href]="'#' + entry.id"
                                (click)="goTo($event, entry.id)">
                                 <span class="trail-mark trail-mark--xs"
@@ -87,11 +87,14 @@
                             </blockquote>
                         }
                         @if (row.facts?.length) {
-                            <dl class="tab-facts">
+                            <!-- One figure stands out on forest; several are cards, as in the mockups. -->
+                            <dl class="tab-facts"
+                                [class.tab-facts--single]="row.facts!.length === 1">
                                 @for (fact of row.facts; track $index) {
                                     <div class="tab-facts__item">
                                         <dt class="tab-facts__label">{{ fact.label }}</dt>
-                                        <dd class="tab-facts__value">{{ fact.value }}</dd>
+                                        <dd class="tab-facts__value"
+                                            [style.color]="row.facts!.length > 1 ? factColor(fact.color) : null">{{ fact.value }}</dd>
                                         @if (fact.note) {
                                             <dd class="tab-facts__note">{{ fact.note }}</dd>
                                         }
@@ -105,7 +108,9 @@
                                     <figcaption class="bar-chart__title">{{ row.chart_title }}</figcaption>
                                 }
                                 @for (bar of row.chart; track $index) {
-                                    <div class="bar-chart__row">
+                                    <div class="bar-chart__row"
+                                         [class.bar-chart__row--subject]="bar.highlight && isComparison(row.chart)"
+                                         [class.bar-chart__row--reference]="!bar.highlight && isComparison(row.chart)">
                                         <span>{{ bar.label }}</span>
                                         <span class="bar-chart__track"
                                               aria-hidden="true">

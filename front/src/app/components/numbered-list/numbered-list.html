@@ -10,72 +10,85 @@
             }
         </div>
     }
-    <div class="numbered__body">
-        <ol class="numbered__list">
+    @if (points()) {
+        <ol class="points">
             @for (item of component().items ?? []; track $index) {
-                <li class="numbered__item">
-                    <button class="numbered__toggle"
-                            type="button"
-                            [class.numbered__toggle--open]="open() === $index"
-                            [attr.aria-expanded]="open() === $index"
-                            [attr.aria-controls]="'pozycja-' + ($index + 1)"
-                            (click)="toggle($index)">
-                        <span class="numbered__number"
-                              [style.border-color]="colors[$index % colors.length]">{{ $index + 1 }}</span>
-                        <span class="numbered__titles">
-                            <span class="numbered__title">{{ item.title }}</span>
-                            @if (item.place) {
-                                <span class="numbered__place">{{ item.place }}</span>
-                            }
-                        </span>
-                        <span class="numbered__sign"
-                              aria-hidden="true">{{ open() === $index ? '−' : '+' }}</span>
-                    </button>
-                    <div class="numbered__panel"
-                         [id]="'pozycja-' + ($index + 1)"
-                         [hidden]="open() !== $index">
-                        <div class="numbered__text">
-                            @if (item.text) {
-                                <div class="prose"
-                                     [innerHTML]="item.text | trusted"></div>
-                            }
-                            @if (item.link) {
-                                <a class="more-link"
-                                   [href]="item.link">Więcej →</a>
-                            }
-                        </div>
-                        @if (item.image) {
-                            <figure class="numbered__figure">
-                                <img loading="lazy"
-                                     [src]="item.image"
-                                     [alt]="item.title ?? ''">
-                                @if (item.image_author) {
-                                    <figcaption>{{ photoCredit(item.image_author) }}</figcaption>
-                                }
-                            </figure>
-                        }
-                    </div>
+                <li class="points__item">
+                    <span class="points__number"
+                          [style.border-color]="colors[$index % colors.length]">{{ $index + 1 }}</span>
+                    <div class="points__text prose"
+                         [innerHTML]="item.text | trusted"></div>
                 </li>
             }
         </ol>
-        @if (component().more_items?.length) {
-            <aside class="numbered__more">
-                <h3 class="numbered__more-title">{{ component().more_title || 'A ponadto' }}</h3>
-                <ul>
-                    @for (item of component().more_items; track $index) {
-                        <li>
-                            <span class="trail-mark trail-mark--xs"
-                                  aria-hidden="true"
-                                  [style.--mark]="colors[$index % colors.length]"></span>
-                            @if (item.link) {
-                                <a [href]="item.link">{{ item.text }}</a>
-                            } @else {
-                                <span>{{ item.text }}</span>
+    } @else {
+        <div class="numbered__body">
+            <ol class="numbered__list">
+                @for (item of component().items ?? []; track $index) {
+                    <li class="numbered__item">
+                        <button class="numbered__toggle"
+                                type="button"
+                                [class.numbered__toggle--open]="open() === $index"
+                                [attr.aria-expanded]="open() === $index"
+                                [attr.aria-controls]="'pozycja-' + ($index + 1)"
+                                (click)="toggle($index)">
+                            <span class="numbered__number"
+                                  [style.border-color]="colors[$index % colors.length]">{{ $index + 1 }}</span>
+                            <span class="numbered__titles">
+                                <span class="numbered__title">{{ item.title }}</span>
+                                @if (item.place) {
+                                    <span class="numbered__place">{{ item.place }}</span>
+                                }
+                            </span>
+                            <span class="numbered__sign"
+                                  aria-hidden="true">{{ open() === $index ? '−' : '+' }}</span>
+                        </button>
+                        <div class="numbered__panel"
+                             [id]="'pozycja-' + ($index + 1)"
+                             [hidden]="open() !== $index">
+                            <div class="numbered__text">
+                                @if (item.text) {
+                                    <div class="prose"
+                                         [innerHTML]="item.text | trusted"></div>
+                                }
+                                @if (item.link) {
+                                    <a class="more-link"
+                                       [href]="item.link">Więcej →</a>
+                                }
+                            </div>
+                            @if (item.image) {
+                                <figure class="numbered__figure">
+                                    <img loading="lazy"
+                                         [src]="item.image"
+                                         [alt]="item.title ?? ''">
+                                    @if (item.image_author) {
+                                        <figcaption>{{ photoCredit(item.image_author) }}</figcaption>
+                                    }
+                                </figure>
                             }
-                        </li>
-                    }
-                </ul>
-            </aside>
-        }
-    </div>
+                        </div>
+                    </li>
+                }
+            </ol>
+            @if (component().more_items?.length) {
+                <aside class="numbered__more">
+                    <h3 class="numbered__more-title">{{ component().more_title || 'A ponadto' }}</h3>
+                    <ul>
+                        @for (item of component().more_items; track $index) {
+                            <li>
+                                <span class="trail-mark trail-mark--xs"
+                                      aria-hidden="true"
+                                      [style.--mark]="colors[$index % colors.length]"></span>
+                                @if (item.link) {
+                                    <a [href]="item.link">{{ item.text }}</a>
+                                } @else {
+                                    <span>{{ item.text }}</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </aside>
+            }
+        </div>
+    }
 </section>

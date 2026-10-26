@@ -1,6 +1,7 @@
 import { Page } from '../models/page.model';
 import { formatDate } from './dates';
 import {
+    FactsData,
     GalleryData,
     NoticeData,
     PageHeroData,
@@ -29,10 +30,28 @@ export interface Byline {
 
 export type PageKind = 'home' | 'album' | 'content';
 
+/** The page header of the mockups: a photo band, a light or a dark band, or a plain title. */
+export type HeaderStyle = 'photo' | 'light' | 'dark' | 'plain';
+
+export interface PageHeader {
+    data: PageHeroData;
+    style: HeaderStyle;
+    /** A `facts` row right after the header – drawn inside the light and dark bands. */
+    facts?: FactsData;
+    /** The map button of the TOP 50 route, beside the title as in the mockup. */
+    action?: { label: string; link: string };
+    /** Above the title instead of the breadcrumbs. */
+    eyebrow?: string;
+    /** The dictionary comes first: its search field sits in the light band. */
+    searchCount?: number;
+    /** The byline leaves the light and dark bands, as in the mockups. */
+    bylineBelow: boolean;
+}
+
 export interface PageLayout {
     kind: PageKind;
     /** Page header; undefined on the home page and on albums, which draw their own. */
-    hero?: PageHeroData;
+    header?: PageHeader;
     byline?: Byline;
     /** Rows of the main column, without those consumed by the header. */
     rows: Row[];
@@ -82,9 +101,17 @@ export function isFullWidth(row: Row): boolean {
     return FULL_WIDTH.includes(row.type);
 }
 
-/** Rows beside the text: link cards set to "lista boczna" and, as in the mockup, the geosite databases. */
+/**
+ * Rows beside the text: link cards set to "lista boczna" and, as in the mockups, the geosite
+ * databases and a quote standing on its own (the motto of "Skarby natury").
+ */
 function isSideRow(row: Row): boolean {
-    return (row.type === 'link_cards' && row.data?.variant === 'lista boczna') || row.type === 'geosites_logos';
+    if (row.type === 'link_cards') return row.data?.variant === 'lista boczna';
+    if (row.type === 'title_and_text') {
+        const text = row.data?.text ?? [];
+        return !row.data?.title && text.length === 1 && text[0].paragraph_class === 'cytat' && !text[0].list?.length;
+    }
+    return row.type === 'geosites_logos';
 }
 
 /** A title_and_text row without the byline paragraph; undefined when nothing is left. */
@@ -163,6 +190,35 @@ function heroFromRow(row: Row | undefined): { hero: PageHeroData; consumed: 'row
     return undefined;
 }
 
+/**
+ * The header and what it takes over from the rows that follow it, as in the mockups:
+ * the figures of "Położenie" and "Geoparki", the search of "Słowa kluczowe" and the map
+ * button of TOP 50.
+ */
+function headerOf(data: PageHeroData, rows: Row[]): { header: PageHeader; rows: Row[] } {
+    const style: HeaderStyle = data.image
+        ? 'photo'
+        : data.variant === 'jasne'
+          ? 'light'
+          : data.variant === 'ciemne'
+            ? 'dark'
+            : 'plain';
+    const header: PageHeader = { data, style, bylineBelow: style === 'light' || style === 'dark' };
+    const first = rows[0];
+
+    if (first?.type === 'facts' && (style === 'light' || style === 'dark')) {
+        header.facts = first.data ?? {};
+        rows = rows.slice(1);
+    } else if (first?.type === 'dictionary' && style === 'light') {
+        header.searchCount = first.data?.items?.length ?? 0;
+    } else if (first?.type === 'top50' && first.data?.variant !== 'zapowiedź' && first.data?.link && style === 'plain') {
+        header.action = { label: first.data.link_label || 'Pokaż wszystkie 50 na mapie', link: first.data.link };
+        header.eyebrow = 'Szlak czerwony';
+        rows = [{ ...first, data: { ...first.data, link: undefined } }, ...rows.slice(1)];
+    }
+    return { header, rows };
+}
+
 export function layoutPage(page: Page | undefined): PageLayout {
     const source = (page?.rows ?? []).filter(row => !!row?.type);
 
@@ -215,9 +271,12 @@ export function layoutPage(page: Page | undefined): PageLayout {
               }
             : parsed;
 
+    const header = headerOf(hero, rows);
+    rows = header.rows;
+
     return {
         kind: 'content',
-        hero,
+        header: header.header,
         byline,
         rows: rows.filter(row => !isSideRow(row)),
         side: rows.filter(isSideRow),

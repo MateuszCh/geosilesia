@@ -21,7 +21,9 @@
             <app-news [component]="row.data" />
         }
         @case ('dictionary') {
-            <app-dictionary [component]="row.data" />
+            <app-dictionary [component]="row.data"
+                            [(query)]="dictionaryQuery"
+                            [searchInHeader]="layout().header?.searchCount !== undefined" />
         }
         @case ('footnotes') {
             <app-footnotes [component]="row.data" />
@@ -81,29 +83,39 @@
     }
 </ng-template>
 
+<ng-template #nextTpl
+             let-nextPage>
+    <a class="next-card"
+       [routerLink]="nextPage.link">
+        <span class="next-card__label">Dalej w dziale {{ nextPage.section }}</span>
+        <span class="next-card__title">{{ nextPage.title }}</span>
+        <span class="next-card__arrow"
+              aria-hidden="true">→</span>
+    </a>
+</ng-template>
+
 <main class="page"
       [class.page--home]="layout().kind === 'home'"
       [class.page--album]="layout().kind === 'album'">
-    @if (layout().hero; as hero) {
-        <app-page-hero [hero]="hero"
+    @if (layout().header; as header) {
+        <app-page-hero [header]="header"
                        [crumbs]="crumbs()"
-                       [byline]="layout().byline" />
+                       [byline]="layout().byline"
+                       [section]="header.style === 'light' ? sectionBar() : undefined">
+            @if (header.searchCount !== undefined) {
+                <app-dictionary-search class="page-hero__search"
+                                       [count]="header.searchCount"
+                                       [(query)]="dictionaryQuery" />
+            }
+        </app-page-hero>
     }
 
     @if (layout().kind === 'content') {
         <div class="page-body container"
              [class.page-body--side]="hasSide()">
             <div class="page-body__main">
-                @if (sectionBar(); as current) {
-                    <nav class="section-bar"
-                         [attr.aria-label]="'Dział ' + current.title">
-                        @for (link of current.links; track link.link) {
-                            <a class="section-bar__link"
-                               [routerLink]="link.link"
-                               [class.section-bar__link--current]="link.current"
-                               [attr.aria-current]="link.current ? 'page' : null">{{ link.title }}</a>
-                        }
-                    </nav>
+                @if (mainSectionBar(); as current) {
+                    <app-section-bar [section]="current" />
                 }
                 @for (row of layout().rows; track $index) {
                     <section class="row"
@@ -112,14 +124,11 @@
                         <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
                     </section>
                 }
-                @if (!listsSections() && next(); as nextPage) {
-                    <a class="next-card"
-                       [routerLink]="nextPage.link">
-                        <span class="next-card__label">Dalej w dziale {{ nextPage.section }}</span>
-                        <span class="next-card__title">{{ nextPage.title }}</span>
-                        <span class="next-card__arrow"
-                              aria-hidden="true">→</span>
-                    </a>
+                @if (mainNext(); as nextPage) {
+                    <ng-container *ngTemplateOutlet="nextTpl; context: { $implicit: nextPage }" />
+                }
+                @if (!hasSide() && bylineBelow()) {
+                    <p class="page-body__byline">{{ bylineBelow() }}</p>
                 }
             </div>
             @if (hasSide()) {
@@ -127,6 +136,12 @@
                        aria-label="Powiązane">
                     @for (row of layout().side; track $index) {
                         <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }" />
+                    }
+                    @if (sideNext(); as nextPage) {
+                        <ng-container *ngTemplateOutlet="nextTpl; context: { $implicit: nextPage }" />
+                    }
+                    @if (bylineBelow()) {
+                        <p class="page-body__byline">{{ bylineBelow() }}</p>
                     }
                 </aside>
             }

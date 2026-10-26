@@ -20,7 +20,10 @@ const newComponents = [
         ["image_author", "Autor zdjęcia", "text"],
         ["author", "Autor tekstu", "text"],
         ["published", "Data publikacji", "date"],
-        ["updated", "Ostatnia aktualizacja", "date"]
+        ["updated", "Ostatnia aktualizacja", "date"],
+        // Not in the spec: the band of a header without a photo, as in the mockups (light
+        // on the dictionary pages, forest on "Położenie"); empty = a plain title.
+        ["variant", "Tło nagłówka bez zdjęcia", "select", ";jasne;ciemne"]
     ]),
     def("map_search", "Wyszukiwarka atrakcji", [
         ["title", "Tytuł", "text"],
@@ -144,7 +147,9 @@ const changedComponents = [
                 ["facts", "Liczby", "repeater", [
                     ["value", "Wartość", "text"],
                     ["label", "Opis", "text"],
-                    ["note", "Dopisek", "text"]
+                    ["note", "Dopisek", "text"],
+                    // Not in the spec: the figures of "Rzeźba terenu" are coloured in the mockup.
+                    ["color", "Kolor liczby", "select", `;${TRAIL_COLORS}`]
                 ]],
                 ["chart_title", "Tytuł wykresu", "text"],
                 ["chart_unit", "Jednostka", "text"],

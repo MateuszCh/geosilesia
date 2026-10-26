@@ -21,7 +21,9 @@ import { pageKeyFromUrl } from '../../core/page-key';
 import { NavigationService } from '../../core/navigation.service';
 import { PageLayout, groupRows, layoutPage } from '../../core/page-layout';
 import * as seoMeta from '../../../../../shared/seo-meta';
-import { PageHero } from '../page-hero/page-hero';
+import { PageHero, bylineText } from '../page-hero/page-hero';
+import { SectionBar } from '../section-bar/section-bar';
+import { DictionarySearch } from '../dictionary/dictionary-search';
 import { Dictionary } from '../dictionary/dictionary';
 import { Footnotes } from '../footnotes/footnotes';
 import { Gallery } from '../gallery/gallery';
@@ -54,7 +56,9 @@ import { TitleAndText } from '../title-and-text/title-and-text';
         NgTemplateOutlet,
         RouterLink,
         PageHero,
+        SectionBar,
         Dictionary,
+        DictionarySearch,
         Footnotes,
         Gallery,
         GalleryList,
@@ -100,6 +104,9 @@ export class PageView {
             : { kind: 'content', rows: [], side: [], wide: false };
     });
 
+    /** The dictionary's search; the light header band may hold the field. */
+    readonly dictionaryQuery = signal('');
+
     /** Rows of the home page and albums; the events and knowledge base previews share a line. */
     readonly groups = computed(() => groupRows(this.layout().rows));
     /** The map is the page's main content (and its title the h1) unless the home banner is above it. */
@@ -120,8 +127,26 @@ export class PageView {
     readonly sectionBar = computed(() =>
         this.layout().kind === 'content' && !this.listsSections() ? this.section() : undefined
     );
-    /** The side panel only holds link cards set to "lista boczna". */
-    readonly hasSide = computed(() => this.layout().side.length > 0);
+    /** Inside a light header band the section bar stands above the title, as in the mockups. */
+    readonly mainSectionBar = computed(() =>
+        this.layout().header?.style === 'light' ? undefined : this.sectionBar()
+    );
+    /**
+     * "Dalej w dziale" stands beside the text on article pages (tabs) and on pages that
+     * already have a side column, as in the mockup of an article; elsewhere under the text.
+     */
+    readonly sideNext = computed(() => {
+        const { side, rows } = this.layout();
+        const beside = side.length > 0 || rows.some(row => row.type === 'tabs');
+        return beside && !this.listsSections() ? this.next() : undefined;
+    });
+    readonly mainNext = computed(() => (!this.sideNext() && !this.listsSections() ? this.next() : undefined));
+    /** The author and dates of a page whose header band does not show them. */
+    readonly bylineBelow = computed(() =>
+        this.layout().header?.bylineBelow ? bylineText(this.layout().byline) : ''
+    );
+    /** The side column: link cards set to "lista boczna", the databases and "Dalej w dziale". */
+    readonly hasSide = computed(() => this.layout().side.length > 0 || !!this.sideNext());
     readonly top50Link = computed(() => {
         const item = this.navigation.items().find(entry => /top\s*50/i.test(entry.title ?? ''));
         return item ? this.navigation.sectionLink(item) : undefined;
@@ -157,6 +182,7 @@ export class PageView {
 
         this.displayed.set(resolved);
         this.loaded.set(false);
+        this.dictionaryQuery.set('');
 
         // The resolver returned content from IndexedDB so the page appears immediately –
         // now the network version is fetched. Without offline mode the resolver already
