@@ -77,6 +77,8 @@ export class Gallery implements OnInit {
     private readonly top50Posts = signal<{ number: number; title: string; urls: string[] }[]>([]);
 
     private readonly navigation = inject(NavigationService);
+    /** "Inne albumy" – one heading for every album page, kept in the navigation post. */
+    protected readonly otherAlbumsTitle = this.navigation.albumsMoreTitle;
     private readonly resource = inject(ResourceService);
     private readonly destroyRef = inject(DestroyRef);
 

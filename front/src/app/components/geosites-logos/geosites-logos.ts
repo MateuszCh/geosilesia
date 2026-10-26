@@ -36,8 +36,13 @@ export class GeositesLogos {
             }))
     );
 
-    /** "Sprawdź w bazach PIG-PIB" as in the mockup – as long as every database is the institute's. */
+    /**
+     * The heading from the CMS; without one "Sprawdź w bazach PIG-PIB" as in the mockup – as
+     * long as every database is the institute's.
+     */
     readonly title = computed(() => {
+        const own = this.component().title?.trim();
+        if (own) return own;
         const bases = this.bases();
         const institute = bases.length > 0 && bases.every(base => /(^|\.)pgi\.gov\.pl$/.test(base.host));
         return institute ? 'Sprawdź w bazach PIG-PIB' : 'Sprawdź w bazach danych';

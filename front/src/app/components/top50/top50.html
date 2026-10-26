@@ -38,7 +38,7 @@
             <span class="eyebrow eyebrow--red">
                 <span class="trail-mark"
                       aria-hidden="true"></span>
-                Szlak czerwony · TOP 50
+                {{ component().eyebrow || 'Szlak czerwony · TOP 50' }}
             </span>
             <h2 class="h-section">{{ component().title || '50 miejsc, które trzeba zobaczyć' }}</h2>
             @if (component().intro) {

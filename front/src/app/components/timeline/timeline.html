@@ -30,8 +30,8 @@
     </ol>
     @if (hasHighlights()) {
         <div class="timeline__legend">
-            <span><span class="timeline__dot timeline__dot--highlight"></span>województwo śląskie</span>
-            <span><span class="timeline__dot"></span>Polska</span>
+            <span><span class="timeline__dot timeline__dot--highlight"></span>{{ component().legend_highlight || 'województwo śląskie' }}</span>
+            <span><span class="timeline__dot"></span>{{ component().legend_other || 'Polska' }}</span>
         </div>
     }
 </section>

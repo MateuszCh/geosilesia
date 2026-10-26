@@ -40,7 +40,20 @@ withDb(async db => {
             if (r.type === "dictionary" && (r.data.items || []).some(item => !item.title_en && /\(ang\./i.test(item.title || ""))) {
                 issues.push(`${page.pageUrl}: dictionary terms with "(ang. …)" in the title`);
             }
+            if (r.type === "geosites_logos" && !r.data.title) issues.push(`${page.pageUrl}: databases without a heading`);
+            if (r.type === "top50" && r.data.variant === "zapowiedź" && !r.data.eyebrow) {
+                issues.push(`${page.pageUrl}: TOP 50 preview without an eyebrow`);
+            }
+            if (r.type === "timeline" && (r.data.items || []).some(item => item.highlight) && !(r.data.legend_highlight && r.data.legend_other)) {
+                issues.push(`${page.pageUrl}: timeline without its legend`);
+            }
         });
+        // The TOP 50 route's page shows an eyebrow above its title.
+        const heroAt = rows.findIndex(r => r.type === "page_hero");
+        const afterHero = rows[heroAt + 1];
+        if (heroAt >= 0 && !rows[heroAt].data.eyebrow && afterHero && afterHero.type === "top50" && afterHero.data.variant !== "zapowiedź" && afterHero.data.link) {
+            issues.push(`${page.pageUrl}: TOP 50 page header without an eyebrow`);
+        }
     }
 
     const icons = await db.collection("posts").find({ type: "icon" }).toArray();
@@ -51,7 +64,7 @@ withDb(async db => {
 
     const nav = await db.collection("posts").findOne({ type: "navigation" });
     const data = (nav && nav.data) || {};
-    ["cta_label", "cta_link", "footer_text"].filter(key => !data[key]).forEach(key => issues.push(`navigation: no ${key}`));
+    ["cta_label", "cta_link", "footer_text", "albums_more_title"].filter(key => !data[key]).forEach(key => issues.push(`navigation: no ${key}`));
     (data.nav || []).filter(item => !item.link).forEach(item => issues.push(`navigation: section "${item.title}" has no link`));
 
     console.log(issues.length ? issues.join("\n") : "no fallbacks in use");
