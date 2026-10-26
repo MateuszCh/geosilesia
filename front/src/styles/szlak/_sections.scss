@@ -535,22 +535,18 @@
         }
     }
 
+    // Title and the place's sources – the same links as on the TOP 50 page.
     &__caption-text {
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 8px;
+        min-width: 0;
     }
 
     &__caption-title {
         font-size: 18px;
         font-weight: 700;
         line-height: 23px;
-    }
-
-    &__caption-meta {
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 20px;
     }
 
     &__text {

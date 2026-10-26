@@ -27,10 +27,10 @@
                      [alt]="stop.title">
                 <div class="top50-preview__caption">
                     <span class="route-stop route-stop--filled route-stop--large">{{ stop.number }}</span>
-                    <span class="top50-preview__caption-text">
+                    <div class="top50-preview__caption-text">
                         <span class="top50-preview__caption-title">{{ stop.title }}</span>
-                        <span class="top50-preview__caption-meta">{{ stop.summary }}</span>
-                    </span>
+                        <ng-container *ngTemplateOutlet="sourcesTpl; context: { $implicit: stop }" />
+                    </div>
                 </div>
             }
         </div>

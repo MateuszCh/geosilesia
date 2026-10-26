@@ -31,8 +31,6 @@ interface Stop {
     image?: string;
     description?: string;
     links: { label: string; href: string; internal: boolean }[];
-    /** "artykuł · www · galeria" – the preview caption. */
-    summary: string;
 }
 
 /**
@@ -108,15 +106,13 @@ export class Top50 implements OnInit {
                 this.stops.set(
                     posts
                         .map(post => {
-                            const links = chips(post.data?.links);
                             return {
                                 id: post.id,
                                 number: Number(post.data?.number) || 0,
                                 title: post.title ?? '',
                                 image: post.data?.image || undefined,
                                 description: post.data?.description || undefined,
-                                links,
-                                summary: links.map(link => link.label).join(' · ')
+                                links: chips(post.data?.links)
                             };
                         })
                         .sort((a, b) => a.number - b.number)
