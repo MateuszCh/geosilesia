@@ -52,8 +52,8 @@ export class ResourceService {
         return this.idb.getPage(pageKey);
     }
 
-    loadPostsFromNetwork<T>(type: string): Observable<Post<T>[]> {
-        return this.api.get<Post<T>[]>(`/api/posts/${type}`).pipe(
+    loadPostsFromNetwork<T>(type: string, transfer = true): Observable<Post<T>[]> {
+        return this.api.get<Post<T>[]>(`/api/posts/${type}`, { transfer }).pipe(
             map(posts => posts ?? []),
             tap(posts => {
                 // An empty response is information too, but it does not wipe the cache:

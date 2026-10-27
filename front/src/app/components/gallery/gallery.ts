@@ -23,6 +23,7 @@ import * as seoMeta from '../../../../../shared/seo-meta';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { PhotoViewer, ViewerPhoto } from '../photo-viewer/photo-viewer';
 import { plural } from '../../shared/plural';
+import { HtmlDirective } from '../../shared/html.directive';
 
 /** How many photos the album shows before "Pokaż pozostałe". */
 const COLLAPSED_PHOTOS = 12;
@@ -35,11 +36,11 @@ const OTHER_ALBUMS = 4;
 @Component({
     selector: 'app-gallery',
     templateUrl: './gallery.html',
-    // CMS HTML in <p [innerHTML]>: if an editor puts a block element in it (<p>, <div>,
+    // CMS HTML in <p [appHtml]>: if an editor puts a block element in it (<p>, <div>,
     // <ul>), the browser rearranges the server-sent DOM and hydration breaks. So the
     // component re-renders in the browser; the content is in the HTML for robots anyway.
     host: { ngSkipHydration: 'true' },
-    imports: [RouterLink, TrustedPipe, PhotoViewer],
+    imports: [RouterLink, TrustedPipe, PhotoViewer, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Gallery implements OnInit {

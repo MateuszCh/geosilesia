@@ -50,7 +50,7 @@
             <h2 class="h-section">{{ component().title || '50 miejsc, które trzeba zobaczyć' }}</h2>
             @if (component().intro) {
                 <div class="prose"
-                     [innerHTML]="component().intro | trusted"></div>
+                     [appHtml]="component().intro | trusted"></div>
             }
             <!-- Pointing at a place shows it beside; a click opens the route at that place. -->
             <ol class="route route--compact"
@@ -92,7 +92,7 @@
                     }
                     @if (component().intro) {
                         <div class="lead prose"
-                             [innerHTML]="component().intro | trusted"></div>
+                             [appHtml]="component().intro | trusted"></div>
                     }
                 </div>
                 @if (link()) {
@@ -116,7 +116,7 @@
                             <h2 class="route__title">{{ stop.title }}</h2>
                             @if (stop.description) {
                                 <div class="route__description prose"
-                                     [innerHTML]="stop.description | trusted"></div>
+                                     [appHtml]="stop.description | trusted"></div>
                             }
                             <ng-container *ngTemplateOutlet="sourcesTpl; context: { $implicit: stop }" />
                         </div>

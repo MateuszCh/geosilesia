@@ -8,6 +8,7 @@ import { TrustedPipe } from '../../shared/trusted.pipe';
 import { photoCredit } from '../../shared/photo-credit';
 import { Facts } from '../facts/facts';
 import { SectionBar } from '../section-bar/section-bar';
+import { HtmlDirective } from '../../shared/html.directive';
 
 /** "Ryszard Chybiorz · 03.06.2026 · ostatnia aktualizacja 05.10.2026" */
 export function bylineText(byline: Byline | undefined): string {
@@ -25,9 +26,7 @@ export function bylineText(byline: Byline | undefined): string {
 @Component({
     selector: 'app-page-hero',
     templateUrl: './page-hero.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, Facts, SectionBar],
-    // The lead is CMS HTML in [innerHTML] – see TitleAndText.
-    host: { ngSkipHydration: 'true' },
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, Facts, SectionBar, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PageHero {

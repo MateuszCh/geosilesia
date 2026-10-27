@@ -25,7 +25,7 @@
                 <li class="contact__card">
                     <span class="contact__card-title">{{ card.title }}</span>
                     <div class="contact__card-text prose"
-                         [innerHTML]="card.text | trusted"></div>
+                         [appHtml]="card.text | trusted"></div>
                 </li>
             }
         </ul>

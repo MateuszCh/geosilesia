@@ -6,7 +6,7 @@
                 <h2 class="notice__title">{{ component().title }}</h2>
             }
             <div class="notice__box prose"
-                 [innerHTML]="component().text | trusted"></div>
+                 [appHtml]="component().text | trusted"></div>
         </section>
     }
     @case ('informacja') {
@@ -19,7 +19,7 @@
                     <h2 class="notice__title notice__title--small">{{ component().title }}</h2>
                 }
                 <div class="prose"
-                     [innerHTML]="component().text | trusted"></div>
+                     [appHtml]="component().text | trusted"></div>
             </div>
         </section>
     }
@@ -43,7 +43,7 @@
                     <h2 class="notice__title notice__title--small">{{ component().title }}</h2>
                 }
                 <div class="prose"
-                     [innerHTML]="component().text | trusted"></div>
+                     [appHtml]="component().text | trusted"></div>
             </div>
         </section>
     }

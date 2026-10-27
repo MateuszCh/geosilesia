@@ -6,9 +6,9 @@ import { colorByName } from '../../core/categories';
 import { internalLink, isExternalLink } from '../../core/cms-link';
 import { ContentService } from '../../core/content.service';
 import { LinkCardsData } from '../../models/row.model';
-import { MarkerPostData } from '../../models/post.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
+import { HtmlDirective } from '../../shared/html.directive';
 
 /**
  * How a side list is drawn, as in the mockups: several places in a box ("Zobacz w terenie"),
@@ -21,9 +21,7 @@ export type SideForm = 'list' | 'figure' | 'card';
 @Component({
     selector: 'app-link-cards',
     templateUrl: './link-cards.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe],
-    // The intro is CMS HTML in [innerHTML] – see TitleAndText.
-    host: { ngSkipHydration: 'true' },
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LinkCards implements OnInit {
@@ -73,11 +71,10 @@ export class LinkCards implements OnInit {
         const category = this.side() && this.form() === 'card' ? this.cards()[0].params['kategoria'] : undefined;
         if (!category) return;
         this.content
-            .posts<MarkerPostData>('marker')
+            .markerCountsByCategory()
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(markers => {
-                const count = markers.filter(marker => marker.data?.categories?.includes(category)).length;
-                if (count) this.mapCount.set(count);
+            .subscribe(counts => {
+                if (counts[category]) this.mapCount.set(counts[category]);
             });
     }
 }

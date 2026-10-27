@@ -18,6 +18,7 @@ import { AlbumSummary } from '../../models/post.model';
 import { GalleryListData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
+import { HtmlDirective } from '../../shared/html.directive';
 
 interface AlbumCard {
     link: string;
@@ -38,9 +39,7 @@ interface AlbumCard {
 @Component({
     selector: 'app-gallery-list',
     templateUrl: './gallery-list.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe],
-    // The intro is CMS HTML in [innerHTML] – see TitleAndText.
-    host: { ngSkipHydration: 'true' },
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GalleryList implements OnInit {

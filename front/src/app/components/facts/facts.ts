@@ -2,19 +2,18 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, injec
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, map } from 'rxjs';
 import { ContentService } from '../../core/content.service';
-import { MarkerPostData } from '../../models/post.model';
 import { FactsAuto, FactsData } from '../../models/row.model';
 
-/** What each "Licz automatycznie" choice counts. */
+/**
+ * What each "Licz automatycznie" choice counts. Markers and events arrive as bare numbers
+ * (ContentService.summary); the other lists are small and other rows load them anyway.
+ */
 const COUNTERS: Record<FactsAuto, (content: ContentService) => Observable<number>> = {
-    'obiekty na mapie': content =>
-        content
-            .posts<MarkerPostData>('marker')
-            .pipe(map(posts => posts.filter(post => post.data?.lat && post.data?.long).length)),
+    'obiekty na mapie': content => content.locatedMarkerCount(),
     kategorie: content => content.posts('icon').pipe(map(posts => posts.length)),
     'TOP 50': content => content.posts('top50').pipe(map(posts => posts.length)),
     albumy: content => content.albums().pipe(map(albums => albums.filter(album => !album.hidden).length)),
-    wydarzenia: content => content.posts('wydarzenie').pipe(map(posts => posts.length))
+    wydarzenia: content => content.postCount('wydarzenie')
 };
 
 /** The stats strip: figures typed in the CMS or counted from the data. */

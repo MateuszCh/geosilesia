@@ -4,6 +4,7 @@ import { ContentService } from '../../core/content.service';
 import { colorByName } from '../../core/categories';
 import { IconPostData } from '../../models/post.model';
 import { MarkerCategoryListData } from '../../models/row.model';
+import { HtmlDirective } from '../../shared/html.directive';
 
 /**
  * Descriptions of the map categories. Each row entry picks an icon file in the CMS – the
@@ -14,7 +15,8 @@ import { MarkerCategoryListData } from '../../models/row.model';
 @Component({
     selector: 'app-marker-category-list',
     templateUrl: './marker-category-list.html',
-    // CMS HTML in <p [innerHTML]>: if an editor puts a block element in it (<p>, <div>,
+    imports: [HtmlDirective],
+    // CMS HTML in <p [appHtml]>: if an editor puts a block element in it (<p>, <div>,
     // <ul>), the browser rearranges the server-sent DOM and hydration breaks. So the
     // component re-renders in the browser; the content is in the HTML for robots anyway.
     host: { ngSkipHydration: 'true' },

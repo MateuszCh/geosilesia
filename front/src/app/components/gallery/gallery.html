@@ -30,7 +30,7 @@
             <div class="album__text">
                 @for (paragraph of intro(); track $index) {
                     <p class="prose"
-                       [innerHTML]="paragraph | trusted"></p>
+                       [appHtml]="paragraph | trusted"></p>
                 }
             </div>
             @if (top50() || categoryCount()) {

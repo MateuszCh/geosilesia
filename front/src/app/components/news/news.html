@@ -9,7 +9,7 @@
         </div>
         @if (component().intro) {
             <div class="prose"
-                 [innerHTML]="component().intro | trusted"></div>
+                 [appHtml]="component().intro | trusted"></div>
         }
         <ul class="events-preview__list">
             @for (event of visible(); track event.id) {
@@ -47,7 +47,7 @@
         </div>
         @if (component().intro) {
             <div class="prose lead"
-                 [innerHTML]="component().intro | trusted"></div>
+                 [appHtml]="component().intro | trusted"></div>
         }
 
         @if (visible().length) {

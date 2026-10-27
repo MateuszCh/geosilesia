@@ -32,7 +32,7 @@
 <ng-template #leadTpl>
     @if (hero().lead) {
         <div class="page-hero__lead-text lead prose"
-             [innerHTML]="hero().lead | trusted"></div>
+             [appHtml]="hero().lead | trusted"></div>
     }
 </ng-template>
 
@@ -40,6 +40,7 @@
     @case ('photo') {
         <section class="page-hero page-hero--photo">
             <img class="page-hero__image"
+                 fetchpriority="high"
                  [src]="hero().image"
                  [alt]="hero().image_caption ?? ''">
             <div class="page-hero__overlay container">
@@ -56,7 +57,7 @@
         @if (hero().lead) {
             <div class="container">
                 <div class="page-hero__lead lead prose"
-                     [innerHTML]="hero().lead | trusted"></div>
+                     [appHtml]="hero().lead | trusted"></div>
             </div>
         }
     }

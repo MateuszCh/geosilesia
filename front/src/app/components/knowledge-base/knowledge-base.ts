@@ -10,6 +10,7 @@ import { KnowledgeSection, ResourcePost, ResourcePostData } from '../../models/p
 import { KnowledgeBaseData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
+import { HtmlDirective } from '../../shared/html.directive';
 
 /** The seven sections, in their order, with the trail colour and the action of each. */
 const SECTIONS: { name: KnowledgeSection; color: string; textColor: string; cta: string }[] = [
@@ -42,9 +43,7 @@ interface ResourceView {
 @Component({
     selector: 'app-knowledge-base',
     templateUrl: './knowledge-base.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe],
-    // Intro and notes are CMS HTML in [innerHTML] – see TitleAndText.
-    host: { ngSkipHydration: 'true' },
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class KnowledgeBase implements OnInit {

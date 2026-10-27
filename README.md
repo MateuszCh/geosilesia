@@ -138,6 +138,10 @@ without it the script stops before building. If the root `package.json` changed,
   functions from `app.js` passed in `REQUEST_CONTEXT`. It is a backend, not an
   interceptor: only this way do the responses end up in the HTTP transfer cache, from
   which the browser takes data during hydration.
+- **Lists a page only derives something from stay out of the HTML.** The home page
+  counts all markers and shows three events; sending the lists would add over 1 MB, and the
+  browser hydrates only after the whole HTML has arrived. `ContentService.summary` sends
+  the result alone in TransferState and fetches the lists past the transfer cache.
 - **`<head>` is assembled by `app.js`** (`injectSeo`) for every response, rendered or
   not; `SeoService` does nothing on the server and only updates meta on in-app navigation.
 - The first navigation on a server-rendered page skips IndexedDB in the resolver (the
@@ -158,10 +162,13 @@ without it the script stops before building. If the root `package.json` changed,
   SSR the CSR shell has this name; it is the offline navigation fallback. `app.js` serves
   it (and `/index.html`) byte for byte, because ngsw checks its hash.
 - **Hydration requires the server DOM to be identical to the client's first render.**
-  Components with CMS HTML in `<p [innerHTML]>` (`TitleAndText`, `Gallery`,
-  `MarkerCategoryList`) have `ngSkipHydration`, and tables have an explicit `<tbody>` —
-  the browser rearranges the DOM of such constructs while parsing. A new component of
-  this kind needs the same.
+  CMS HTML goes in with `[appHtml]` (`front/src/app/shared/html.directive.ts`), never
+  `[innerHTML]`: hydration would write innerHTML again, repaint the text and move LCP to
+  the moment the JS runs. Put it on a `<div>`. Components with CMS HTML in a `<p>` or
+  `<li>` (`TitleAndText`, `Gallery`, `MarkerCategoryList`) have `ngSkipHydration`, and
+  tables have an explicit `<tbody>` — the browser rearranges the DOM of such constructs
+  while parsing. A new component of this kind needs the same. `ngSkipHydration` costs LCP
+  too: the component's server DOM is thrown away and painted again.
 - **The IndexedDB schema in `front/src/app/core/idb.service.ts`** — database `geosilesia`
   v1, store `pages` (key `pageUrl`) and `posts` (key `id`, index `type`). Users have these
   databases on disk; changing the version wipes their offline data.

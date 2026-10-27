@@ -4,7 +4,7 @@
             <h2 class="h-section">{{ component().title || 'Co chcesz zobaczyć?' }}</h2>
             @if (component().intro) {
                 <div class="section-head__note prose"
-                     [innerHTML]="component().intro | trusted"></div>
+                     [appHtml]="component().intro | trusted"></div>
             }
         </div>
         <a class="more-link"
