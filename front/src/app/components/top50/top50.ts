@@ -19,6 +19,7 @@ import { internalLink, isExternalLink } from '../../core/cms-link';
 import { Top50PostData } from '../../models/post.model';
 import { Top50Data } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
+import { HtmlDirective } from '../../shared/html.directive';
 
 const PREVIEW_LIMIT = 7;
 /** The full list opens with this many places; "Dalej: miejsca 16–50" shows the rest at once. */
@@ -56,9 +57,7 @@ function chips(links: Top50PostData['links']): Stop['links'] {
 @Component({
     selector: 'app-top50',
     templateUrl: './top50.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe],
-    // Intro and descriptions are CMS HTML in [innerHTML] – see TitleAndText.
-    host: { ngSkipHydration: 'true' },
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Top50 implements OnInit {

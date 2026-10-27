@@ -23,6 +23,7 @@ import * as seoMeta from '../../../../../shared/seo-meta';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { PhotoViewer, ViewerPhoto } from '../photo-viewer/photo-viewer';
 import { plural } from '../../shared/plural';
+import { HtmlDirective } from '../../shared/html.directive';
 
 /** How many photos the album shows before "Pokaż pozostałe". */
 const COLLAPSED_PHOTOS = 12;
@@ -35,11 +36,11 @@ const OTHER_ALBUMS = 4;
 @Component({
     selector: 'app-gallery',
     templateUrl: './gallery.html',
-    // CMS HTML in <p [innerHTML]>: if an editor puts a block element in it (<p>, <div>,
+    // CMS HTML in <p [appHtml]>: if an editor puts a block element in it (<p>, <div>,
     // <ul>), the browser rearranges the server-sent DOM and hydration breaks. So the
     // component re-renders in the browser; the content is in the HTML for robots anyway.
     host: { ngSkipHydration: 'true' },
-    imports: [RouterLink, TrustedPipe, PhotoViewer],
+    imports: [RouterLink, TrustedPipe, PhotoViewer, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Gallery implements OnInit {
@@ -111,14 +112,14 @@ export class Gallery implements OnInit {
         return (same.length ? same : visible).slice(0, OTHER_ALBUMS);
     });
 
-    /** The TOP 50 entry whose "galeria" link points to this album. */
+    /** The TOP 50 entry whose "galeria" link points to this album; the link opens the list at it. */
     readonly top50 = computed(() => {
         const path = this.pageUrl();
         const entry = this.top50Posts().find(post => post.urls.includes(path));
         if (!entry) return undefined;
         const item = this.navigation.items().find(nav => /top\s*50/i.test(nav.title ?? ''));
         const link = item ? this.navigation.sectionLink(item) : undefined;
-        return link ? { ...entry, link } : undefined;
+        return link ? { ...entry, link, fragment: `top50-${entry.number}` } : undefined;
     });
 
     /** "19 zdjęć i rycin · Ryszard Chybiorz · 09.11.2019, ostatnia aktualizacja 10.10.2026" */

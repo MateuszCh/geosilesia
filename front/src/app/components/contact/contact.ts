@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DOCUMENT, computed, inject, input, signal } from '@angular/core';
 import { ContactData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
+import { HtmlDirective } from '../../shared/html.directive';
 
 /**
  * Contact: the editor with the address written as "(at)" – kept that way against harvesters –
@@ -9,9 +10,7 @@ import { TrustedPipe } from '../../shared/trusted.pipe';
 @Component({
     selector: 'app-contact',
     templateUrl: './contact.html',
-    imports: [TrustedPipe],
-    // Card texts are CMS HTML in [innerHTML] – see TitleAndText.
-    host: { ngSkipHydration: 'true' },
+    imports: [TrustedPipe, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Contact {

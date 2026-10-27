@@ -6,18 +6,17 @@ import { ContentService } from '../../core/content.service';
 import { NavigationService } from '../../core/navigation.service';
 import { categoryLook } from '../../core/categories';
 import { internalLink } from '../../core/cms-link';
-import { IconPost, IconPostData, MarkerPostData } from '../../models/post.model';
+import { IconPost, IconPostData } from '../../models/post.model';
 import { CategoryGridData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
+import { HtmlDirective } from '../../shared/html.directive';
 
 /** "Co chcesz zobaczyć?": one card per map category, opening the map filtered by it. */
 @Component({
     selector: 'app-category-grid',
     templateUrl: './category-grid.html',
-    imports: [RouterLink, TrustedPipe],
-    // The intro is CMS HTML in [innerHTML] – see TitleAndText.
-    host: { ngSkipHydration: 'true' },
+    imports: [RouterLink, TrustedPipe, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CategoryGrid implements OnInit {
@@ -49,15 +48,11 @@ export class CategoryGrid implements OnInit {
     ngOnInit(): void {
         forkJoin({
             icons: this.content.posts<IconPostData>('icon'),
-            markers: this.content.posts<MarkerPostData>('marker')
+            counts: this.content.markerCountsByCategory()
         })
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(({ icons, markers }) => {
-                const counts = new Map<string, number>();
-                markers.forEach(marker =>
-                    marker.data?.categories?.forEach(key => counts.set(key, (counts.get(key) ?? 0) + 1))
-                );
-                this.counts.set(counts);
+            .subscribe(({ icons, counts }) => {
+                this.counts.set(new Map(Object.entries(counts)));
                 this.icons.set(icons);
             });
     }

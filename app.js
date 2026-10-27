@@ -1,5 +1,6 @@
 const express = require("express"),
     bodyParser = require("body-parser"),
+    compression = require("compression"),
     path = require("path"),
     fs = require("fs"),
     MongoClient = require("mongodb").MongoClient,
@@ -18,6 +19,12 @@ app.set("port", process.env.PORT || 3000);
 // nor the Host header itself is trustworthy – the client can forge both if the proxy
 // does not overwrite them – so "siteUrl" in config.json is mandatory in production.
 app.set("trust proxy", 1);
+
+// Brotli or gzip for every text response – rendered pages, the JS bundle, CSS and API JSON.
+// Without it the first visit on a phone downloads several times more: main.js shrinks from
+// ~530 kB to ~160 kB. Images are left alone (already compressed). A proxy in front of the
+// app does not compress again a response that already has Content-Encoding.
+app.use(compression());
 
 // Global indexing switch – one flag for the whole site, no per-page settings.
 // Deliberately OFF by default: a fresh clone or a staging instance without the entry

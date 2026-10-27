@@ -3,7 +3,7 @@
         <h2 class="kb-preview__title">{{ component().title || 'Baza wiedzy' }}</h2>
         @if (component().intro) {
             <div class="prose"
-                 [innerHTML]="component().intro | trusted"></div>
+                 [appHtml]="component().intro | trusted"></div>
         }
         <ul class="kb-preview__list">
             @for (section of sections(); track section.name) {
@@ -29,7 +29,7 @@
                 }
                 @if (component().intro) {
                     <div class="lead prose"
-                         [innerHTML]="component().intro | trusted"></div>
+                         [appHtml]="component().intro | trusted"></div>
                 }
             </div>
         }

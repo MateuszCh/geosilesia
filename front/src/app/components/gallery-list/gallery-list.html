@@ -2,7 +2,7 @@
     <div class="albums__bar">
         @if (intro()) {
             <div class="albums__intro lead prose"
-                 [innerHTML]="intro() | trusted"></div>
+                 [appHtml]="intro() | trusted"></div>
         } @else if (albums().length) {
             <p class="albums__intro lead">{{ albums().length }} {{ albumsLabel(albums().length) }} fotograficznych z terenu.</p>
         }

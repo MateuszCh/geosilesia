@@ -1,6 +1,7 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    DOCUMENT,
     DestroyRef,
     afterNextRender,
     computed,
@@ -35,6 +36,15 @@ export class HomepageBanner {
     readonly component = input.required<HomepageBannerData>();
 
     readonly current = signal(0);
+
+    /**
+     * Slides whose photo may download. At first only the first one: it is the largest
+     * element of the page (LCP), and the other six – stacked inside the viewport, so
+     * loading="lazy" does not hold them back – would all download with it and take its
+     * bandwidth. Once the page has loaded, the neighbours of the current slide join, and
+     * so on as the carousel moves; a slide the user opens earlier loads on the spot.
+     */
+    private readonly loading = signal<ReadonlySet<number>>(new Set([0]));
     readonly slides = computed<Slide[]>(() => (this.component().slides ?? []).filter(slide => slide.image));
 
     /** Variant C sets the title in sentence case; an all-caps title from the CMS is lowered. */
@@ -55,26 +65,44 @@ export class HomepageBanner {
     private timer: ReturnType<typeof setInterval> | undefined;
     private paused = false;
     private reducedMotion = false;
+    private pageLoaded = false;
 
     constructor() {
-        inject(DestroyRef).onDestroy(() => this.stop());
+        const destroyRef = inject(DestroyRef);
+        const doc = inject(DOCUMENT);
+        destroyRef.onDestroy(() => this.stop());
         // Only in the browser – on the server the timer would just tick until the app is
-        // destroyed. Autoplay is off for people who asked for reduced motion.
+        // destroyed. Autoplay is off for people who asked for reduced motion, and waits for
+        // the page to load, so that the next photo does not compete with the first one.
         afterNextRender(() => {
             this.reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-            this.start();
+            const onLoad = () => {
+                this.pageLoaded = true;
+                this.load(this.current());
+                this.start();
+            };
+            if (doc.readyState === 'complete') {
+                onLoad();
+            } else {
+                doc.defaultView?.addEventListener('load', onLoad, { once: true });
+                destroyRef.onDestroy(() => doc.defaultView?.removeEventListener('load', onLoad));
+            }
         });
+    }
+
+    loads(index: number): boolean {
+        return this.loading().has(index);
     }
 
     next(): void {
         const count = this.slides().length;
-        if (count) this.current.update(index => (index + 1) % count);
+        if (count) this.show((this.current() + 1) % count);
         this.restart();
     }
 
     prev(): void {
         const count = this.slides().length;
-        if (count) this.current.update(index => (index - 1 + count) % count);
+        if (count) this.show((this.current() - 1 + count) % count);
         this.restart();
     }
 
@@ -99,11 +127,22 @@ export class HomepageBanner {
     private start(): void {
         this.stop();
         const seconds = Number.parseInt(String(this.component().interval ?? ''), 10);
-        if (this.paused || this.reducedMotion || this.slides().length < 2 || !seconds) return;
-        this.timer = setInterval(() => {
-            const count = this.slides().length;
-            this.current.update(index => (index + 1) % count);
-        }, seconds * 1000);
+        if (!this.pageLoaded || this.paused || this.reducedMotion || this.slides().length < 2 || !seconds) return;
+        this.timer = setInterval(() => this.show((this.current() + 1) % this.slides().length), seconds * 1000);
+    }
+
+    private show(index: number): void {
+        this.current.set(index);
+        this.load(index);
+    }
+
+    /** Lets the photo of slide `index` download – with its neighbours once the page has loaded. */
+    private load(index: number): void {
+        const count = this.slides().length;
+        if (!count) return;
+        const wanted = this.pageLoaded ? [index, (index + 1) % count, (index - 1 + count) % count] : [index];
+        if (wanted.every(slide => this.loading().has(slide))) return;
+        this.loading.update(loading => new Set([...loading, ...wanted]));
     }
 
     private restart(): void {

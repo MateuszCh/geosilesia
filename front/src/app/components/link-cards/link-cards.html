@@ -15,7 +15,7 @@
         <h2 class="side-cards__title">{{ component().title || 'Zobacz w terenie' }}</h2>
         @if (component().intro) {
             <div class="side-cards__intro prose"
-                 [innerHTML]="component().intro | trusted"></div>
+                 [appHtml]="component().intro | trusted"></div>
         }
         @for (card of cards(); track $index) {
             <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: card, form: 'list' }" />
@@ -31,7 +31,7 @@
             </div>
             @if (component().intro) {
                 <div class="section-head__note prose"
-                     [innerHTML]="component().intro | trusted"></div>
+                     [appHtml]="component().intro | trusted"></div>
             }
         </div>
         <ul class="link-cards__list">

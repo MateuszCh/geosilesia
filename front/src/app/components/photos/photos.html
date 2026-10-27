@@ -15,7 +15,7 @@
     }
     @if (component().intro) {
         <div class="photos__intro lead prose"
-             [innerHTML]="component().intro | trusted"></div>
+             [appHtml]="component().intro | trusted"></div>
     }
 
     @if (grid()) {

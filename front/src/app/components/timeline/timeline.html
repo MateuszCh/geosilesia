@@ -4,7 +4,7 @@
     }
     @if (component().intro) {
         <div class="text-block__p prose"
-             [innerHTML]="component().intro | trusted"></div>
+             [appHtml]="component().intro | trusted"></div>
     }
     <ol class="timeline__list">
         @for (item of component().items ?? []; track $index) {

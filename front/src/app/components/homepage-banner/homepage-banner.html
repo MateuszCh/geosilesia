@@ -13,9 +13,9 @@
             <img class="home-hero__image"
                  draggable="false"
                  [class.home-hero__image--current]="current() === $index"
-                 [src]="slide.image"
+                 [attr.src]="loads($index) ? slide.image : null"
                  [alt]="slide.text ?? ''"
-                 [attr.loading]="$index === 0 ? null : 'lazy'"
+                 [attr.fetchpriority]="$index === 0 ? 'high' : null"
                  [attr.aria-hidden]="current() === $index ? null : 'true'"
                  [style.object-position]="objectPosition(slide)">
         }

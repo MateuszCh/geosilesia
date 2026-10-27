@@ -10,6 +10,8 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
+import { ContentService } from '../../core/content.service';
 import { ResourceService } from '../../core/resource.service';
 import { internalLink } from '../../core/cms-link';
 import { MONTHS_SHORT, dateParts, toDate } from '../../core/dates';
@@ -17,6 +19,7 @@ import { EventPost } from '../../models/post.model';
 import { NewsData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
+import { HtmlDirective } from '../../shared/html.directive';
 
 const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_PREVIEW = 3;
@@ -81,6 +84,18 @@ function toView(event: EventPost): EventView {
     };
 }
 
+/** Events with a publication date in the future are hidden; the rest newest first. */
+function publishedViews(events: EventPost[]): EventView[] {
+    const now = Date.now();
+    return events
+        .filter(event => {
+            const publication = toDate(event.data?.date_of_publication);
+            return !!publication && publication.getTime() < now;
+        })
+        .map(toView)
+        .sort((a, b) => b.time - a.time);
+}
+
 /**
  * Events: the full archive as an accordion with a year filter and pages, or – as
  * "zapowiedź" on the home page – the latest few.
@@ -88,9 +103,7 @@ function toView(event: EventPost): EventView {
 @Component({
     selector: 'app-news',
     templateUrl: './news.html',
-    imports: [RouterLink, TrustedPipe],
-    // The intro is CMS HTML in [innerHTML] – see TitleAndText.
-    host: { ngSkipHydration: 'true' },
+    imports: [RouterLink, TrustedPipe, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class News implements OnInit {
@@ -160,11 +173,28 @@ export class News implements OnInit {
     });
 
     private readonly resource = inject(ResourceService);
+    private readonly content = inject(ContentService);
     private readonly destroyRef = inject(DestroyRef);
     /** Network data takes precedence – once it has arrived, the IndexedDB result will not overwrite it. */
     private loadedFromNetwork = false;
 
     ngOnInit(): void {
+        if (this.preview()) {
+            // Only the few shown travel in the HTML, not the whole archive.
+            const limit = this.limit();
+            this.content
+                .summary(`latest-events:${limit}`, () =>
+                    this.content
+                        .posts<EventPost['data']>('wydarzenie', false)
+                        .pipe(map(posts => publishedViews(posts).slice(0, limit)))
+                )
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(views => {
+                    this.events.set(views);
+                    this.loaded.set(true);
+                });
+            return;
+        }
         if (this.resource.isOfflineAvailable()) {
             void this.resource
                 .loadPostsFromCache<EventPost['data']>('wydarzenie')
@@ -199,16 +229,8 @@ export class News implements OnInit {
         this.currentPage.set(page);
     }
 
-    /** Events with a publication date in the future are hidden; the rest newest first. */
     private setEvents(events: EventPost[]): void {
-        const now = Date.now();
-        const views = events
-            .filter(event => {
-                const publication = toDate(event.data?.date_of_publication);
-                return !!publication && publication.getTime() < now;
-            })
-            .map(toView)
-            .sort((a, b) => b.time - a.time);
+        const views = publishedViews(events);
         this.events.set(views);
         this.loaded.set(true);
         // The list opens on the latest year, as in the mockup.
