@@ -38,7 +38,8 @@
                        aria-label="Zobacz też">
                     @if (top50(); as entry) {
                         <a class="top50-link"
-                           [routerLink]="entry.link">
+                           [routerLink]="entry.link"
+                           [fragment]="entry.fragment">
                             <span class="route-stop route-stop--filled">{{ entry.number }}</span>
                             <span class="top50-link__text">
                                 <span class="top50-link__label">TOP 50 · nr {{ entry.number }}</span>

@@ -112,14 +112,14 @@ export class Gallery implements OnInit {
         return (same.length ? same : visible).slice(0, OTHER_ALBUMS);
     });
 
-    /** The TOP 50 entry whose "galeria" link points to this album. */
+    /** The TOP 50 entry whose "galeria" link points to this album; the link opens the list at it. */
     readonly top50 = computed(() => {
         const path = this.pageUrl();
         const entry = this.top50Posts().find(post => post.urls.includes(path));
         if (!entry) return undefined;
         const item = this.navigation.items().find(nav => /top\s*50/i.test(nav.title ?? ''));
         const link = item ? this.navigation.sectionLink(item) : undefined;
-        return link ? { ...entry, link } : undefined;
+        return link ? { ...entry, link, fragment: `top50-${entry.number}` } : undefined;
     });
 
     /** "19 zdjęć i rycin · Ryszard Chybiorz · 09.11.2019, ostatnia aktualizacja 10.10.2026" */
