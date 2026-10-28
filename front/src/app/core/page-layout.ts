@@ -100,7 +100,8 @@ const FULL_WIDTH: RowType[] = [
     'map_search',
     'facts',
     'category_grid',
-    'numbered_list'
+    'numbered_list',
+    'columns'
 ];
 
 export function isFullWidth(row: Row): boolean {
@@ -350,24 +351,4 @@ export function layoutPage(page: Page | undefined): PageLayout {
         side: rows.filter(isSideRow),
         wide: rows.some(isFullWidth)
     };
-}
-
-const isPreview = (row: Row | undefined, type: RowType) =>
-    row?.type === type && (row.data as { variant?: string } | undefined)?.variant === 'zapowiedź';
-
-/**
- * Rows in display groups: the events preview followed by the knowledge base preview stand
- * side by side on the home page, as in the mockup; every other row stands alone.
- */
-export function groupRows(rows: Row[]): Row[][] {
-    const groups: Row[][] = [];
-    for (let i = 0; i < rows.length; i++) {
-        if (isPreview(rows[i], 'news') && isPreview(rows[i + 1], 'knowledge_base')) {
-            groups.push([rows[i], rows[i + 1]]);
-            i++;
-        } else {
-            groups.push([rows[i]]);
-        }
-    }
-    return groups;
 }

@@ -284,4 +284,9 @@ const pageTypes = [
     ])
 ];
 
-module.exports = { newComponents, changedComponents, newPostTypes, changedPostTypes, RETYPE, pageTypes };
+/** Step 19: columns side by side, each a list of components ("component" fields). */
+const columnsComponent = def("columns", "Kolumny", [
+    ["columns", "Kolumny", "repeater", [["components", "Komponenty", "repeater", [["component", "Komponent", "component"]]]]]
+]);
+
+module.exports = { newComponents, changedComponents, newPostTypes, changedPostTypes, RETYPE, pageTypes, columnsComponent };

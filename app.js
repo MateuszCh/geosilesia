@@ -87,22 +87,37 @@ function postsOfType(type) {
     return collections.posts.find({ type }).toArray();
 }
 
+// Calls `fn` for every row of a page and every component nested in one or in the page's
+// type values: a "component" field stores a component as { type, title, data } – the shape
+// of a row – in a column of "Kolumny", in the side column of a "tresc" page and so on.
+function forEachRow(page, fn) {
+    const visit = value => {
+        if (Array.isArray(value)) {
+            value.forEach(visit);
+        } else if (value && typeof value === "object") {
+            if (typeof value.type === "string" && value.data && typeof value.data === "object") fn(value);
+            Object.keys(value).forEach(key => visit(value[key]));
+        }
+    };
+    visit(page.rows);
+    visit(page.typeData);
+}
+
 // Replaces the catalogue name in "gallery" rows (and in "photos" rows that take their
-// photos from a catalogue) with the list of files from the files collection. Each row gets
-// the result of its own query – previously responses were assigned by index among all
-// galleries while queries were only made for those with a catalogue, so a gallery without
-// one shifted the files of the following ones (visible in /api/appData/).
+// photos from a catalogue) with the list of files from the files collection – nested ones
+// included. Each row gets the result of its own query – previously responses were assigned
+// by index among all galleries while queries were only made for those with a catalogue, so
+// a gallery without one shifted the files of the following ones (visible in /api/appData/).
 function attachGalleries(pages) {
     const galleries = [];
-    (pages || []).forEach(page => {
-        (page.rows || []).forEach(row => {
-            const usesCatalogue =
-                row.type === "gallery" || (row.type === "photos" && row.data && row.data.source === "katalog");
-            if (usesCatalogue && row.data && typeof row.data.catalogue === "string" && row.data.catalogue) {
+    (pages || []).forEach(page =>
+        forEachRow(page, row => {
+            const usesCatalogue = row.type === "gallery" || (row.type === "photos" && row.data.source === "katalog");
+            if (usesCatalogue && typeof row.data.catalogue === "string" && row.data.catalogue) {
                 galleries.push(row);
             }
-        });
-    });
+        })
+    );
     return Promise.all(
         galleries.map(gallery =>
             collections.files

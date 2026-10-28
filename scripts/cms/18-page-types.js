@@ -25,9 +25,9 @@
 // and derives its SEO title and description (shared/seo-meta.js), before and after, and lists
 // every difference. --apply refuses to write while there is one, or when the check cannot run.
 //
-// Idempotent: a page with a type is left alone. The last step of the chain: replaying earlier
-// steps after it would bring back what it moved (01 the page_hero component and the album
-// fields, 06 page_hero rows on pages without one).
+// Idempotent: a page with a type is left alone. Earlier steps must not be replayed after it:
+// they would bring back what it moved (01 the page_hero component and the album fields, 06
+// page_hero rows on pages without one).
 //
 // The old frodo keeps `type` and `typeData` on save but cannot show or edit them – update the
 // CMS that edits this database first.

@@ -1,0 +1,89 @@
+@let row = this.row();
+@switch (row.type) {
+    @case ('homepage_banner') {
+        <app-homepage-banner [component]="row.data" />
+    }
+    @case ('map') {
+        <app-search-map [component]="row.data"
+                        [standalone]="context.mapStandalone()" />
+    }
+    @case ('title_and_text') {
+        <app-title-and-text [component]="row.data" />
+    }
+    @case ('marker_category_list') {
+        <app-marker-category-list [component]="row.data" />
+    }
+    @case ('literature') {
+        <app-literature [component]="row.data"
+                        [byline]="context.literatureByline()" />
+    }
+    @case ('news') {
+        <app-news [component]="row.data" />
+    }
+    @case ('dictionary') {
+        <app-dictionary [component]="row.data"
+                        [(query)]="context.dictionaryQuery"
+                        [searchInHeader]="context.searchInHeader()"
+                        [literature]="context.dictionaryLiterature()?.data"
+                        [byline]="context.literatureByline()" />
+    }
+    @case ('footnotes') {
+        <app-footnotes [component]="row.data" />
+    }
+    @case ('heading') {
+        <app-heading [component]="row.data" />
+    }
+    @case ('geosites_logos') {
+        <app-geosites-logos [component]="row.data" />
+    }
+    @case ('tabs') {
+        <app-tabs [component]="row.data"
+                  [showToc]="context.showToc()" />
+    }
+    @case ('gallery_list') {
+        <app-gallery-list [component]="row.data" />
+    }
+    @case ('notice') {
+        <app-notice [component]="row.data" />
+    }
+    @case ('page_hero') {
+        <!-- Drawn above the content by the page header; a second one is ignored. -->
+    }
+    @case ('map_search') {
+        <app-map-search [component]="row.data" />
+    }
+    @case ('facts') {
+        <app-facts [component]="row.data" />
+    }
+    @case ('category_grid') {
+        <app-category-grid [component]="row.data" />
+    }
+    @case ('top50') {
+        <app-top50 [component]="row.data" />
+    }
+    @case ('link_cards') {
+        <app-link-cards [component]="row.data" />
+    }
+    @case ('photos') {
+        <app-photos [component]="row.data" />
+    }
+    @case ('timeline') {
+        <app-timeline [component]="row.data" />
+    }
+    @case ('numbered_list') {
+        <app-numbered-list [component]="row.data" />
+    }
+    @case ('knowledge_base') {
+        <app-knowledge-base [component]="row.data" />
+    }
+    @case ('contact') {
+        <app-contact [component]="row.data" />
+    }
+    @case ('gallery') {
+        <app-gallery [component]="row.data"
+                     [pageUrl]="context.path()" />
+    }
+    @case ('columns') {
+        <app-columns [component]="row.data" />
+    }
+}
