@@ -15,8 +15,13 @@ withDb(async db => {
     for (const page of pages) {
         const rows = (page.rows || []).filter(r => r && r.type);
         const types = rows.map(r => r.type);
-        if (!types.some(type => KEEPS_OWN_HEADER.has(type) || type === "page_hero")) {
+        if (!page.type && !types.some(type => KEEPS_OWN_HEADER.has(type) || type === "page_hero")) {
             issues.push(`${page.pageUrl}: no page_hero – the header is taken from the content`);
+        }
+        // Step 18 gives content pages and albums a type; until then the front end places the
+        // header and the rows beside the text by their kind.
+        if (!page.type && !types.includes("homepage_banner") && !types.includes("map")) {
+            issues.push(`${page.pageUrl}: no page type – laid out by the rules for pages without one`);
         }
         rows.forEach(r => {
             if (r.type === "title_and_text" && (r.data.text || []).some(t => parseByline(t.paragraph))) {
@@ -26,11 +31,13 @@ withDb(async db => {
                 issues.push(`${page.pageUrl}: warning heading not turned into a notice`);
             }
             if (r.type === "gallery") {
-                const missing = ["category", "cover", "author", "updated"].filter(key => !r.data[key]);
-                if (typeof r.data.hidden !== "boolean") missing.push("hidden");
+                // An album page keeps these in its own values (step 18).
+                const album = Object.assign({}, r.data, page.type === "album" ? page.typeData : undefined);
+                const missing = ["category", "cover", "author", "updated"].filter(key => !album[key]);
+                if (typeof album.hidden !== "boolean") missing.push("hidden");
                 if ((r.data.paragraphs || []).some(p => p && parseByline(p.paragraph))) missing.push("byline paragraph");
                 // Hidden albums are not listed anywhere, so nothing falls back for them.
-                if (missing.length && r.data.hidden !== true) {
+                if (missing.length && album.hidden !== true) {
                     issues.push(`${page.pageUrl}: album without ${missing.join(", ")}`);
                 }
             }
@@ -48,10 +55,12 @@ withDb(async db => {
                 issues.push(`${page.pageUrl}: timeline without its legend`);
             }
         });
-        // The TOP 50 route's page shows an eyebrow above its title.
-        const heroAt = rows.findIndex(r => r.type === "page_hero");
+        // The TOP 50 route's page shows an eyebrow above its title. A "tresc" page keeps its
+        // header in its values, so the first row follows it.
+        const heroAt = page.type === "tresc" ? -1 : rows.findIndex(r => r.type === "page_hero");
+        const hero = page.type === "tresc" ? page.typeData || {} : heroAt >= 0 ? rows[heroAt].data : undefined;
         const afterHero = rows[heroAt + 1];
-        if (heroAt >= 0 && !rows[heroAt].data.eyebrow && afterHero && afterHero.type === "top50" && afterHero.data.variant !== "zapowiedź" && afterHero.data.link) {
+        if (hero && !hero.eyebrow && afterHero && afterHero.type === "top50" && afterHero.data.variant !== "zapowiedź" && afterHero.data.link) {
             issues.push(`${page.pageUrl}: TOP 50 page header without an eyebrow`);
         }
     }

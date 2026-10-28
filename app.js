@@ -135,15 +135,20 @@ function pageData(pageUrl) {
 }
 
 // Albums for the gallery list and the "Inne albumy" section: every page with a "gallery"
-// row. Variant C keeps the category, cover and "hidden" flag on the album itself; albums
-// not migrated yet take the category and cover from the manual gallery_list. An album
+// row. Variant C keeps the category, cover and "hidden" flag on the album itself – in the
+// values of an "album" page, before scripts/cms/18 in its gallery row (the front merges
+// them the same way, page-layout.ts); albums with neither take the category and cover from
+// the manual gallery_list. An album
 // whose "hidden" flag was never set is hidden only while the list is kept by hand ("ręcznie")
 // and the album is not on it – as on the old site. In the "automatycznie" mode it is shown,
 // otherwise a new album would stay invisible until someone also added it to the manual list.
 function galleriesList() {
     return Promise.all([
         collections.pages
-            .find({ "rows.type": "gallery" }, { projection: { pageUrl: 1, title: 1, rows: 1, updated: 1 } })
+            .find(
+                { "rows.type": "gallery" },
+                { projection: { pageUrl: 1, title: 1, rows: 1, updated: 1, type: 1, typeData: 1 } }
+            )
             .toArray(),
         collections.pages.find({ "rows.type": "gallery_list" }, { projection: { rows: 1 } }).toArray()
     ]).then(([albumPages, listPages]) => {
@@ -161,7 +166,11 @@ function galleriesList() {
         );
 
         const albums = albumPages.map(page => {
-            const gallery = (page.rows.find(row => row.type === "gallery") || {}).data || {};
+            const gallery = Object.assign(
+                {},
+                (page.rows.find(row => row.type === "gallery") || {}).data,
+                page.type === "album" ? page.typeData : undefined
+            );
             const pageUrl = seoMeta.normalizePath(page.pageUrl);
             const manual = listed.get(pageUrl);
             return {

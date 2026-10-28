@@ -255,4 +255,33 @@ const changedPostTypes = [
     ])
 ];
 
-module.exports = { newComponents, changedComponents, newPostTypes, changedPostTypes, RETYPE };
+/**
+ * Page types (step 18): what the page_hero row and the album fields of the gallery row held
+ * moves into the page's own values. Field ids stay the same, so the front end reads them
+ * as it read the rows.
+ */
+const pageTypes = [
+    def("tresc", "Strona treści", [
+        ["eyebrow", "Nadtytuł", "text"],
+        ["title", "Tytuł (pusty = nazwa strony)", "text"],
+        ["lead", "Wstęp", "textarea"],
+        ["image", "Zdjęcie", "file"],
+        ["image_caption", "Podpis zdjęcia", "text"],
+        ["image_author", "Autor zdjęcia", "text"],
+        ["variant", "Tło nagłówka bez zdjęcia", "select", ";jasne;ciemne"],
+        ["author", "Autor tekstu", "text"],
+        ["published", "Data publikacji", "date"],
+        ["updated", "Ostatnia aktualizacja (pusta = data zapisu)", "date"],
+        ["side", "Kolumna boczna", "repeater", [["component", "Komponent", "component"]]]
+    ]),
+    def("album", "Album", [
+        ["category", "Kategoria", "select", ALBUM_CATEGORIES],
+        ["cover", "Okładka", "file"],
+        ["author", "Autor", "text"],
+        ["published", "Data publikacji", "date"],
+        ["updated", "Ostatnia aktualizacja", "date"],
+        ["hidden", "Ukryj na liście albumów", "checkbox"]
+    ])
+];
+
+module.exports = { newComponents, changedComponents, newPostTypes, changedPostTypes, RETYPE, pageTypes };

@@ -181,7 +181,10 @@ export interface GalleryData {
     title?: string;
     paragraphs?: { paragraph?: string }[];
     catalogue?: GalleryImage[];
-    /** Variant C. */
+    /**
+     * Variant C. From here on the album's own values: an "album" page keeps them in its
+     * `typeData` and layoutPage puts them here; a page without a type had them in this row.
+     */
     category?: AlbumCategory | string;
     cover?: string;
     author?: string;

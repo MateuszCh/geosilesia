@@ -165,14 +165,23 @@
         return '';
     }
 
-    // Title from the page content: 1) homepage_banner.title, 2) page_hero.title (variant C),
+    // A field of the page header (variant C): a value of a "Strona treści" page, or of the
+    // page_hero row of a page without a type (scripts/cms/18-page-types.js).
+    function heroText(page, field) {
+        if (page.type === 'tresc') {
+            return page.typeData && page.typeData[field] ? stripHtml(page.typeData[field]) : '';
+        }
+        return rowText(page.rows || [], 'page_hero', field);
+    }
+
+    // Title from the page content: 1) homepage_banner.title, 2) the header's title,
     // 3) heading (prefer h1), 4) gallery.title (albums), 5) title_and_text.title.
     function deriveTitle(page) {
-        if (!page || !page.rows || !page.rows.length) return '';
-        var rows = page.rows;
+        if (!page) return '';
+        var rows = page.rows || [];
         var fromBanner = rowText(rows, 'homepage_banner', 'title');
         if (fromBanner) return fromBanner;
-        var fromHero = rowText(rows, 'page_hero', 'title');
+        var fromHero = heroText(page, 'title');
         if (fromHero) return fromHero;
         var firstHeading = null;
         for (var i = 0; i < rows.length; i++) {
@@ -200,12 +209,12 @@
         return '';
     }
 
-    // Description: the lead of page_hero (variant C), else the first paragraph of the
+    // Description: the lead of the page header (variant C), else the first paragraph of the
     // content – a text row, or the album's own text.
     function deriveDescription(page) {
-        if (!page || !page.rows || !page.rows.length) return '';
-        var rows = page.rows;
-        var lead = rowText(rows, 'page_hero', 'lead');
+        if (!page) return '';
+        var rows = page.rows || [];
+        var lead = heroText(page, 'lead');
         if (lead) return truncate(lead, MAX_DESCRIPTION);
         for (var i = 0; i < rows.length; i++) {
             if (!rows[i] || !rows[i].data) continue;

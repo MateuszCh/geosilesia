@@ -30,6 +30,7 @@ be replayed on production later in the same order.
 | `15-mockup-layout.js` | Nine pages laid out as in the mockups: header bands, header photos (off on Położenie, Geoparki and TOP 50, on for Rzeźba terenu), leads in the header, "Co warto wiedzieć", side lists and cards, the Żytko quote, figure colours, the gallery lead |
 | `16-mockup-texts.js` | The mockups' shorter texts on eight pages (`--only=` picks pages) and the note under the TOP 50 route; "A ponadto" as short items beside the list; Położenie's extreme points as figures; the fossils as a table; `{albumy}` in the gallery intro becomes the album count. Maps, tables, charts and map legends stay |
 | `17-fixed-headings.js` | Headings the front end held now in the CMS: the databases heading, the TOP 50 eyebrows, the timeline legend, the other albums heading (navigation post) |
+| `18-page-types.js` | Page types (needs frodo with page types): "Strona treści" takes the page_hero row and the rows beside the text ("Kolumna boczna"), "Album" the album fields of the gallery row; the page_hero component and those gallery fields go. The dry run lays out every changed page with the front end's `layoutPage` and SEO meta before and after; `--apply` writes only when nothing differs. The last step: replaying earlier ones after it would bring back what it moved |
 | `check-fallbacks.js` | Read-only: pages and posts that still need a front-end fallback (run after the scripts) |
 | `restore.js` | Restores collections from a backup |
 
