@@ -458,6 +458,11 @@
     }
 }
 
+// A row's component in place of its wrapper (RowView): the page's styles see the component.
+app-row {
+    display: contents;
+}
+
 // Home page and album: rows run full width; contained ones get the container here.
 .page--home,
 .page--album {

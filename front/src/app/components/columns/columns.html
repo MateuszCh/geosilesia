@@ -1,0 +1,10 @@
+<div class="columns">
+    @for (rows of columns(); track $index) {
+        <div class="columns__column"
+             [attr.data-row]="rows[0].type">
+            @for (row of rows; track $index) {
+                <app-row [row]="row" />
+            }
+        </div>
+    }
+</div>

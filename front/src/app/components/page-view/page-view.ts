@@ -19,35 +19,13 @@ import { ResourceService } from '../../core/resource.service';
 import { SeoService } from '../../core/seo.service';
 import { pageKeyFromUrl } from '../../core/page-key';
 import { NavigationService } from '../../core/navigation.service';
-import { PageLayout, groupRows, layoutPage } from '../../core/page-layout';
+import { PageLayout, layoutPage } from '../../core/page-layout';
 import * as seoMeta from '../../../../../shared/seo-meta';
 import { PageHero, bylineText } from '../page-hero/page-hero';
 import { SectionBar } from '../section-bar/section-bar';
 import { DictionarySearch } from '../dictionary/dictionary-search';
-import { Dictionary } from '../dictionary/dictionary';
-import { Footnotes } from '../footnotes/footnotes';
-import { Gallery } from '../gallery/gallery';
-import { GalleryList } from '../gallery-list/gallery-list';
-import { GeositesLogos } from '../geosites-logos/geosites-logos';
-import { Heading } from '../heading/heading';
-import { HomepageBanner } from '../homepage-banner/homepage-banner';
-import { Literature } from '../literature/literature';
-import { MarkerCategoryList } from '../marker-category-list/marker-category-list';
-import { News } from '../news/news';
-import { Notice } from '../notice/notice';
-import { MapSearch } from '../map-search/map-search';
-import { Facts } from '../facts/facts';
-import { CategoryGrid } from '../category-grid/category-grid';
-import { Top50 } from '../top50/top50';
-import { LinkCards } from '../link-cards/link-cards';
-import { Photos } from '../photos/photos';
-import { Timeline } from '../timeline/timeline';
-import { NumberedList } from '../numbered-list/numbered-list';
-import { KnowledgeBase } from '../knowledge-base/knowledge-base';
-import { Contact } from '../contact/contact';
-import { SearchMap } from '../search-map/search-map';
-import { Tabs } from '../tabs/tabs';
-import { TitleAndText } from '../title-and-text/title-and-text';
+import { RowView } from '../row/row';
+import { RowContext } from '../../core/row-context';
 
 @Component({
     selector: 'app-page-view',
@@ -57,35 +35,14 @@ import { TitleAndText } from '../title-and-text/title-and-text';
         RouterLink,
         PageHero,
         SectionBar,
-        Dictionary,
         DictionarySearch,
-        Footnotes,
-        Gallery,
-        GalleryList,
-        GeositesLogos,
-        Heading,
-        HomepageBanner,
-        Literature,
-        MarkerCategoryList,
-        News,
-        Notice,
-        MapSearch,
-        Facts,
-        CategoryGrid,
-        Top50,
-        LinkCards,
-        Photos,
-        Timeline,
-        NumberedList,
-        KnowledgeBase,
-        Contact,
-        SearchMap,
-        Tabs,
-        TitleAndText
+        RowView
     ],
+    // The rows read the page's shared state through RowContext – nested ones too.
+    providers: [{ provide: RowContext, useExisting: PageView }],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PageView {
+export class PageView implements RowContext {
     /** Resolver result, bound via withComponentInputBinding(). */
     readonly page = input<Page | undefined>();
 
@@ -107,8 +64,8 @@ export class PageView {
     /** The dictionary's search; the light header band may hold the field. */
     readonly dictionaryQuery = signal('');
 
-    /** Rows of the home page and albums; the events and knowledge base previews share a line. */
-    readonly groups = computed(() => groupRows(this.layout().rows));
+    /** The light header band holds the dictionary's search field. */
+    readonly searchInHeader = computed(() => this.layout().header?.searchCount !== undefined);
     /** The map is the page's main content (and its title the h1) unless the home banner is above it. */
     readonly mapStandalone = computed(
         () => !this.layout().rows.some(row => row.type === 'homepage_banner')
@@ -134,6 +91,8 @@ export class PageView {
         const { header, side } = this.layout();
         return header?.style !== 'light' && side.length === 0 ? this.sectionBar() : undefined;
     });
+    /** Tabs list their sections themselves unless the section menu stands beside the text. */
+    readonly showToc = computed(() => !this.sideMenu());
     /** "Dalej w dziale" closes the side column of an article with tabs (Budowa geologiczna). */
     readonly sideNext = computed(() => {
         const { header, side, rows } = this.layout();

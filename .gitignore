@@ -2,7 +2,8 @@
 .DS_Store
 front/node_modules/
 front/dist/
-front/.angular/
+# The Angular CLI's cache, wherever it was started (front/ or the repository root)
+.angular/
 node_modules/
 package-lock.json
 # The front-end lockfile must be in the repo: without it the server picks the newest

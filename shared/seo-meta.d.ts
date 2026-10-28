@@ -9,6 +9,9 @@ export interface SeoPage {
     seoTitle?: string;
     seoDescription?: string;
     updated?: string | number | Date;
+    /** Key of the page type; "tresc" pages keep their header (title, lead) in typeData. */
+    type?: string;
+    typeData?: object;
     rows?: unknown[];
 }
 

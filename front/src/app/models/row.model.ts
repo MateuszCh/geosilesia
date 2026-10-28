@@ -181,7 +181,10 @@ export interface GalleryData {
     title?: string;
     paragraphs?: { paragraph?: string }[];
     catalogue?: GalleryImage[];
-    /** Variant C. */
+    /**
+     * Variant C. From here on the album's own values: an "album" page keeps them in its
+     * `typeData` and layoutPage puts them here; a page without a type had them in this row.
+     */
     category?: AlbumCategory | string;
     cover?: string;
     author?: string;
@@ -313,6 +316,14 @@ export interface NoticeData {
     variant?: 'cytowanie' | 'uwaga' | 'informacja' | string;
 }
 
+/**
+ * Columns side by side ("Kolumny"), each a list of components: a repeater of columns
+ * holding a repeater of "component" fields, whose values have the shape of a row.
+ */
+export interface ColumnsData {
+    columns?: { components?: { component?: Row | null }[] }[];
+}
+
 export type Row =
     | { type: 'homepage_banner'; data: HomepageBannerData }
     | { type: 'map'; data: MapData }
@@ -338,6 +349,7 @@ export type Row =
     | { type: 'numbered_list'; data: NumberedListData }
     | { type: 'knowledge_base'; data: KnowledgeBaseData }
     | { type: 'contact'; data: ContactData }
-    | { type: 'notice'; data: NoticeData };
+    | { type: 'notice'; data: NoticeData }
+    | { type: 'columns'; data: ColumnsData };
 
 export type RowType = Row['type'];

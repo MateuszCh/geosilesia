@@ -1514,14 +1514,18 @@
     }
 }
 
-// Events and knowledge base previews side by side on the home page.
-.row-pair {
+// "Kolumny": columns side by side (the events and knowledge base previews on the home
+// page), each a stack of components; they wrap below each other on narrow screens.
+.columns {
     display: flex;
     flex-wrap: wrap;
     gap: 40px;
 
-    &__item {
+    &__column {
+        display: flex;
         flex: 1 1 340px;
+        flex-direction: column;
+        gap: 32px;
         min-width: 0;
 
         &[data-row='news'] {

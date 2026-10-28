@@ -87,22 +87,37 @@ function postsOfType(type) {
     return collections.posts.find({ type }).toArray();
 }
 
+// Calls `fn` for every row of a page and every component nested in one or in the page's
+// type values: a "component" field stores a component as { type, title, data } – the shape
+// of a row – in a column of "Kolumny", in the side column of a "tresc" page and so on.
+function forEachRow(page, fn) {
+    const visit = value => {
+        if (Array.isArray(value)) {
+            value.forEach(visit);
+        } else if (value && typeof value === "object") {
+            if (typeof value.type === "string" && value.data && typeof value.data === "object") fn(value);
+            Object.keys(value).forEach(key => visit(value[key]));
+        }
+    };
+    visit(page.rows);
+    visit(page.typeData);
+}
+
 // Replaces the catalogue name in "gallery" rows (and in "photos" rows that take their
-// photos from a catalogue) with the list of files from the files collection. Each row gets
-// the result of its own query – previously responses were assigned by index among all
-// galleries while queries were only made for those with a catalogue, so a gallery without
-// one shifted the files of the following ones (visible in /api/appData/).
+// photos from a catalogue) with the list of files from the files collection – nested ones
+// included. Each row gets the result of its own query – previously responses were assigned
+// by index among all galleries while queries were only made for those with a catalogue, so
+// a gallery without one shifted the files of the following ones (visible in /api/appData/).
 function attachGalleries(pages) {
     const galleries = [];
-    (pages || []).forEach(page => {
-        (page.rows || []).forEach(row => {
-            const usesCatalogue =
-                row.type === "gallery" || (row.type === "photos" && row.data && row.data.source === "katalog");
-            if (usesCatalogue && row.data && typeof row.data.catalogue === "string" && row.data.catalogue) {
+    (pages || []).forEach(page =>
+        forEachRow(page, row => {
+            const usesCatalogue = row.type === "gallery" || (row.type === "photos" && row.data.source === "katalog");
+            if (usesCatalogue && typeof row.data.catalogue === "string" && row.data.catalogue) {
                 galleries.push(row);
             }
-        });
-    });
+        })
+    );
     return Promise.all(
         galleries.map(gallery =>
             collections.files
@@ -135,15 +150,20 @@ function pageData(pageUrl) {
 }
 
 // Albums for the gallery list and the "Inne albumy" section: every page with a "gallery"
-// row. Variant C keeps the category, cover and "hidden" flag on the album itself; albums
-// not migrated yet take the category and cover from the manual gallery_list. An album
+// row. Variant C keeps the category, cover and "hidden" flag on the album itself – in the
+// values of an "album" page, before scripts/cms/18 in its gallery row (the front merges
+// them the same way, page-layout.ts); albums with neither take the category and cover from
+// the manual gallery_list. An album
 // whose "hidden" flag was never set is hidden only while the list is kept by hand ("ręcznie")
 // and the album is not on it – as on the old site. In the "automatycznie" mode it is shown,
 // otherwise a new album would stay invisible until someone also added it to the manual list.
 function galleriesList() {
     return Promise.all([
         collections.pages
-            .find({ "rows.type": "gallery" }, { projection: { pageUrl: 1, title: 1, rows: 1, updated: 1 } })
+            .find(
+                { "rows.type": "gallery" },
+                { projection: { pageUrl: 1, title: 1, rows: 1, updated: 1, type: 1, typeData: 1 } }
+            )
             .toArray(),
         collections.pages.find({ "rows.type": "gallery_list" }, { projection: { rows: 1 } }).toArray()
     ]).then(([albumPages, listPages]) => {
@@ -161,7 +181,11 @@ function galleriesList() {
         );
 
         const albums = albumPages.map(page => {
-            const gallery = (page.rows.find(row => row.type === "gallery") || {}).data || {};
+            const gallery = Object.assign(
+                {},
+                (page.rows.find(row => row.type === "gallery") || {}).data,
+                page.type === "album" ? page.typeData : undefined
+            );
             const pageUrl = seoMeta.normalizePath(page.pageUrl);
             const manual = listed.get(pageUrl);
             return {

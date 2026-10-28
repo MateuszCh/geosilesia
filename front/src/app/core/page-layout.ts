@@ -1,4 +1,4 @@
-import { Page } from '../models/page.model';
+import { ALBUM_PAGE, AlbumTypeData, CONTENT_PAGE, ContentTypeData, Page } from '../models/page.model';
 import { formatDate } from './dates';
 import {
     FactsData,
@@ -14,6 +14,12 @@ import {
 /**
  * How a CMS page is laid out in variant C. Pure functions of the page document, so the
  * server render and the browser's first render always agree (hydration).
+ *
+ * A page with a type (scripts/cms/18-page-types.js) says itself what goes where: a "Strona
+ * treści" keeps its header, byline and side column in `typeData`, an album its category,
+ * cover, author and dates. The rules below lay out pages without a type – the home page,
+ * the map and pages of a database the script has not migrated yet: the header comes from a
+ * `page_hero` row and the side column from the kinds of rows the mockups put beside the text.
  *
  * Pages saved before the redesign have no `page_hero` row and keep the author and dates in
  * a trailing italic paragraph. Until they are migrated, the header is built from the first
@@ -94,7 +100,8 @@ const FULL_WIDTH: RowType[] = [
     'map_search',
     'facts',
     'category_grid',
-    'numbered_list'
+    'numbered_list',
+    'columns'
 ];
 
 export function isFullWidth(row: Row): boolean {
@@ -238,8 +245,58 @@ function headerOf(data: PageHeroData, rows: Row[]): { header: PageHeader; rows: 
     return { header, rows };
 }
 
+/** The author and dates of a header; undefined when it has none of them. */
+function heroByline(hero: PageHeroData, page: Page | undefined): Byline | undefined {
+    if (!hero.author && !hero.published && !hero.updated) return undefined;
+    return {
+        author: hero.author,
+        published: formatDate(hero.published),
+        updated: formatDate(hero.updated) ?? formatDate(page?.updated)
+    };
+}
+
+/**
+ * Rows the side column of a "Strona treści" takes – what the mockups put beside the text.
+ * The CMS offers every component there; one that needs the main column is left out rather
+ * than squeezed into the narrow one.
+ */
+const SIDE_TYPES: RowType[] = ['link_cards', 'numbered_list', 'title_and_text', 'geosites_logos', 'notice'];
+
+/** A "Strona treści": the header, byline and side column are the values of its type. */
+function layoutContent(page: Page, source: Row[]): PageLayout {
+    const { side, ...hero } = (page.typeData ?? {}) as ContentTypeData;
+    const header = headerOf(
+        { ...hero, title: hero.title || page.title },
+        source.filter(row => row.type !== 'page_hero')
+    );
+    const sideRows = (side ?? [])
+        .map(item => item?.component)
+        .filter((row): row is Row => !!row?.type && SIDE_TYPES.includes(row.type));
+
+    return {
+        kind: 'content',
+        header: header.header,
+        byline: heroByline(hero, page),
+        rows: header.rows,
+        side: sideRows,
+        wide: [...header.rows, ...sideRows].some(isFullWidth)
+    };
+}
+
+/** An album: its category, cover, author and dates are the values of its type. */
+function layoutAlbum(page: Page, source: Row[]): PageLayout {
+    const album = (page.typeData ?? {}) as AlbumTypeData;
+    const rows = source.map(row =>
+        row.type === 'gallery' ? ({ ...row, data: { ...row.data, ...album } } as Row) : row
+    );
+    return { kind: 'album', rows, side: [], wide: true };
+}
+
 export function layoutPage(page: Page | undefined): PageLayout {
     const source = (page?.rows ?? []).filter(row => !!row?.type);
+
+    if (page?.type === CONTENT_PAGE) return layoutContent(page, source);
+    if (page?.type === ALBUM_PAGE) return layoutAlbum(page, source);
 
     // The home page and the map page draw their own header (the photo hero, the map panel).
     if (source.some(row => row.type === 'homepage_banner' || row.type === 'map')) {
@@ -281,14 +338,7 @@ export function layoutPage(page: Page | undefined): PageLayout {
         })
         .filter((row): row is Row => !!row);
 
-    const byline: Byline | undefined =
-        hero.author || hero.published || hero.updated
-            ? {
-                  author: hero.author,
-                  published: formatDate(hero.published),
-                  updated: formatDate(hero.updated) ?? formatDate(page?.updated)
-              }
-            : parsed;
+    const byline = heroByline(hero, page) ?? parsed;
 
     const header = headerOf(hero, rows);
     rows = withMoreBeside(header.rows);
@@ -301,24 +351,4 @@ export function layoutPage(page: Page | undefined): PageLayout {
         side: rows.filter(isSideRow),
         wide: rows.some(isFullWidth)
     };
-}
-
-const isPreview = (row: Row | undefined, type: RowType) =>
-    row?.type === type && (row.data as { variant?: string } | undefined)?.variant === 'zapowiedź';
-
-/**
- * Rows in display groups: the events preview followed by the knowledge base preview stand
- * side by side on the home page, as in the mockup; every other row stands alone.
- */
-export function groupRows(rows: Row[]): Row[][] {
-    const groups: Row[][] = [];
-    for (let i = 0; i < rows.length; i++) {
-        if (isPreview(rows[i], 'news') && isPreview(rows[i + 1], 'knowledge_base')) {
-            groups.push([rows[i], rows[i + 1]]);
-            i++;
-        } else {
-            groups.push([rows[i]]);
-        }
-    }
-    return groups;
 }
