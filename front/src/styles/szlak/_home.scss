@@ -11,7 +11,9 @@
     --hero-panel: 640px;
 
     position: relative;
-    height: 680px;
+    // On a low screen the hero shrinks, so the search card that overlaps its bottom stays in
+    // the first screen: 130px is the header, the card's part below the photo and some room.
+    height: clamp(500px, calc(100svh - 130px), 680px);
     overflow: hidden;
     background: var(--forest);
 
