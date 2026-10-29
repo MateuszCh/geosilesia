@@ -10,5 +10,7 @@ if [ -z "$domain" ]; then
     echo 'deploy: "deployDomain" is missing in config.json' >&2
     exit 1
 fi
+# Server dependencies too: without a newly added one the restarted app would not start.
+npm install --omit=dev
 (cd front && npm run build:deploy)
 devil www restart "$domain"
