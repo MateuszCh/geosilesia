@@ -105,12 +105,22 @@ export class Gallery implements OnInit {
 
     readonly visibleAlbumCount = computed(() => this.albums().filter(album => !album.hidden).length);
 
-    readonly otherAlbums = computed(() => {
+    /** Other albums of the same category; any others when the category has no more. */
+    private readonly others = computed(() => {
         const key = this.category()?.key;
         const visible = this.albums().filter(album => !album.hidden && album.pageUrl !== this.pageUrl());
         const same = key ? visible.filter(album => albumCategory(album.category)?.key === key) : [];
-        return (same.length ? same : visible).slice(0, OTHER_ALBUMS);
+        return { albums: (same.length ? same : visible).slice(0, OTHER_ALBUMS), inCategory: same.length > 0 };
     });
+    readonly otherAlbums = computed(() => this.others().albums);
+    readonly othersInCategory = computed(() => this.others().inCategory);
+
+    /** "Wszystkie …" beside them: the category's albums on the filtered list, or the whole list. */
+    readonly othersMore = computed(() =>
+        this.othersInCategory()
+            ? { count: this.categoryCount(), params: this.categoryParams() }
+            : { count: this.visibleAlbumCount(), params: {} }
+    );
 
     /** The TOP 50 entry whose "galeria" link points to this album; the link opens the list at it. */
     readonly top50 = computed(() => {
