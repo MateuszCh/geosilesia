@@ -69,7 +69,8 @@ export class Gallery implements OnInit {
     readonly viewerPhotos = computed<ViewerPhoto[]>(() =>
         this.images().map(image => ({
             src: image.src,
-            description: image.title || image.description,
+            title: image.title,
+            description: image.description,
             author: image.author
         }))
     );
