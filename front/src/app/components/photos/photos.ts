@@ -5,6 +5,7 @@ import { ContentService } from '../../core/content.service';
 import { ResourceService } from '../../core/resource.service';
 import { internalLink } from '../../core/cms-link';
 import { GalleryImage, PhotosData, Slide } from '../../models/row.model';
+import { AlbumSummary } from '../../models/post.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
 import { photoCredit } from '../../shared/photo-credit';
@@ -20,6 +21,14 @@ interface PhotoView {
     author?: string;
     description?: string;
 }
+
+type PhotoSource = 'albums' | 'banner' | 'catalogue';
+
+/** "Źródło zdjęć"; empty or anything else = the albums of the gallery. */
+const SOURCES: Record<string, PhotoSource> = { 'baner strony głównej': 'banner', katalog: 'catalogue' };
+
+/** Photos in the strip, and albums in place of photos. */
+const STRIP_SIZE = 4;
 
 function fromSlide(slide: Slide): PhotoView {
     const author = photoCredit(slide.author) || undefined;
@@ -45,7 +54,9 @@ function fromFile(file: GalleryImage): PhotoView {
 
 /**
  * Photographs: from the home page banner or from a catalogue of the file library, as a strip
- * of four ("Region w obiektywie") or as a grid with the photo viewer.
+ * of four or as a grid with the photo viewer. By default the covers of the gallery's first
+ * four albums instead, in the album list's order, each a link to its album ("Region w
+ * obiektywie").
  */
 @Component({
     selector: 'app-photos',
@@ -58,19 +69,23 @@ export class Photos implements OnInit {
 
     readonly viewerIndex = signal<number | undefined>(undefined);
     private readonly slides = signal<Slide[]>([]);
-    private readonly albumCount = signal(0);
+    private readonly albumList = signal<AlbumSummary[]>([]);
 
     private readonly resource = inject(ResourceService);
     private readonly content = inject(ContentService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly grid = computed(() => this.component().variant === 'siatka z podglądem');
-    private readonly fromBanner = computed(() => this.component().source !== 'katalog');
+    readonly source = computed<PhotoSource>(() => SOURCES[this.component().source ?? ''] ?? 'albums');
+
+    private readonly visibleAlbums = computed(() => this.albumList().filter(album => !album.hidden));
+    readonly albums = computed(() => (this.source() === 'albums' ? this.visibleAlbums().slice(0, STRIP_SIZE) : []));
+    protected readonly stripSize = STRIP_SIZE;
 
     readonly photos = computed<PhotoView[]>(() => {
-        if (this.fromBanner()) return this.slides().filter(slide => slide.image).map(fromSlide);
+        if (this.source() === 'banner') return this.slides().filter(slide => slide.image).map(fromSlide);
         const catalogue = this.component().catalogue;
-        return Array.isArray(catalogue) ? catalogue.filter(file => file.src).map(fromFile) : [];
+        return this.source() === 'catalogue' && Array.isArray(catalogue) ? catalogue.filter(file => file.src).map(fromFile) : [];
     });
 
     readonly viewerPhotos = computed<ViewerPhoto[]>(() =>
@@ -83,16 +98,18 @@ export class Photos implements OnInit {
     );
 
     /** "Galeria — 48 albumów" – the album count is added to the label by itself. */
+    private readonly countsAlbums = computed(() => !!this.component().link && /galeri/i.test(this.component().link_label || 'Galeria'));
+
     readonly linkInfo = computed(() => {
         const href = internalLink(this.component().link);
         if (!href) return undefined;
         const label = this.component().link_label || 'Galeria';
-        const count = this.albumCount();
+        const count = this.countsAlbums() ? this.visibleAlbums().length : 0;
         return { href, label: count ? `${label} — ${count} ${plural(count, 'album', 'albumy', 'albumów')}` : label };
     });
 
     ngOnInit(): void {
-        if (this.fromBanner()) {
+        if (this.source() === 'banner') {
             this.resource
                 .loadPageFromNetwork('/')
                 .pipe(takeUntilDestroyed(this.destroyRef))
@@ -101,11 +118,11 @@ export class Photos implements OnInit {
                     this.slides.set(banner?.type === 'homepage_banner' ? (banner.data?.slides ?? []) : []);
                 });
         }
-        if (this.component().link && /galeri/i.test(this.component().link_label || 'Galeria')) {
+        if (this.source() === 'albums' || this.countsAlbums()) {
             this.content
                 .albums()
                 .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe(albums => this.albumCount.set(albums.filter(album => !album.hidden).length));
+                .subscribe(albums => this.albumList.set(albums));
         }
     }
 }

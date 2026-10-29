@@ -340,6 +340,13 @@ const bannerTitleSize = def("homepage_banner", "Homepage banner", [
     ["title_size", "Rozmiar tytułu", "select", BANNER_TITLE_SIZES.join(";")]
 ]);
 
+/**
+ * Step 23: "Zdjęcia" shows the covers of the gallery's first albums, which becomes the first
+ * option and what an empty field means.
+ */
+const PHOTO_SOURCES = ["albumy z galerii", "baner strony głównej", "katalog"];
+const photosSource = field(["source", "Źródło zdjęć (puste = albumy z galerii)", "select", PHOTO_SOURCES.join(";")]);
+
 module.exports = {
     newComponents,
     changedComponents,
@@ -353,5 +360,7 @@ module.exports = {
     contentFieldOrder,
     layoutComponents,
     BANNER_TITLE_SIZES,
-    bannerTitleSize
+    bannerTitleSize,
+    PHOTO_SOURCES,
+    photosSource
 };

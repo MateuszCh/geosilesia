@@ -18,7 +18,27 @@
              [appHtml]="component().intro | trusted"></div>
     }
 
-    @if (grid()) {
+    @if (source() === 'albums') {
+        <ul class="album-grid album-grid--small">
+            @for (album of albums(); track album.pageUrl) {
+                <li>
+                    <a class="album-card"
+                       [routerLink]="album.pageUrl">
+                        @if (album.cover) {
+                            <img class="album-card__image"
+                                 loading="lazy"
+                                 [src]="album.cover"
+                                 [alt]="'przejdź do galerii ' + album.title">
+                        } @else {
+                            <span class="album-card__image album-card__image--empty"
+                                  aria-hidden="true"></span>
+                        }
+                        <span class="album-card__title">{{ album.title }}</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    } @else if (grid()) {
         <ul class="photos__grid">
             @for (photo of photos(); track $index) {
                 <li [class.photos__wide]="$first">
@@ -45,7 +65,7 @@
         </ul>
     } @else {
         <ul class="photos__strip">
-            @for (photo of photos().slice(0, 4); track $index) {
+            @for (photo of photos().slice(0, stripSize); track $index) {
                 <li class="photos__strip-item">
                     <img class="photos__strip-image"
                          loading="lazy"

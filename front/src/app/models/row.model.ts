@@ -276,7 +276,8 @@ export interface PhotosData {
     title?: string;
     intro?: string;
     variant?: 'pasek' | 'siatka z podglądem' | string;
-    source?: 'baner strony głównej' | 'katalog' | string;
+    /** Empty or "albumy z galerii" = the covers of the gallery's first albums. */
+    source?: 'albumy z galerii' | 'baner strony głównej' | 'katalog' | string;
     /** Replaced by the server with the file list, as in `gallery`. */
     catalogue?: GalleryImage[] | string;
     link?: string;
