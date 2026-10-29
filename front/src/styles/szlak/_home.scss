@@ -3,6 +3,13 @@
 // The home page: the photo hero and the sections built from variant C components.
 
 .home-hero {
+    // "Rozmiar tytułu" in the CMS. The panel narrows with the title, so a smaller one hides
+    // less of the photo; the desktop sizes are the ones the options show.
+    --hero-title: 68px;
+    --hero-title-tablet: 52px;
+    --hero-title-phone: 40px;
+    --hero-panel: 640px;
+
     position: relative;
     height: 680px;
     overflow: hidden;
@@ -10,6 +17,20 @@
 
     @include below($bp-phone) {
         height: 520px;
+    }
+
+    &--medium {
+        --hero-title: 56px;
+        --hero-title-tablet: 46px;
+        --hero-title-phone: 36px;
+        --hero-panel: 600px;
+    }
+
+    &--small {
+        --hero-title: 44px;
+        --hero-title-tablet: 40px;
+        --hero-title-phone: 32px;
+        --hero-panel: 540px;
     }
 
     &__slides {
@@ -62,10 +83,10 @@
 
     &__panel {
         display: flex;
-        flex: 0 1 640px;
+        flex: 0 1 var(--hero-panel);
         flex-direction: column;
         gap: 14px;
-        max-width: 640px;
+        max-width: var(--hero-panel);
         padding: 28px 32px;
         border-radius: var(--radius-lg);
         background: var(--forest);
@@ -96,16 +117,16 @@
 
     &__title {
         font-family: var(--font-display);
-        font-size: 68px;
+        font-size: var(--hero-title);
         font-weight: 800;
         line-height: 0.95;
 
         @include below($bp-tablet) {
-            font-size: 52px;
+            font-size: var(--hero-title-tablet);
         }
 
         @include below($bp-phone) {
-            font-size: 40px;
+            font-size: var(--hero-title-phone);
             line-height: 0.98;
         }
     }

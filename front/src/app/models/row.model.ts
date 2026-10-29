@@ -30,6 +30,8 @@ export interface HomepageBannerData {
     info_text_english?: string;
     /** Variant C. */
     eyebrow?: string;
+    /** "Rozmiar tytułu": the option's label as stored, "mały (44 px)"; empty = large. */
+    title_size?: string;
 }
 
 export interface MapData {

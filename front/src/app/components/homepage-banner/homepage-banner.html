@@ -1,4 +1,6 @@
 <section class="home-hero"
+         [class.home-hero--medium]="titleSize() === 'medium'"
+         [class.home-hero--small]="titleSize() === 'small'"
          aria-roledescription="karuzela"
          aria-label="Fotografie"
          (mouseenter)="pause()"

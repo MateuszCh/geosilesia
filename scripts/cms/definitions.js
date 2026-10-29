@@ -331,6 +331,15 @@ const layoutComponents = [
     def("columns", "Kolumny", [["columns", "Kolumny", "repeater", [["wide", "Szersza kolumna", "checkbox"]]]])
 ];
 
+/**
+ * Step 22: the size of the home page banner's title, with its desktop size in brackets.
+ * Frodo stores the label it shows; the front end reads only its first word.
+ */
+const BANNER_TITLE_SIZES = ["duży (68 px)", "średni (56 px)", "mały (44 px)"];
+const bannerTitleSize = def("homepage_banner", "Homepage banner", [
+    ["title_size", "Rozmiar tytułu", "select", BANNER_TITLE_SIZES.join(";")]
+]);
+
 module.exports = {
     newComponents,
     changedComponents,
@@ -342,5 +351,7 @@ module.exports = {
     dictionaryComponent,
     contentLayoutFields,
     contentFieldOrder,
-    layoutComponents
+    layoutComponents,
+    BANNER_TITLE_SIZES,
+    bannerTitleSize
 };

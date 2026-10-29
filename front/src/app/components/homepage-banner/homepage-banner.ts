@@ -15,6 +15,11 @@ import { photoCredit } from '../../shared/photo-credit';
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
+type TitleSize = 'large' | 'medium' | 'small';
+
+/** First words of the "Rozmiar tytułu" options; the sizes in brackets may change. */
+const TITLE_SIZES: Record<string, TitleSize> = { duży: 'large', średni: 'medium', mały: 'small' };
+
 /** Mostly upper-case text, as older banner titles were typed for the old design. */
 function isShouting(text: string): boolean {
     const letters = text.replace(/[^\p{L}]/gu, '');
@@ -53,6 +58,12 @@ export class HomepageBanner {
         if (!isShouting(title)) return title;
         const lower = title.toLocaleLowerCase('pl');
         return lower.charAt(0).toLocaleUpperCase('pl') + lower.slice(1);
+    });
+
+    /** "Rozmiar tytułu": Frodo stores the option's label, "mały (44 px)", so its first word counts. */
+    readonly titleSize = computed<TitleSize>(() => {
+        const word = (this.component().title_size ?? '').trim().split(/\s+/)[0].toLocaleLowerCase('pl');
+        return TITLE_SIZES[word] ?? 'large';
     });
 
     readonly counter = computed(() => `${pad(this.current() + 1)} / ${pad(this.slides().length)}`);
