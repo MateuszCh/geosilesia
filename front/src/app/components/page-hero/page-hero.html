@@ -23,6 +23,12 @@
     }
 </ng-template>
 
+<ng-template #sectionTpl>
+    @if (section(); as current) {
+        <app-section-bar [section]="current" />
+    }
+</ng-template>
+
 <ng-template #bylineTpl>
     @if (bylineText(); as text) {
         <p class="page-hero__byline">{{ text }}</p>
@@ -36,6 +42,25 @@
     }
 </ng-template>
 
+<!-- "W nagłówku", the dictionary's search and "Przycisk przy tytule". -->
+<ng-template #extrasTpl>
+    @if (header().component; as component) {
+        <div class="page-hero__component">
+            <app-row [row]="component" />
+        </div>
+    }
+    @if (header().searchCount !== undefined) {
+        <app-dictionary-search class="page-hero__search"
+                               [count]="header().searchCount ?? 0"
+                               [(query)]="query" />
+    }
+    @if (action(); as link) {
+        <a class="btn btn--signal btn--large"
+           [routerLink]="link.path"
+           [queryParams]="link.params">{{ link.label }}</a>
+    }
+</ng-template>
+
 @switch (header().style) {
     @case ('photo') {
         <section class="page-hero page-hero--photo">
@@ -45,6 +70,7 @@
                  [alt]="hero().image_caption ?? ''">
             <div class="page-hero__overlay container">
                 <div class="page-hero__panel">
+                    <ng-container *ngTemplateOutlet="sectionTpl" />
                     <ng-container *ngTemplateOutlet="crumbsTpl" />
                     <h1 class="page-hero__title">{{ hero().title }}</h1>
                     <ng-container *ngTemplateOutlet="bylineTpl" />
@@ -54,29 +80,27 @@
                 }
             </div>
         </section>
-        @if (hero().lead) {
-            <div class="container">
-                <div class="page-hero__lead lead prose"
-                     [appHtml]="hero().lead | trusted"></div>
+        @if (hero().lead || hasExtras()) {
+            <div class="page-hero__below container">
+                @if (hero().lead) {
+                    <div class="page-hero__lead lead prose"
+                         [appHtml]="hero().lead | trusted"></div>
+                }
+                <ng-container *ngTemplateOutlet="extrasTpl" />
             </div>
         }
     }
     @case ('light') {
         <section class="page-hero page-hero--light">
             <div class="page-hero__band container">
-                @if (section(); as current) {
-                    <app-section-bar [section]="current" />
-                }
+                <ng-container *ngTemplateOutlet="sectionTpl" />
                 <div class="page-hero__row">
                     <div class="page-hero__head">
                         <h1 class="page-title">{{ hero().title }}</h1>
                         <ng-container *ngTemplateOutlet="leadTpl" />
+                        <ng-container *ngTemplateOutlet="bylineTpl" />
                     </div>
-                    @if (header().facts; as facts) {
-                        <app-facts class="page-hero__facts"
-                                   [component]="facts" />
-                    }
-                    <ng-content />
+                    <ng-container *ngTemplateOutlet="extrasTpl" />
                 </div>
             </div>
         </section>
@@ -84,19 +108,19 @@
     @case ('dark') {
         <section class="page-hero page-hero--dark">
             <div class="page-hero__band container">
+                <ng-container *ngTemplateOutlet="sectionTpl" />
                 <ng-container *ngTemplateOutlet="crumbsTpl" />
                 <h1 class="page-hero__title">{{ hero().title }}</h1>
                 <ng-container *ngTemplateOutlet="leadTpl" />
-                @if (header().facts; as facts) {
-                    <app-facts class="page-hero__facts"
-                               [component]="facts" />
-                }
+                <ng-container *ngTemplateOutlet="bylineTpl" />
+                <ng-container *ngTemplateOutlet="extrasTpl" />
             </div>
         </section>
     }
     @default {
         <section class="page-hero page-hero--plain container">
             <div class="page-hero__head">
+                <ng-container *ngTemplateOutlet="sectionTpl" />
                 <ng-container *ngTemplateOutlet="crumbsTpl" />
                 <h1 class="page-title">{{ hero().title }}</h1>
                 <ng-container *ngTemplateOutlet="leadTpl" />
@@ -104,11 +128,8 @@
                     <ng-container *ngTemplateOutlet="bylineTpl" />
                 }
             </div>
-            @if (action(); as link) {
-                <a class="btn btn--signal btn--large"
-                   [routerLink]="link.path"
-                   [queryParams]="link.params">{{ link.label }}</a>
-            } @else {
+            <ng-container *ngTemplateOutlet="extrasTpl" />
+            @if (!action()) {
                 <ng-container *ngTemplateOutlet="bylineTpl" />
             }
         </section>

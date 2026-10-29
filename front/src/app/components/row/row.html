@@ -4,8 +4,7 @@
         <app-homepage-banner [component]="row.data" />
     }
     @case ('map') {
-        <app-search-map [component]="row.data"
-                        [standalone]="context.mapStandalone()" />
+        <app-search-map [component]="row.data" />
     }
     @case ('title_and_text') {
         <app-title-and-text [component]="row.data" />
@@ -23,9 +22,7 @@
     @case ('dictionary') {
         <app-dictionary [component]="row.data"
                         [(query)]="context.dictionaryQuery"
-                        [searchInHeader]="context.searchInHeader()"
-                        [literature]="context.dictionaryLiterature()?.data"
-                        [byline]="context.literatureByline()" />
+                        [headerSearch]="context.searchInHeader()" />
     }
     @case ('footnotes') {
         <app-footnotes [component]="row.data" />
@@ -37,8 +34,7 @@
         <app-geosites-logos [component]="row.data" />
     }
     @case ('tabs') {
-        <app-tabs [component]="row.data"
-                  [showToc]="context.showToc()" />
+        <app-tabs [component]="row.data" />
     }
     @case ('gallery_list') {
         <app-gallery-list [component]="row.data" />

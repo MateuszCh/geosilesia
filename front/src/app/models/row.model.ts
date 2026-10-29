@@ -36,6 +36,8 @@ export interface MapData {
     title?: string;
     number_results?: number;
     marker_cluster?: boolean;
+    /** "Tytuł jako nagłówek strony": the title is the page's h1. */
+    page_title?: boolean;
 }
 
 /** Stored values of `paragraph_class`: older pages hold a CSS class, newer ones a choice. */
@@ -81,6 +83,10 @@ export interface DictionaryItem {
 
 export interface DictionaryData {
     items?: DictionaryItem[];
+    /** A component under the terms, in their column ("Pod listą pojęć"); the shape of a row. */
+    below?: Row | null;
+    /** "Wyszukiwarka w nagłówku strony": the page header holds the search field. */
+    search_in_header?: boolean;
 }
 
 export interface FootnotesData {
@@ -150,6 +156,8 @@ export interface TabRow {
 
 export interface TabsData {
     tabs?: { title?: string; rows?: TabRow[] }[];
+    /** "Bez spisu „Na tej stronie”". */
+    hide_toc?: boolean;
 }
 
 export type AlbumCategory = 'dziedzictwo Ziemi' | 'dziedzictwo geokulturowe' | 'inne';
@@ -183,7 +191,7 @@ export interface GalleryData {
     catalogue?: GalleryImage[];
     /**
      * Variant C. From here on the album's own values: an "album" page keeps them in its
-     * `typeData` and layoutPage puts them here; a page without a type had them in this row.
+     * `typeData` and layoutPage puts them here.
      */
     category?: AlbumCategory | string;
     cover?: string;
@@ -245,6 +253,8 @@ export interface Top50Data {
     limit?: number | string;
     link?: string;
     link_label?: string;
+    /** "Pod trasą": a component in the route's column, under the stops; the shape of a row. */
+    below?: Row | null;
 }
 
 export interface LinkCardsData {
@@ -321,7 +331,8 @@ export interface NoticeData {
  * holding a repeater of "component" fields, whose values have the shape of a row.
  */
 export interface ColumnsData {
-    columns?: { components?: { component?: Row | null }[] }[];
+    /** `wide`: "Szersza kolumna". */
+    columns?: { components?: { component?: Row | null }[]; wide?: boolean }[];
 }
 
 export type Row =

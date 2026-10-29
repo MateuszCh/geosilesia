@@ -14,6 +14,17 @@ export const ALBUM_PAGE = 'album';
 export interface ContentTypeData extends PageHeroData {
     /** A repeater of "component" fields; each value has the shape of a page row. */
     side?: { component?: Row | null }[];
+    /** "W nagłówku": a component drawn in the header. */
+    header_component?: Row | null;
+    /** "Przycisk przy tytule". */
+    action_label?: string;
+    action_link?: string;
+    /** "Autor i daty"; empty = in the header. */
+    byline?: '' | 'pod treścią' | 'w kolumnie bocznej' | 'w ramce literatury' | string;
+    /** "Menu działu"; empty = none. */
+    section_menu?: '' | 'w nagłówku' | 'obok tekstu' | string;
+    /** The "Dalej w dziale" card at the end of the side column. */
+    next_card?: boolean;
 }
 
 /** Values of an "Album" page: what the album list and the album's header show. */

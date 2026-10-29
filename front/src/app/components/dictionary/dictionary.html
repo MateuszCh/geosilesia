@@ -66,10 +66,10 @@
                     </div>
                 </div>
             }
-            @if (literature(); as literature) {
-                <app-literature class="dictionary__literature"
-                                [component]="literature"
-                                [byline]="byline()" />
+            @if (below(); as below) {
+                <div class="dictionary__below">
+                    <app-row [row]="below" />
+                </div>
             }
         </div>
     </div>
