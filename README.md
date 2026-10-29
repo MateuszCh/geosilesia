@@ -101,14 +101,15 @@ On the server:
 
 ```bash
 git pull
-npm run deploy   # front: npm ci + ng build, then devil www restart <deployDomain>
+npm run deploy   # root: npm install --omit=dev; front: npm ci + ng build; then devil www restart <deployDomain>
 ```
 
 Every deployment restarts the Node process, always after the build — the new server
 expects the new build. The restart is also what clears all in-memory caches (rendered
 HTML, page list, CSR shell). The domain is taken from `deployDomain` in `config.json`;
-without it the script stops before building. If the root `package.json` changed, run
-`npm install --omit=dev` in the root first.
+without it the script stops before installing anything. The server dependencies are
+installed by the script as well (`npm install --omit=dev` in the root), so a change to the
+root `package.json` needs no manual step.
 
 - `front/dist/` is in `.gitignore`, so every deployment has to build.
 - `npm ci` deletes `node_modules` and installs exactly the versions pinned in
