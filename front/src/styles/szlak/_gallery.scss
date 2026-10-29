@@ -477,10 +477,13 @@
         }
     }
 
+    // The photo and the panel share one row of the height left: the panel never grows
+    // taller than the photo, a long description scrolls inside it.
     &__main {
-        display: flex;
+        display: grid;
         flex: 1;
-        flex-wrap: wrap;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+        grid-template-rows: minmax(0, 1fr);
         gap: 16px;
         min-height: 0;
 
@@ -493,7 +496,6 @@
 
     &__stage {
         position: relative;
-        flex: 999 1 640px;
         min-width: 0;
         min-height: 300px;
         overflow: hidden;
@@ -546,10 +548,9 @@
 
     &__info {
         display: flex;
-        flex: 1 1 300px;
         flex-direction: column;
         gap: 14px;
-        max-width: 360px;
+        min-height: 0;
         padding: 24px;
         overflow: auto;
         border-radius: var(--radius-lg);
@@ -559,7 +560,6 @@
         @include below($bp-tablet) {
             flex: none;
             order: 1;
-            max-width: none;
             padding: 18px;
         }
     }
@@ -570,7 +570,12 @@
         font-weight: 600;
     }
 
+    // The only part that gives way: the title, author and buttons stay in view. Below the
+    // tablet breakpoint the panel has no height limit and the whole viewer scrolls.
     &__description {
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
         color: var(--ink-soft);
         font-size: 18px;
         line-height: 28px;
