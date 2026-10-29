@@ -106,10 +106,11 @@
                  aria-labelledby="other-albums">
             <div class="section-head">
                 <h2 id="other-albums"
-                    class="h-article">{{ otherAlbumsTitle() }}{{ category() ? ': ' + category()!.label : '' }}</h2>
-                @if (galleryLink()) {
+                    class="h-article">{{ otherAlbumsTitle() }}{{ othersInCategory() ? ': ' + category()!.label : '' }}</h2>
+                @if (galleryLink(); as link) {
                     <a class="more-link"
-                       [routerLink]="galleryLink()">Wszystkie {{ visibleAlbumCount() }} {{ albumsLabel(visibleAlbumCount()) }} →</a>
+                       [routerLink]="link"
+                       [queryParams]="othersMore().params">Wszystkie {{ othersMore().count }} {{ albumsLabel(othersMore().count) }} →</a>
                 }
             </div>
             <ul class="album-grid album-grid--small">
