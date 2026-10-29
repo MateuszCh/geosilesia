@@ -20,9 +20,9 @@
 // A page the front end still needs its older rules for (no page_hero, a byline paragraph, a
 // warning made of a heading, two galleries) keeps no type and is listed.
 //
-// The dry run checks the result: it lays out every changed page with the front end's own
-// layoutPage (front/src/app/core/page-layout.ts, bundled with esbuild from front/node_modules)
-// and derives its SEO title and description (shared/seo-meta.js), before and after, and lists
+// The dry run checks the result: it lays out every changed page with the front end's
+// layoutPage as of step 20 (legacy/page-layout.ts, bundled with esbuild from front/node_modules;
+// the front end itself stopped inferring layouts in step 21) and derives its SEO title and description (shared/seo-meta.js), before and after, and lists
 // every difference. --apply refuses to write while there is one, or when the check cannot run.
 //
 // Idempotent: a page with a type is left alone. Earlier steps must not be replayed after it:
@@ -123,7 +123,7 @@ function asAlbum(page) {
     return { type: ALBUM, typeData, rows, note: Object.keys(typeData).join(", ") || "(no album fields)" };
 }
 
-/** The front end's layoutPage, bundled from its source; null when esbuild is not installed. */
+/** The front end's layoutPage as of step 20, bundled from its frozen copy; null when esbuild is not installed. */
 function loadLayoutPage() {
     let esbuild;
     try {
@@ -133,7 +133,7 @@ function loadLayoutPage() {
     }
     const outfile = path.join(ROOT, "tmp", "page-layout.cjs");
     esbuild.buildSync({
-        entryPoints: [path.join(ROOT, "front", "src", "app", "core", "page-layout.ts")],
+        entryPoints: [path.join(__dirname, "legacy", "page-layout.ts")],
         bundle: true,
         platform: "node",
         format: "cjs",

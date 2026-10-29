@@ -7,6 +7,7 @@ import {
     OnInit,
     afterNextRender,
     computed,
+    forwardRef,
     inject,
     input,
     signal
@@ -17,9 +18,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContentService } from '../../core/content.service';
 import { internalLink, isExternalLink } from '../../core/cms-link';
 import { Top50PostData } from '../../models/post.model';
-import { Top50Data } from '../../models/row.model';
+import { Row, Top50Data } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { HtmlDirective } from '../../shared/html.directive';
+import { RowView } from '../row/row';
 
 const PREVIEW_LIMIT = 7;
 /** The full list opens with this many places; "Dalej: miejsca 16–50" shows the rest at once. */
@@ -57,13 +59,19 @@ function chips(links: Top50PostData['links']): Stop['links'] {
 @Component({
     selector: 'app-top50',
     templateUrl: './top50.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective],
+    // RowView draws the component under the route and itself imports this one: forwardRef breaks the cycle.
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective, forwardRef(() => RowView)],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Top50 implements OnInit {
     readonly component = input.required<Top50Data>();
 
     readonly preview = computed(() => this.component().variant === 'zapowiedź');
+    /** "Pod trasą": a component in the route's column, under the stops – the route's note. */
+    readonly below = computed<Row | undefined>(() => {
+        const below = this.component().below;
+        return below?.type ? below : undefined;
+    });
     readonly stops = signal<Stop[]>([]);
     private readonly expanded = signal(false);
     /** The place pointed at in the preview list (mouse or keyboard); stays when the pointer leaves. */

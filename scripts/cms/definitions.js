@@ -289,4 +289,58 @@ const columnsComponent = def("columns", "Kolumny", [
     ["columns", "Kolumny", "repeater", [["components", "Komponenty", "repeater", [["component", "Komponent", "component"]]]]]
 ]);
 
-module.exports = { newComponents, changedComponents, newPostTypes, changedPostTypes, RETYPE, pageTypes, columnsComponent };
+/** Step 20: a component under the dictionary's terms, in their column (the literature). */
+const dictionaryComponent = def("dictionary", "Lista pojęć", [["below", "Pod listą pojęć", "component"]]);
+
+/**
+ * Step 21: what the front end used to work out from the kinds and order of the rows, as
+ * fields. The page type's new fields, then the order of all its fields in the panel.
+ */
+const contentLayoutFields = [
+    ["header_component", "W nagłówku", "component"],
+    ["action_label", "Przycisk przy tytule – napis", "text"],
+    ["action_link", "Przycisk przy tytule – adres", "text"],
+    ["byline", "Autor i daty (puste = w nagłówku)", "select", ";pod treścią;w kolumnie bocznej;w ramce literatury"],
+    ["section_menu", "Menu działu (puste = brak)", "select", ";w nagłówku;obok tekstu"],
+    ["next_card", "Karta „Dalej w dziale” na końcu kolumny bocznej", "checkbox"]
+].map(spec => field(spec));
+const contentFieldOrder = [
+    "eyebrow",
+    "title",
+    "lead",
+    "image",
+    "image_caption",
+    "image_author",
+    "variant",
+    "header_component",
+    "action_label",
+    "action_link",
+    "section_menu",
+    "author",
+    "published",
+    "updated",
+    "byline",
+    "side",
+    "next_card"
+];
+const layoutComponents = [
+    def("dictionary", "Lista pojęć", [["search_in_header", "Wyszukiwarka w nagłówku strony", "checkbox"]]),
+    def("tabs", "Tabs", [["hide_toc", "Bez spisu „Na tej stronie”", "checkbox"]]),
+    def("map", "Mapa atrakcji", [["page_title", "Tytuł jako nagłówek strony", "checkbox"]]),
+    def("top50", "TOP 50", [["below", "Pod trasą", "component"]]),
+    def("columns", "Kolumny", [["columns", "Kolumny", "repeater", [["wide", "Szersza kolumna", "checkbox"]]]])
+];
+
+module.exports = {
+    newComponents,
+    changedComponents,
+    newPostTypes,
+    changedPostTypes,
+    RETYPE,
+    pageTypes,
+    columnsComponent,
+    dictionaryComponent,
+    contentLayoutFields,
+    contentFieldOrder,
+    layoutComponents
+};

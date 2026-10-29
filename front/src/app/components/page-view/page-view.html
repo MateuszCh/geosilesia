@@ -15,14 +15,9 @@
     @if (layout().header; as header) {
         <app-page-hero [header]="header"
                        [crumbs]="crumbs()"
-                       [byline]="layout().byline"
-                       [section]="header.style === 'light' ? sectionBar() : undefined">
-            @if (header.searchCount !== undefined) {
-                <app-dictionary-search class="page-hero__search"
-                                       [count]="header.searchCount"
-                                       [(query)]="dictionaryQuery" />
-            }
-        </app-page-hero>
+                       [byline]="layout().bylinePlace === 'header' ? layout().byline : undefined"
+                       [section]="headerMenu()"
+                       [(query)]="dictionaryQuery" />
     }
 
     @if (layout().kind === 'content') {
@@ -30,16 +25,14 @@
              [class.page-body--side]="hasSide()">
             <div class="page-body__main">
                 @for (row of layout().rows; track $index) {
-                    @if (row !== dictionaryLiterature()) {
-                        <section class="row"
-                                 [id]="'section-' + $index"
-                                 [attr.data-row]="row.type">
-                            <app-row [row]="row" />
-                        </section>
-                    }
+                    <section class="row"
+                             [id]="'section-' + $index"
+                             [attr.data-row]="row.type">
+                        <app-row [row]="row" />
+                    </section>
                 }
-                @if (!hasSide() && sideByline()) {
-                    <p class="page-body__byline">{{ sideByline() }}</p>
+                @if (belowByline()) {
+                    <p class="page-body__byline">{{ belowByline() }}</p>
                 }
             </div>
             @if (hasSide()) {

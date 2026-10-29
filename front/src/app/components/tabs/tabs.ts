@@ -29,8 +29,8 @@ interface TocEntry {
 })
 export class Tabs {
     readonly component = input.required<TabsData>();
-    /** No "Na tej stronie" beside a section menu, as in the mockups of Położenie and Rzeźba terenu. */
-    readonly showToc = input(true);
+    /** "Bez spisu „Na tej stronie”", as beside the section menu of Położenie and Rzeźba terenu. */
+    readonly showToc = computed(() => !this.component().hide_toc);
     readonly activeTab = signal(0);
     readonly tocOpen = signal(false);
     readonly currentHeading = signal<string | undefined>(undefined);

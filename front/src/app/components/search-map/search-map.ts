@@ -74,8 +74,8 @@ export function placesLabel(count: number): string {
 })
 export class SearchMap implements OnInit {
     readonly component = input.required<MapData>();
-    /** The map is the whole page (its title is the h1). */
-    readonly standalone = input(false);
+    /** "Tytuł jako nagłówek strony": the map is the whole page and its title the h1. */
+    readonly standalone = computed(() => !!this.component().page_title);
 
     readonly categories = signal<MapCategory[]>([]);
     readonly searchMode = signal<SearchMode>('location');

@@ -1,9 +1,19 @@
-import { ChangeDetectionStrategy, Component, DOCUMENT, computed, inject, input, model, signal } from '@angular/core';
-import { DictionaryData, DictionaryItem, LiteratureData } from '../../models/row.model';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    DOCUMENT,
+    computed,
+    forwardRef,
+    inject,
+    input,
+    model,
+    signal
+} from '@angular/core';
+import { DictionaryData, DictionaryItem, Row } from '../../models/row.model';
 import { ScrollService } from '../../core/scroll.service';
 import { foldText } from '../../shared/fold-text';
 import { DictionarySearch } from './dictionary-search';
-import { Literature } from '../literature/literature';
+import { RowView } from '../row/row';
 
 /** Trail colours of the term marks, in turn. */
 const MARK_COLORS = [
@@ -40,18 +50,26 @@ export function splitTerm(item: DictionaryItem): { term: string; foreign: string
 @Component({
     selector: 'app-dictionary',
     templateUrl: './dictionary.html',
-    imports: [DictionarySearch, Literature],
+    // RowView draws the component below the terms and itself imports this one: forwardRef breaks the cycle.
+    imports: [DictionarySearch, forwardRef(() => RowView)],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Dictionary {
     readonly component = input.required<DictionaryData>();
-    /** Two-way: the page header holds the field when the light band shows it. */
+    /** Two-way: shared with the page header when it holds the field. */
     readonly query = model('');
-    readonly searchInHeader = input(false);
-    /** The page's literature, under the terms in their column, as in the mockup. */
-    readonly literature = input<LiteratureData | undefined>();
-    readonly byline = input('');
+    /** The page header holds the search field of a dictionary that asks for it. */
+    readonly headerSearch = input(false);
     readonly active = signal(-1);
+
+    /** "Wyszukiwarka w nagłówku strony": the field is in the page header, not above the terms. */
+    readonly searchInHeader = computed(() => !!this.component().search_in_header && this.headerSearch());
+
+    /** The component under the terms, in their column ("Pod listą pojęć"): the literature, as in the mockup. */
+    readonly below = computed<Row | undefined>(() => {
+        const below = this.component().below;
+        return below?.type ? below : undefined;
+    });
 
     private readonly doc = inject(DOCUMENT);
     private readonly scroll = inject(ScrollService);

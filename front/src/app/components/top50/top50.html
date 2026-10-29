@@ -17,6 +17,14 @@
     }
 </ng-template>
 
+<ng-template #belowTpl>
+    @if (below(); as below) {
+        <div class="top50__below">
+            <app-row [row]="below" />
+        </div>
+    }
+</ng-template>
+
 @if (preview()) {
     <section class="top50-preview">
         <div class="top50-preview__photo">
@@ -82,6 +90,7 @@
             }
         </div>
     </section>
+    <ng-container *ngTemplateOutlet="belowTpl" />
 } @else {
     <section class="top50">
         @if (component().title || component().intro || link()) {
@@ -141,5 +150,6 @@
                         (click)="more()">Dalej: miejsca {{ shown().length + 1 }}–{{ stops().length }}</button>
             </div>
         }
+        <ng-container *ngTemplateOutlet="belowTpl" />
     </section>
 }
