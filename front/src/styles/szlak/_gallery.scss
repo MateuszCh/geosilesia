@@ -421,10 +421,13 @@
     background: var(--night);
     color: #fff;
 
+    @include below($bp-tablet) {
+        overflow-y: auto;
+    }
+
     @include below($bp-phone) {
         gap: 10px;
         padding: 12px;
-        overflow-y: auto;
     }
 
     &__bar {
@@ -481,8 +484,10 @@
         gap: 16px;
         min-height: 0;
 
+        // One scrolling column below the tablet breakpoint: the photo, its thumbnails
+        // right under it, then the description.
         @include below($bp-tablet) {
-            flex: none;
+            display: contents;
         }
     }
 
@@ -497,7 +502,7 @@
         touch-action: pan-y;
 
         @include below($bp-tablet) {
-            flex-basis: 100%;
+            flex: none;
             height: 60vh;
         }
     }
@@ -552,6 +557,8 @@
         color: var(--ink);
 
         @include below($bp-tablet) {
+            flex: none;
+            order: 1;
             max-width: none;
             padding: 18px;
         }
@@ -583,6 +590,7 @@
 
     &__thumbs {
         display: flex;
+        flex-shrink: 0;
         gap: 8px;
         padding: 4px 4px 6px;
         overflow-x: auto;

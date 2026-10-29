@@ -67,12 +67,14 @@
         </aside>
     </div>
     @if (photos().length > 1) {
-        <div class="lightbox__thumbs"
+        <div #thumbs
+             class="lightbox__thumbs"
              role="group"
              aria-label="Miniatury">
             @for (item of photos(); track $index) {
                 <button class="lightbox__thumb"
                         type="button"
+                        [style.order]="thumbOrders()[$index]"
                         [attr.aria-label]="'Pokaż zdjęcie ' + ($index + 1)"
                         [attr.aria-current]="$index === index() ? 'true' : null"
                         (click)="index.set($index)">
