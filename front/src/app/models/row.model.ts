@@ -55,6 +55,8 @@ export interface TextRow {
 export interface TitleAndTextData {
     title?: string;
     text?: TextRow[];
+    /** "Kolejność list"; empty = as in the CMS. */
+    list_order?: '' | 'od najnowszej daty' | string;
 }
 
 export interface MarkerCategoryListData {
