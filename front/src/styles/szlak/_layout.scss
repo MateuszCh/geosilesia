@@ -420,6 +420,13 @@
     }
 }
 
+// Several forest cards of one side list, one under another.
+.side-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
 .next-card {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;

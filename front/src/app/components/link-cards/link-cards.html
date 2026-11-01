@@ -7,8 +7,15 @@
         }
         <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: card, form: 'figure' }" />
     </section>
-} @else if (side() && form() === 'card') {
+} @else if (side() && form() === 'card' && cards().length === 1) {
     <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: cards()[0], form: 'card' }" />
+} @else if (side() && form() === 'card') {
+    <nav class="side-stack"
+         [attr.aria-label]="component().title || 'Zobacz w terenie'">
+        @for (card of cards(); track $index) {
+            <ng-container *ngTemplateOutlet="linkTpl; context: { $implicit: card, form: 'card' }" />
+        }
+    </nav>
 } @else if (side()) {
     <section class="side-cards"
              [attr.aria-label]="component().title || 'Zobacz w terenie'">
@@ -82,7 +89,7 @@
 <ng-template #forestBody
              let-card>
     <span class="next-card__label">{{ card.title }} →</span>
-    <span class="next-card__title">{{ cardTitle() }}</span>
+    <span class="next-card__title">{{ cardTitle(card) }}</span>
 </ng-template>
 
 <ng-template #cardBody

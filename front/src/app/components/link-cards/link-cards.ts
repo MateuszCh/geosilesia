@@ -11,9 +11,9 @@ import { plural } from '../../shared/plural';
 import { HtmlDirective } from '../../shared/html.directive';
 
 /**
- * How a side list is drawn, as in the mockups: several places in a box ("Zobacz w terenie"),
- * one place with a photo as a figure (Geoparki), one link without a photo as a forest card
- * (the map on Geostanowiska, TOP 50 on Skarby natury).
+ * How a side list is drawn, as in the mockups: several places with photos in a box ("Zobacz w
+ * terenie"), one place with a photo as a figure (Geoparki), links without photos as forest
+ * cards, one under another (the map categories on Geostanowiska, TOP 50 on Skarby natury).
  */
 export type SideForm = 'list' | 'figure' | 'card';
 
@@ -52,29 +52,26 @@ export class LinkCards implements OnInit {
 
     readonly form = computed<SideForm>(() => {
         const cards = this.cards();
-        if (cards.length !== 1) return 'list';
-        return cards[0].image ? 'figure' : 'card';
+        if (cards.length && cards.every(card => !card.image)) return 'card';
+        return cards.length === 1 ? 'figure' : 'list';
     });
 
     /** A forest card leading to a map category shows how many places it holds. */
-    private readonly mapCount = signal<number | undefined>(undefined);
-    readonly cardTitle = computed(() => {
-        const count = this.mapCount();
-        if (count !== undefined) return `${count} ${plural(count, 'miejsce', 'miejsca', 'miejsc')} na mapie`;
-        return this.cards()[0]?.description || this.cards()[0]?.title;
-    });
+    private readonly mapCounts = signal<Record<string, number>>({});
+    cardTitle(card: { title: string; description?: string; params: Record<string, string> }): string {
+        const count = this.mapCounts()[card.params['kategoria']];
+        if (count) return `${count} ${plural(count, 'miejsce', 'miejsca', 'miejsc')} na mapie`;
+        return card.description || card.title;
+    }
 
     private readonly content = inject(ContentService);
     private readonly destroyRef = inject(DestroyRef);
 
     ngOnInit(): void {
-        const category = this.side() && this.form() === 'card' ? this.cards()[0].params['kategoria'] : undefined;
-        if (!category) return;
+        if (!this.side() || this.form() !== 'card' || !this.cards().some(card => card.params['kategoria'])) return;
         this.content
             .markerCountsByCategory()
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(counts => {
-                if (counts[category]) this.mapCount.set(counts[category]);
-            });
+            .subscribe(counts => this.mapCounts.set(counts));
     }
 }
