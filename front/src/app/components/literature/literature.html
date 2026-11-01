@@ -7,7 +7,7 @@
         }
     </h2>
     @if (items().length) {
-        <!-- Order as in the CMS. Every item is in the HTML; the long tail is only hidden. -->
+        <!-- Alphabetical (see items()). Every item is in the HTML; the long tail is only hidden. -->
         <ol class="literature__list">
             @for (item of items(); track $index) {
                 <li [hidden]="collapsible() && !expanded() && $index >= collapsedCount">
