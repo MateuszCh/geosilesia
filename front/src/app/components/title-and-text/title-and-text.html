@@ -31,7 +31,7 @@
         }
         @if (row.list?.length) {
             <ul class="text-block__list default-list prose">
-                @for (item of row.list; track $index) {
+                @for (item of listItems(row); track $index) {
                     <li [appHtml]="item.item | trusted"></li>
                 }
             </ul>
