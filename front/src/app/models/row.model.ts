@@ -5,6 +5,7 @@
 // Fields marked "variant C" were added for the redesign; pages saved before it do not have
 // them, so every component falls back to the older fields.
 
+import { PostRefs } from '../core/post-refs';
 import { KnowledgeSection, TrailColorName } from './post.model';
 
 export interface Slide {
@@ -58,7 +59,8 @@ export interface TitleAndTextData {
 
 export interface MarkerCategoryListData {
     text?: string;
-    categories?: { icon?: string; text?: string }[];
+    /** `category` ("Kategoria"): the entry's `icon` post – its icon and colour. */
+    categories?: { category?: PostRefs | null; text?: string }[];
 }
 
 export interface LiteratureData {
@@ -74,6 +76,8 @@ export interface NewsData {
     limit?: number | string;
     link?: string;
     link_label?: string;
+    /** "Wybrane wydarzenia": `wydarzenie` posts of the preview, in this order; empty = the latest. */
+    picked?: PostRefs | null;
 }
 
 export interface DictionaryItem {
@@ -255,6 +259,8 @@ export interface Top50Data {
     limit?: number | string;
     link?: string;
     link_label?: string;
+    /** "Wyróżniona atrakcja": the `top50` post the preview shows beside the list; empty = the first with a photo. */
+    featured?: PostRefs | null;
     /** "Pod trasą": a component in the route's column, under the stops; the shape of a row. */
     below?: Row | null;
 }

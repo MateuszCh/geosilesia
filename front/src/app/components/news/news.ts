@@ -14,6 +14,7 @@ import { map } from 'rxjs';
 import { ContentService } from '../../core/content.service';
 import { ResourceService } from '../../core/resource.service';
 import { internalLink } from '../../core/cms-link';
+import { PostRefs, pickPosts, postIds } from '../../core/post-refs';
 import { MONTHS_SHORT, dateParts, toDate } from '../../core/dates';
 import { EventPost } from '../../models/post.model';
 import { NewsData } from '../../models/row.model';
@@ -84,21 +85,31 @@ function toView(event: EventPost): EventView {
     };
 }
 
+function isPublished(event: EventPost, now: number): boolean {
+    const publication = toDate(event.data?.date_of_publication);
+    return !!publication && publication.getTime() < now;
+}
+
 /** Events with a publication date in the future are hidden; the rest newest first. */
 function publishedViews(events: EventPost[]): EventView[] {
     const now = Date.now();
     return events
-        .filter(event => {
-            const publication = toDate(event.data?.date_of_publication);
-            return !!publication && publication.getTime() < now;
-        })
+        .filter(event => isPublished(event, now))
         .map(toView)
         .sort((a, b) => b.time - a.time);
 }
 
+/** The events chosen in the CMS ("Wybrane wydarzenia"), in the chosen order; unpublished ones hidden. */
+function pickedViews(picked: PostRefs | null | undefined, events: EventPost[]): EventView[] {
+    const now = Date.now();
+    return pickPosts(picked, events)
+        .filter(event => isPublished(event, now))
+        .map(toView);
+}
+
 /**
  * Events: the full archive as an accordion with a year filter and pages, or – as
- * "zapowiedź" on the home page – the latest few.
+ * "zapowiedź" on the home page – the latest few, or the ones chosen in the CMS.
  */
 @Component({
     selector: 'app-news',
@@ -182,11 +193,16 @@ export class News implements OnInit {
         if (this.preview()) {
             // Only the few shown travel in the HTML, not the whole archive.
             const limit = this.limit();
+            const picked = postIds(this.component().picked);
             this.content
-                .summary(`latest-events:${limit}`, () =>
+                .summary(picked.length ? `picked-events:${picked.join(',')}:${limit}` : `latest-events:${limit}`, () =>
                     this.content
                         .posts<EventPost['data']>('wydarzenie', false)
-                        .pipe(map(posts => publishedViews(posts).slice(0, limit)))
+                        .pipe(
+                            map(posts =>
+                                (picked.length ? pickedViews(this.component().picked, posts) : publishedViews(posts)).slice(0, limit)
+                            )
+                        )
                 )
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe(views => {

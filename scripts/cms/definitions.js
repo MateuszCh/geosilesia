@@ -347,7 +347,23 @@ const bannerTitleSize = def("homepage_banner", "Homepage banner", [
 const PHOTO_SOURCES = ["albumy z galerii", "baner strony głównej", "katalog"];
 const photosSource = field(["source", "Źródło zdjęć (puste = albumy z galerii)", "select", PHOTO_SOURCES.join(";")]);
 
+/**
+ * Steps 24–26: frodo's "post" field (a list of chosen posts of one post type, `{ ids }`)
+ * replaces links the front end made by matching file paths, numbers and keys.
+ */
+// Step 24: an entry of "Lista kategorii" picks its category instead of repeating its icon file.
+const categoryListCategory = field(["category", "Kategoria", "post", "icon"], true);
+// Step 25: a TOP 50 place picks its markers instead of the markers repeating its number.
+const top50Markers = field(["markers", "Obiekty na mapie", "post", "marker"]);
+// Step 26: the previews of TOP 50 and events take the places and events chosen in the CMS.
+const top50Featured = field(["featured", "Wyróżniona atrakcja (pusta = pierwsza ze zdjęciem)", "post", "top50"]);
+const newsPicked = field(["picked", "Wybrane wydarzenia w zapowiedzi (puste = najnowsze)", "post", "wydarzenie"]);
+
 module.exports = {
+    categoryListCategory,
+    top50Markers,
+    top50Featured,
+    newsPicked,
     newComponents,
     changedComponents,
     newPostTypes,

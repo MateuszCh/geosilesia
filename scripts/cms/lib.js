@@ -63,7 +63,8 @@ function formatId(str) {
  * Builds a field definition the way frodo stores it: top-level fields are mongoose
  * subdocuments with their own `_id`, nested repeater fields are plain objects, and
  * `repeaterFields` is always present. `spec` is `[id, title, type, extra]`, where `extra`
- * is a `selectOptions` string or an array of nested field specs for a repeater.
+ * is a `selectOptions` string, an array of nested field specs for a repeater, or the post
+ * type key of a "post" field (frodo's `postType`).
  */
 function field([id, title, type, extra], nested = false) {
     const result = {
@@ -76,6 +77,7 @@ function field([id, title, type, extra], nested = false) {
     if (type === "select" && typeof extra === "string") result.selectOptions = extra;
     if (type === "multiselect" && typeof extra === "string") result.multiselectOptions = extra;
     if (type === "repeater") result.repeaterFields = (extra || []).map(spec => field(spec, true));
+    if (type === "post") result.postType = extra;
     return result;
 }
 
@@ -83,6 +85,7 @@ function field([id, title, type, extra], nested = false) {
 function describeFields(fields) {
     return (fields || []).map(f => {
         if (f.type === "repeater") return `${f.id}[${describeFields(f.repeaterFields).join(", ")}]`;
+        if (f.type === "post") return `${f.id}:post(${f.postType})`;
         const options = f.selectOptions || f.multiselectOptions;
         return options ? `${f.id}:${f.type}(${options})` : `${f.id}:${f.type}`;
     });
