@@ -1,3 +1,5 @@
+import { PostRefs } from '../core/post-refs';
+
 /**
  * Post types used by the front end. `wydarzenie` (event) feeds the `news` component,
  * `top50` the TOP 50 route and `zasob` (a knowledge base resource) the knowledge base.
@@ -14,8 +16,6 @@ export interface MarkerPostData {
     image?: string;
     /** Rock or kind of object – a short line on the card and in the result list. */
     rock?: string;
-    /** Place in the TOP 50 route; several markers may share one number. */
-    top50?: number | string;
 }
 
 /** The colour names offered by the CMS for map categories and link cards. */
@@ -78,6 +78,8 @@ export type Top50LinkKind = 'artykuł' | 'www' | 'galeria' | 'przewodnik' | 'You
 
 export interface Top50PostData {
     number?: number | string;
+    /** "Obiekty na mapie": the `marker` posts of the place; one place may have several. */
+    markers?: PostRefs | null;
     image?: string;
     links?: ({ kind?: Top50LinkKind | string; label?: string; url?: string } | null)[];
     description?: string;

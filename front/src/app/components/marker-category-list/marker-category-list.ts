@@ -2,15 +2,15 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, injec
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContentService } from '../../core/content.service';
 import { colorByName } from '../../core/categories';
-import { IconPostData } from '../../models/post.model';
+import { pickPosts } from '../../core/post-refs';
+import { IconPost, IconPostData } from '../../models/post.model';
 import { MarkerCategoryListData } from '../../models/row.model';
 import { HtmlDirective } from '../../shared/html.directive';
 
 /**
- * Descriptions of the map categories. Each row entry picks an icon file in the CMS – the
- * same file as the category's `icon` post – so the entry is matched to its category by that
- * file and gets the category colour as a band, as on the home page cards. An icon that
- * belongs to no category is shown without one.
+ * Descriptions of the map categories. Each entry picks the category's `icon` post in the
+ * CMS ("Kategoria") and takes its icon and colour from it – the colour as a band, as on
+ * the home page cards. An entry without a category is shown with its text alone.
  */
 @Component({
     selector: 'app-marker-category-list',
@@ -25,37 +25,22 @@ import { HtmlDirective } from '../../shared/html.directive';
 export class MarkerCategoryList implements OnInit {
     readonly component = input.required<MarkerCategoryListData>();
 
-    /** Category colour by the category's icon file. */
-    private readonly colors = signal(new Map<string, string>());
+    private readonly icons = signal<IconPost[]>([]);
     private readonly content = inject(ContentService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly items = computed(() =>
-        (this.component().categories ?? []).map(category => ({
-            text: category.text ?? '',
-            icon: category.icon,
-            color: this.colors().get(iconKey(category.icon))
-        }))
+        (this.component().categories ?? []).map(entry => {
+            // One category per entry: the field is a post field, so it could hold more.
+            const [icon] = pickPosts(entry.category, this.icons());
+            return { text: entry.text ?? '', icon: icon?.data?.icon || undefined, color: colorByName(icon?.data?.color) };
+        })
     );
 
     ngOnInit(): void {
         this.content
             .posts<IconPostData>('icon')
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(icons =>
-                this.colors.set(
-                    new Map(
-                        icons
-                            .map(icon => [iconKey(icon.data?.icon), colorByName(icon.data?.color)] as const)
-                            .filter((entry): entry is readonly [string, string] => !!entry[0] && !!entry[1])
-                    )
-                )
-            );
+            .subscribe(icons => this.icons.set(icons));
     }
-}
-
-/** "uploads/x.png" and "/uploads/x.png" name the same file. */
-function iconKey(src: string | undefined): string {
-    const path = (src ?? '').trim();
-    return path && !path.startsWith('/') ? `/${path}` : path;
 }

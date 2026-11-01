@@ -2,8 +2,9 @@ import { DOCUMENT, Injectable, PLATFORM_ID, inject, signal } from '@angular/core
 import { isPlatformBrowser } from '@angular/common';
 import { GOOGLE_MAPS_URL } from './map.config';
 import { MapCategory, MapMarker, MapStyleDefinition } from './map.types';
-import { IconPost, MarkerPost } from '../models/post.model';
+import { IconPost, MarkerPost, Top50Post } from '../models/post.model';
 import { NEUTRAL_COLOR, categoryLook } from './categories';
+import { postIds } from './post-refs';
 
 /** Earth's radius in km – for computing distances with the haversine formula. */
 const EARTH_RADIUS_KM = 6371;
@@ -316,9 +317,13 @@ export class MapService {
             }));
     }
 
-    /** Flattens "marker" posts into the shape used by the map and the result list. */
-    getFormattedMarkers(markers: MarkerPost[]): MapMarker[] {
+    /**
+     * Flattens "marker" posts into the shape used by the map and the result list; TOP 50
+     * numbers come from the TOP 50 posts that pick the markers.
+     */
+    getFormattedMarkers(markers: MarkerPost[], top50: Top50Post[]): MapMarker[] {
         if (!markers?.length) return [];
+        const numbers = top50NumbersByMarker(top50 ?? []);
         return markers
             .filter(marker => marker.title && marker.data?.lat && marker.data?.long)
             .map(marker => ({
@@ -333,9 +338,25 @@ export class MapService {
                 },
                 rock: marker.data.rock || undefined,
                 image: marker.data.image || undefined,
-                top50: Number(marker.data.top50) || undefined
+                top50: numbers.get(Number(marker.id))
             }));
     }
+}
+
+/**
+ * The TOP 50 number of each marker a TOP 50 post picks ("Obiekty na mapie"). A marker
+ * picked by two places keeps the lower number.
+ */
+export function top50NumbersByMarker(top50: Top50Post[]): Map<number, number> {
+    const numbers = new Map<number, number>();
+    top50.forEach(post => {
+        const number = Number(post.data?.number);
+        if (!number) return;
+        postIds(post.data?.markers).forEach(id => {
+            if (!numbers.has(id) || number < numbers.get(id)!) numbers.set(id, number);
+        });
+    });
+    return numbers;
 }
 
 /** Distance with a decimal comma: "9,8". */

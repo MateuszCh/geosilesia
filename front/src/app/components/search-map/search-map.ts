@@ -17,7 +17,7 @@ import { ActivatedRoute, ParamMap, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MapData } from '../../models/row.model';
-import { IconPost, MarkerPost } from '../../models/post.model';
+import { IconPost, MarkerPost, Top50Post } from '../../models/post.model';
 import { MapCategory, MapMarker } from '../../core/map.types';
 import { MapService, directionsUrl, formatKm, markerColor } from '../../core/map.service';
 import { ResourceService } from '../../core/resource.service';
@@ -307,26 +307,28 @@ export class SearchMap implements OnInit {
         if (this.resource.isOfflineAvailable()) {
             void Promise.all([
                 this.resource.loadPostsFromCache<MarkerPost['data']>('marker'),
-                this.resource.loadPostsFromCache<IconPost['data']>('icon')
-            ]).then(([markers, icons]) => {
+                this.resource.loadPostsFromCache<IconPost['data']>('icon'),
+                this.resource.loadPostsFromCache<Top50Post['data']>('top50')
+            ]).then(([markers, icons, top50]) => {
                 // Network data takes precedence – if it has already arrived, the cache
                 // does not roll it back.
                 if (!this.dataLoaded && markers.length && icons.length) {
-                    this.onLoad(markers, icons);
+                    this.onLoad(markers, icons, top50);
                 }
             });
         }
 
         forkJoin({
             markers: this.resource.loadPostsFromNetwork<MarkerPost['data']>('marker'),
-            icons: this.resource.loadPostsFromNetwork<IconPost['data']>('icon')
+            icons: this.resource.loadPostsFromNetwork<IconPost['data']>('icon'),
+            top50: this.resource.loadPostsFromNetwork<Top50Post['data']>('top50')
         })
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(({ markers, icons }) => {
+            .subscribe(({ markers, icons, top50 }) => {
                 if (!markers.length || !icons.length) return;
                 this.dataLoaded = true;
                 void this.mapService.loadGoogleMaps();
-                this.onLoad(markers, icons);
+                this.onLoad(markers, icons, top50);
             });
     }
 
@@ -350,9 +352,9 @@ export class SearchMap implements OnInit {
         }
     }
 
-    private onLoad(markers: MarkerPost[], icons: IconPost[]): void {
+    private onLoad(markers: MarkerPost[], icons: IconPost[], top50: Top50Post[]): void {
         this.categories.set(this.mapService.getCategories(markers, icons));
-        this.allMarkers.set(this.mapService.getFormattedMarkers(markers));
+        this.allMarkers.set(this.mapService.getFormattedMarkers(markers, top50));
     }
 
     /** Tablets: the panel stands above the map. Phones keep the map on screen anyway. */

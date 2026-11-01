@@ -17,6 +17,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContentService } from '../../core/content.service';
 import { internalLink, isExternalLink } from '../../core/cms-link';
+import { postIds } from '../../core/post-refs';
 import { Top50PostData } from '../../models/post.model';
 import { Row, Top50Data } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
@@ -107,9 +108,18 @@ export class Top50 implements OnInit {
 
     readonly hasMore = computed(() => !this.limit() && !this.expanded() && this.stops().length > FIRST_STOPS);
 
-    /** The place the preview shows: the one pointed at in the list, else the first with a photo. */
+    /** The place chosen in the CMS ("Wyróżniona atrakcja"). */
+    private readonly chosen = computed(() => {
+        const [id] = postIds(this.component().featured);
+        return id === undefined ? undefined : this.stops().find(stop => Number(stop.id) === id);
+    });
+
+    /**
+     * The place the preview shows: the one pointed at in the list, else the one chosen in
+     * the CMS, else the first with a photo.
+     */
     readonly featured = computed(
-        () => this.pointed() ?? this.stops().find(stop => stop.image) ?? this.stops()[0]
+        () => this.pointed() ?? this.chosen() ?? this.stops().find(stop => stop.image) ?? this.stops()[0]
     );
 
     ngOnInit(): void {
