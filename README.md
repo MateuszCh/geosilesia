@@ -100,9 +100,14 @@ the front end bundles `shared/seo-meta.js`.
 On the server:
 
 ```bash
-git pull
-npm run deploy   # root: npm install --omit=dev; front: npm ci + ng build; then devil www restart <deployDomain>
+npm run deploy   # git pull --ff-only; root: npm install --omit=dev; front: npm ci + ng build into tmp/; swap; devil www restart <deployDomain>
 ```
+
+The script pulls the code itself (`--ff-only`: a server clone with commits of its own
+stops there) and then runs again from the start, since the pull may have changed it. The
+build goes to `tmp/front-build` and replaces `front/dist/geosilesia` only once it has
+succeeded: the running process keeps serving the old build until the restart, and a failed
+or hung build leaves the site as it was.
 
 Every deployment restarts the Node process, always after the build — the new server
 expects the new build. The restart is also what clears all in-memory caches (rendered
