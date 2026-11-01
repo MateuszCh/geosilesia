@@ -358,12 +358,17 @@ const top50Markers = field(["markers", "Obiekty na mapie", "post", "marker"]);
 // Step 26: the previews of TOP 50 and events take the places and events chosen in the CMS.
 const top50Featured = field(["featured", "Wyróżniona atrakcja (pusta = pierwsza ze zdjęciem)", "post", "top50"]);
 const newsPicked = field(["picked", "Wybrane wydarzenia w zapowiedzi (puste = najnowsze)", "post", "wydarzenie"]);
+// Step 29: places added after the original fifty follow a heading of their own.
+const top50NewTitle = field(["new_title", "Nagłówek nowych obiektów (pusty = trasa bez przerwy)", "text"]);
+const top50NewFrom = field(["new_from", "Nowe obiekty od numeru (puste = 51)", "number"]);
 
 module.exports = {
     categoryListCategory,
     top50Markers,
     top50Featured,
     newsPicked,
+    top50NewTitle,
+    top50NewFrom,
     newComponents,
     changedComponents,
     newPostTypes,

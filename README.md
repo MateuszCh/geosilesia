@@ -81,12 +81,23 @@ npm run watch                 # root, or plain `node app.js`
 Open `http://localhost:3000`. This is exactly the path used in production: rendering
 through `app.js`, injected meta, cache, and the `X-Render` response header.
 
+### Both watchers in one terminal
+
+```bash
+npm run dev                   # root: front/ `npm run watch` + root `npm run watch` together
+```
+
+`dev.sh` runs the development build of the front end in watch mode and the backend on
+`:3000`, which nodemon restarts after every build. Open `http://localhost:3000` — the
+same path as production, with a development build. Until the first build finishes the
+backend serves whatever is already in `front/dist`. Ctrl+C stops both; if either one
+exits, the other is stopped too.
+
 ### Debugging hydration
 
-Replace `npm run build` with `cd front && npm run watch`. It keeps rebuilding a
-development build into `front/dist`, `npm run watch` in the root restarts the backend after
-every build,
-and the browser console shows hydration statistics and hydration errors (NG05xx).
+Use `npm run dev` (or `cd front && npm run watch` next to `npm run watch` in the root). It
+keeps rebuilding a development build into `front/dist`, the backend restarts after every
+build, and the browser console shows hydration statistics and hydration errors (NG05xx).
 
 ### When to restart the backend
 

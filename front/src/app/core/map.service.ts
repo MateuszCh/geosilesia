@@ -209,14 +209,14 @@ export class MapService {
         };
     }
 
-    /** A cluster: a trail-red disc with the count, sized by the number of places. */
+    /** A cluster: a neutral grey disc (no category uses grey) with the count, sized by the number of places. */
     clusterIcon(count: number): google.maps.Icon {
         const size = count < 10 ? 38 : count < 100 ? 46 : count < 1000 ? 56 : 64;
         const r = size / 2;
         const svg =
             `<svg xmlns="http://www.w3.org/2000/svg" width="${size + 4}" height="${size + 4}" viewBox="0 0 ${size + 4} ${size + 4}">` +
             `<circle cx="${r + 2}" cy="${r + 3}" r="${r}" fill="#18201b" opacity="0.25"/>` +
-            `<circle cx="${r + 2}" cy="${r + 2}" r="${r - 1.5}" fill="#c8202a" stroke="#ffffff" stroke-width="3"/>` +
+            `<circle cx="${r + 2}" cy="${r + 2}" r="${r - 1.5}" fill="#666666" stroke="#ffffff" stroke-width="3"/>` +
             '</svg>';
         return {
             url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
@@ -327,7 +327,7 @@ export class MapService {
         return markers
             .filter(marker => marker.title && marker.data?.lat && marker.data?.long)
             .map(marker => ({
-                title: marker.title,
+                title: titleWithoutRock(marker.title!, marker.data.rock),
                 hyperlink: marker.data.link,
                 place: marker.data.place,
                 categories: marker.data.categories,
@@ -390,4 +390,18 @@ export function markerColor(
 function getIconPosition(icon: IconPost): number {
     const position = icon.data?.position;
     return typeof position === 'number' && Number.isFinite(position) ? position : Infinity;
+}
+
+/**
+ * The marker's name without its rock, which the card and the result list show under it:
+ * titles read "Name, rock (notes) – note" and `rock` repeats the part after the comma. A
+ * title that does not hold the rock word for word stays as it is.
+ */
+export function titleWithoutRock(title: string, rock: string | undefined): string {
+    const spaced = title.replace(/\s+/g, ' ').trim();
+    if (!rock?.trim()) return spaced;
+    const part = `, ${rock.replace(/\s+/g, ' ').trim()}`;
+    const at = spaced.indexOf(part);
+    if (at < 0) return spaced;
+    return (spaced.slice(0, at) + spaced.slice(at + part.length)).replace(/\s+/g, ' ').trim();
 }

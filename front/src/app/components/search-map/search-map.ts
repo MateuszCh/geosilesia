@@ -149,7 +149,7 @@ export class SearchMap implements OnInit {
     private readonly foldedTitles = computed(
         () =>
             new Map(
-                this.allMarkers().map(marker => [marker.id, foldText(marker.title ?? '')])
+                this.allMarkers().map(marker => [marker.id, foldText(`${marker.title ?? ''} ${marker.rock ?? ''}`)])
             )
     );
 

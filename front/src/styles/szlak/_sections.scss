@@ -347,6 +347,21 @@
         border-radius: var(--radius-lg);
     }
 
+    // "Nagłówek nowych obiektów": between the route and the places added after it, in the
+    // column of the stops' text.
+    &__group {
+        margin: 40px 0 0 76px;
+        font-family: var(--font-display);
+        font-size: 30px;
+        font-weight: 700;
+        line-height: 1.05;
+
+        @include below($bp-phone) {
+            margin-left: 56px;
+            font-size: 24px;
+        }
+    }
+
     &__more {
         display: grid;
         grid-template-columns: 56px minmax(0, 1fr);

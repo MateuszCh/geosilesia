@@ -27,6 +27,8 @@ import { RowView } from '../row/row';
 const PREVIEW_LIMIT = 7;
 /** The full list opens with this many places; "Dalej: miejsca 16–50" shows the rest at once. */
 const FIRST_STOPS = 15;
+/** "Nowe obiekty od numeru" left empty: the first place past the original fifty. */
+const NEW_FROM = 51;
 
 interface Stop {
     id: string | number;
@@ -105,6 +107,16 @@ export class Top50 implements OnInit {
         const limit = this.limit();
         return this.stops().slice(0, limit ?? (this.expanded() ? undefined : FIRST_STOPS));
     });
+
+    /**
+     * "Nagłówek nowych obiektów": places added after the original route, from "Nowe obiekty
+     * od numeru" on, follow it in a list of their own. Without the heading the route runs on.
+     */
+    readonly newTitle = computed(() => this.component().new_title?.trim() ?? '');
+    private readonly newFrom = computed(() => Number(this.component().new_from) || NEW_FROM);
+    private readonly isNew = (stop: Stop): boolean => !!this.newTitle() && stop.number >= this.newFrom();
+    readonly shownRoute = computed(() => this.shown().filter(stop => !this.isNew(stop)));
+    readonly shownNew = computed(() => this.shown().filter(stop => this.isNew(stop)));
 
     readonly hasMore = computed(() => !this.limit() && !this.expanded() && this.stops().length > FIRST_STOPS);
 

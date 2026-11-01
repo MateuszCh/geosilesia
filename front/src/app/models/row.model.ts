@@ -263,6 +263,10 @@ export interface Top50Data {
     featured?: PostRefs | null;
     /** "Pod trasą": a component in the route's column, under the stops; the shape of a row. */
     below?: Row | null;
+    /** "Nagłówek nowych obiektów": shown before the places from `new_from` on; empty = none. */
+    new_title?: string;
+    /** "Nowe obiekty od numeru"; empty = 51. */
+    new_from?: number | string;
 }
 
 export interface LinkCardsData {

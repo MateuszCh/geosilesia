@@ -17,6 +17,35 @@
     }
 </ng-template>
 
+<ng-template #stopTpl
+             let-stop
+             let-first="first">
+    <li class="route__stop"
+        tabindex="-1"
+        [id]="stopId(stop)">
+        <span class="route__track">
+            <span class="route-stop route-stop--large"
+                  [class.route-stop--filled]="first">{{ stop.number }}</span>
+        </span>
+        <div class="route__body">
+            <div class="route__text">
+                <h2 class="route__title">{{ stop.title }}</h2>
+                @if (stop.description) {
+                    <div class="route__description prose"
+                         [appHtml]="stop.description | trusted"></div>
+                }
+                <ng-container *ngTemplateOutlet="sourcesTpl; context: { $implicit: stop }" />
+            </div>
+            @if (stop.image) {
+                <img class="route__image"
+                     loading="lazy"
+                     alt=""
+                     [src]="stop.image">
+            }
+        </div>
+    </li>
+</ng-template>
+
 <ng-template #belowTpl>
     @if (below(); as below) {
         <div class="top50__below">
@@ -112,33 +141,18 @@
             </div>
         }
         <ol class="route">
-            @for (stop of shown(); track stop.id) {
-                <li class="route__stop"
-                    tabindex="-1"
-                    [id]="stopId(stop)">
-                    <span class="route__track">
-                        <span class="route-stop route-stop--large"
-                              [class.route-stop--filled]="$first">{{ stop.number }}</span>
-                    </span>
-                    <div class="route__body">
-                        <div class="route__text">
-                            <h2 class="route__title">{{ stop.title }}</h2>
-                            @if (stop.description) {
-                                <div class="route__description prose"
-                                     [appHtml]="stop.description | trusted"></div>
-                            }
-                            <ng-container *ngTemplateOutlet="sourcesTpl; context: { $implicit: stop }" />
-                        </div>
-                        @if (stop.image) {
-                            <img class="route__image"
-                                 loading="lazy"
-                                 alt=""
-                                 [src]="stop.image">
-                        }
-                    </div>
-                </li>
+            @for (stop of shownRoute(); track stop.id) {
+                <ng-container *ngTemplateOutlet="stopTpl; context: { $implicit: stop, first: $first }" />
             }
         </ol>
+        @if (shownNew().length) {
+            <h2 class="route__group">{{ newTitle() }}</h2>
+            <ol class="route">
+                @for (stop of shownNew(); track stop.id) {
+                    <ng-container *ngTemplateOutlet="stopTpl; context: { $implicit: stop, first: false }" />
+                }
+            </ol>
+        }
         @if (hasMore()) {
             <div class="route__more">
                 <span class="route__track">
