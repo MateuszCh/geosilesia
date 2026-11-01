@@ -41,6 +41,7 @@ be replayed on production later in the same order.
 | `26-preview-picks.js` | TOP 50 gets "Wyróżniona atrakcja" (empty = the first place with a photo; the home preview gets the one it shows today) and "Wiadomości" "Wybrane wydarzenia w zapowiedzi" (empty = the latest) |
 | `27-geosites-map-cards.js` | Geostanowiska's "Zobacz w terenie" side list gets cards for the geomorphological sites, the water sites and the underground routes next to the geological ones, each opening the map filtered to its category |
 | `28-updates-newest-first.js` | "Istotne aktualizacje" lists its dated entries newest first, so new ones go at the top |
+| `29-top50-new-places.js` | TOP 50 gets "Nagłówek nowych obiektów" and "Nowe obiekty od numeru" (empty = 51): places from that number on follow the heading in a list of their own; the TOP 50 list gets the heading "oraz nowo utworzone obiekty geoturystyczne:" |
 | `legacy/page-layout.ts` | The front end's layout as of step 20, which step 18 checks its pages with |
 | `check-fallbacks.js` | Read-only: pages and posts that still need a front-end fallback (run after the scripts) |
 | `restore.js` | Restores collections from a backup |
