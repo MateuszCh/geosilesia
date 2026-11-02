@@ -42,7 +42,7 @@
                            [fragment]="entry.fragment">
                             <span class="route-stop route-stop--filled">{{ entry.number }}</span>
                             <span class="top50-link__text">
-                                <span class="top50-link__label">TOP 50 · nr {{ entry.number }}</span>
+                                <span class="top50-link__label">{{ top50Settings.albumLabel(entry.number) }}</span>
                                 <span class="top50-link__title">{{ entry.title }} →</span>
                             </span>
                         </a>

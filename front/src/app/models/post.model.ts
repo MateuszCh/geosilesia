@@ -3,9 +3,10 @@ import { PostRefs } from '../core/post-refs';
 /**
  * Post types used by the front end. `wydarzenie` (event) feeds the `news` component,
  * `top50` the TOP 50 route, `zasob` (a knowledge base resource) the knowledge base and
- * `not_found` the 404 page and `album_category` the categories of the gallery's albums.
+ * `not_found` the 404 page, `album_category` the categories of the gallery's albums and
+ * `top50_settings` the route's page and labels.
  */
-export type PostType = 'marker' | 'icon' | 'navigation' | 'wydarzenie' | 'top50' | 'zasob' | 'not_found' | 'album_category';
+export type PostType = 'marker' | 'icon' | 'navigation' | 'wydarzenie' | 'top50' | 'zasob' | 'not_found' | 'album_category' | 'top50_settings';
 
 export interface MarkerPostData {
     lat?: number | string;
@@ -62,6 +63,16 @@ export interface NavigationPostData {
     footer_note?: string;
     /** Not in the spec: the heading of the other albums on every album page. */
     albums_more_title?: string;
+}
+
+/** The single post of "Ustawienia TOP 50". */
+export interface Top50SettingsPostData {
+    /** The page of the full route. */
+    route_link?: string;
+    /** "TOP 50 nr {nr}": a place on the map. */
+    place_label?: string;
+    /** "TOP 50 · nr {nr}": the place of an album. */
+    album_label?: string;
 }
 
 /** A category of the gallery's albums; the album list's filters follow `order`. */

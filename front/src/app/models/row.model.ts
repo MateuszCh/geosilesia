@@ -277,8 +277,10 @@ export interface Top50Data {
     below?: Row | null;
     /** "Nagłówek nowych obiektów": shown before the places from `new_from` on; empty = none. */
     new_title?: string;
-    /** "Nowe obiekty od numeru"; empty = 51. */
+    /** "Nowe obiekty od numeru"; empty = no group of new places. */
     new_from?: number | string;
+    /** "Napis przycisku dalszych miejsc": "Dalej: miejsca {od}–{do}". */
+    more_label?: string;
 }
 
 export interface LinkCardsData {

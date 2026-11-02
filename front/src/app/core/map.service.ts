@@ -5,6 +5,7 @@ import { MapCategory, MapMarker, MapStyleDefinition } from './map.types';
 import { IconPost, MarkerPost, Top50Post } from '../models/post.model';
 import { NEUTRAL_COLOR, categoryLook } from './categories';
 import { postIds } from './post-refs';
+import { Top50Settings } from './top50-settings.service';
 
 /** Earth's radius in km – for computing distances with the haversine formula. */
 const EARTH_RADIUS_KM = 6371;
@@ -19,6 +20,7 @@ const EARTH_RADIUS_KM = 6371;
 export class MapService {
     private readonly doc = inject(DOCUMENT);
     private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+    private readonly top50Settings = inject(Top50Settings);
 
     /** Controls the visibility of the map and the search field in the search-map template. */
     readonly ready = signal(false);
@@ -248,7 +250,7 @@ export class MapService {
         const body = el('div', 'object-card__body');
         card.appendChild(body);
 
-        const tagLine = [category?.name, model.top50 ? `TOP 50 nr ${model.top50}` : '']
+        const tagLine = [category?.name, this.top50Settings.placeLabel(model.top50)]
             .filter(Boolean)
             .join(' · ');
         if (tagLine) {

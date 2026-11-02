@@ -17,6 +17,7 @@ import { AlbumSummary, Top50PostData } from '../../models/post.model';
 import { ALBUM_CATEGORY_PARAM, AlbumCategories } from '../../core/albums';
 import { formatDate } from '../../core/dates';
 import { NavigationService } from '../../core/navigation.service';
+import { Top50Settings } from '../../core/top50-settings.service';
 import { ResourceService } from '../../core/resource.service';
 import { internalLink } from '../../core/cms-link';
 import * as seoMeta from '../../../../../shared/seo-meta';
@@ -79,6 +80,7 @@ export class Gallery implements OnInit {
     private readonly top50Posts = signal<{ number: number; title: string; urls: string[] }[]>([]);
 
     private readonly navigation = inject(NavigationService);
+    protected readonly top50Settings = inject(Top50Settings);
     /** "Inne albumy" – one heading for every album page, kept in the navigation post. */
     protected readonly otherAlbumsTitle = this.navigation.albumsMoreTitle;
     private readonly resource = inject(ResourceService);
@@ -132,8 +134,7 @@ export class Gallery implements OnInit {
         const path = this.pageUrl();
         const entry = this.top50Posts().find(post => post.urls.includes(path));
         if (!entry) return undefined;
-        const item = this.navigation.items().find(nav => /top\s*50/i.test(nav.title ?? ''));
-        const link = item ? this.navigation.sectionLink(item) : undefined;
+        const link = this.top50Settings.routeLink();
         return link ? { ...entry, link, fragment: `top50-${entry.number}` } : undefined;
     });
 
@@ -152,6 +153,7 @@ export class Gallery implements OnInit {
 
     ngOnInit(): void {
         this.categories.load();
+        this.top50Settings.load();
         forkJoin({
             albums: this.resource.loadAlbums(),
             top50: this.resource.loadPostsFromNetwork<Top50PostData>('top50')
