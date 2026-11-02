@@ -395,7 +395,19 @@ const mapFieldTexts = [
     ["hint_name", "Tekst pod polem: nazwa obiektu", "text"]
 ].map(spec => field(spec));
 
+// Step 32: album categories are posts of their own; an album and an entry of the manual
+// album list pick one instead of a select option the front end had to know.
+const albumCategoryPostType = pt("album_category", "Kategoria albumu", "Kategorie albumów", [
+    ["name", "Nazwa", "text"],
+    ["slug", "Adres w filtrze listy albumów (np. dziedzictwo-ziemi)", "text"],
+    ["color", "Kolor", "select", TRAIL_COLORS],
+    ["order", "Kolejność na liście albumów", "number"]
+]);
+const albumCategoryField = field(["category", "Kategoria", "post", "album_category"]);
+
 module.exports = {
+    albumCategoryPostType,
+    albumCategoryField,
     mapSearchFieldTexts,
     mapFieldTexts,
     notFoundPostType,

@@ -175,11 +175,10 @@ export interface TabsData {
     hide_toc?: boolean;
 }
 
-export type AlbumCategory = 'dziedzictwo Ziemi' | 'dziedzictwo geokulturowe' | 'inne';
-
 export interface GalleryListData {
     galleries?: {
-        category?: AlbumCategory | string;
+        /** The `album_category` post. */
+        category?: PostRefs | null;
         link?: string;
         image?: string;
         title?: string;
@@ -208,7 +207,8 @@ export interface GalleryData {
      * Variant C. From here on the album's own values: an "album" page keeps them in its
      * `typeData` and layoutPage puts them here.
      */
-    category?: AlbumCategory | string;
+    /** The `album_category` post the album picks. */
+    category?: PostRefs | null;
     cover?: string;
     author?: string;
     updated?: string | number;

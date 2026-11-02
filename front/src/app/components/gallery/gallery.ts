@@ -14,7 +14,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { GalleryData, GalleryImage } from '../../models/row.model';
 import { AlbumSummary, Top50PostData } from '../../models/post.model';
-import { ALBUM_CATEGORY_PARAM, albumCategory } from '../../core/albums';
+import { ALBUM_CATEGORY_PARAM, AlbumCategories } from '../../core/albums';
 import { formatDate } from '../../core/dates';
 import { NavigationService } from '../../core/navigation.service';
 import { ResourceService } from '../../core/resource.service';
@@ -91,8 +91,12 @@ export class Gallery implements OnInit {
 
     private readonly self = computed(() => this.albums().find(album => album.pageUrl === this.pageUrl()));
 
+    private readonly categories = inject(AlbumCategories);
+
     /** The album's own field first; until it is migrated, the category from the album list. */
-    readonly category = computed(() => albumCategory(this.component().category || this.self()?.category));
+    readonly category = computed(
+        () => this.categories.picked(this.component().category) ?? this.categories.picked(this.self()?.category)
+    );
     /** Opens the album list on this album's category. */
     readonly categoryParams = computed(() => {
         const slug = this.category()?.slug;
@@ -101,7 +105,7 @@ export class Gallery implements OnInit {
 
     readonly categoryCount = computed(() => {
         const key = this.category()?.key;
-        return key ? this.albums().filter(album => !album.hidden && albumCategory(album.category)?.key === key).length : 0;
+        return key ? this.albums().filter(album => !album.hidden && this.categories.picked(album.category)?.key === key).length : 0;
     });
 
     readonly visibleAlbumCount = computed(() => this.albums().filter(album => !album.hidden).length);
@@ -110,7 +114,7 @@ export class Gallery implements OnInit {
     private readonly others = computed(() => {
         const key = this.category()?.key;
         const visible = this.albums().filter(album => !album.hidden && album.pageUrl !== this.pageUrl());
-        const same = key ? visible.filter(album => albumCategory(album.category)?.key === key) : [];
+        const same = key ? visible.filter(album => this.categories.picked(album.category)?.key === key) : [];
         return { albums: (same.length ? same : visible).slice(0, OTHER_ALBUMS), inCategory: same.length > 0 };
     });
     readonly otherAlbums = computed(() => this.others().albums);
@@ -147,6 +151,7 @@ export class Gallery implements OnInit {
     });
 
     ngOnInit(): void {
+        this.categories.load();
         forkJoin({
             albums: this.resource.loadAlbums(),
             top50: this.resource.loadPostsFromNetwork<Top50PostData>('top50')
