@@ -5,7 +5,7 @@ import {
     computed,
     inject,
     input,
-    signal
+    linkedSignal
 } from '@angular/core';
 import { ChartBar, TabsData } from '../../models/row.model';
 import { colorByName, periodColor } from '../../core/categories';
@@ -31,9 +31,14 @@ export class Tabs {
     readonly component = input.required<TabsData>();
     /** "Bez spisu „Na tej stronie”", as beside the section menu of Położenie and Rzeźba terenu. */
     readonly showToc = computed(() => !this.component().hide_toc);
-    readonly activeTab = signal(0);
-    readonly tocOpen = signal(false);
-    readonly currentHeading = signal<string | undefined>(undefined);
+    // Linked to the input: the router reuses this instance when another page with tabs
+    // opens, and each page starts on its first tab with the contents list closed.
+    readonly activeTab = linkedSignal({ source: this.component, computation: () => 0 });
+    readonly tocOpen = linkedSignal({ source: this.component, computation: () => false });
+    readonly currentHeading = linkedSignal<TabsData, string | undefined>({
+        source: this.component,
+        computation: () => undefined
+    });
 
     protected readonly periodColor = periodColor;
 
