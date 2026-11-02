@@ -12,7 +12,7 @@ import { Location, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { internalLink, isExternalLink } from '../../core/cms-link';
-import { ALBUM_CATEGORIES, ALBUM_CATEGORY_PARAM, albumCategory, albumCategoryBySlug } from '../../core/albums';
+import { ALBUM_CATEGORY_PARAM, AlbumCategories } from '../../core/albums';
 import { ResourceService } from '../../core/resource.service';
 import { AlbumSummary } from '../../models/post.model';
 import { GalleryListData } from '../../models/row.model';
@@ -45,7 +45,8 @@ interface AlbumCard {
 export class GalleryList implements OnInit {
     readonly component = input.required<GalleryListData>();
 
-    readonly selected = signal<string | undefined>(undefined);
+    /** The category's slug from the address; the categories may arrive after it. */
+    private readonly slug = signal<string | null>(null);
     readonly expanded = signal(false);
     protected readonly collapsedCount = 11;
 
@@ -54,6 +55,9 @@ export class GalleryList implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
     private readonly route = inject(ActivatedRoute);
     private readonly location = inject(Location);
+    private readonly categories = inject(AlbumCategories);
+
+    readonly selected = computed(() => this.categories.bySlug(this.slug())?.key);
 
     readonly albums = computed<AlbumCard[]>(() => {
         const auto = this.auto();
@@ -65,7 +69,7 @@ export class GalleryList implements OnInit {
                   .filter(entry => entry.link)
                   .map(entry => ({ link: entry.link!, title: entry.title ?? '', cover: entry.image, category: entry.category }));
         return source.map(album => {
-            const category = albumCategory(album.category);
+            const category = this.categories.picked(album.category);
             const external = isExternalLink(album.link);
             return {
                 link: external ? album.link : internalLink(album.link)!,
@@ -80,7 +84,7 @@ export class GalleryList implements OnInit {
     });
 
     readonly filters = computed(() =>
-        ALBUM_CATEGORIES.map(category => ({
+        this.categories.all().map(category => ({
             ...category,
             count: this.albums().filter(album => album.categoryKey === category.key).length
         })).filter(category => category.count)
@@ -102,9 +106,10 @@ export class GalleryList implements OnInit {
     });
 
     ngOnInit(): void {
+        this.categories.load();
         this.route.queryParamMap
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(params => this.selected.set(albumCategoryBySlug(params.get(ALBUM_CATEGORY_PARAM))?.key));
+            .subscribe(params => this.slug.set(params.get(ALBUM_CATEGORY_PARAM)));
 
         if (this.component().mode !== 'automatycznie') return;
         this.resource
@@ -116,9 +121,9 @@ export class GalleryList implements OnInit {
     }
 
     select(key: string | undefined): void {
-        this.selected.set(key);
+        const slug = this.categories.byKey(key)?.slug;
+        this.slug.set(slug ?? null);
         // replaceState, not a router navigation: the router would scroll back to the top.
-        const slug = albumCategory(key)?.slug;
         const [path] = this.location.path().split('?');
         this.location.replaceState(path, slug ? `${ALBUM_CATEGORY_PARAM}=${encodeURIComponent(slug)}` : '');
     }

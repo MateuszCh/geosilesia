@@ -363,8 +363,54 @@ const titleAndTextListOrder = field(["list_order", "Kolejność list (pusta = ja
 // Step 29: places added after the original fifty follow a heading of their own.
 const top50NewTitle = field(["new_title", "Nagłówek nowych obiektów (pusty = trasa bez przerwy)", "text"]);
 const top50NewFrom = field(["new_from", "Nowe obiekty od numeru (puste = 51)", "number"]);
+// Step 30: the texts and links of the 404 page, in a post type of their own with a single post.
+const notFoundPostType = pt("not_found", "Strona 404", "Strona 404", [
+    ["eyebrow", "Nadtytuł", "text"],
+    ["title", "Tytuł", "text"],
+    ["lead", "Wstęp", "textarea"],
+    ["lead_offline", "Wstęp, gdy strona działa offline (pusty = jak wyżej)", "textarea"],
+    ["buttons", "Przyciski", "repeater", [
+        ["label", "Napis", "text"],
+        ["link", "Adres", "text"]
+    ]],
+    ["signpost", "Drogowskaz", "repeater", [
+        ["label", "Napis", "text"],
+        ["link", "Adres", "text"],
+        ["direction", "Kierunek", "select", "w prawo;w lewo"]
+    ]],
+    ["offline_title", "Brak połączenia: pogrubiony początek", "text"],
+    ["offline_text", "Brak połączenia: komunikat", "textarea"]
+]);
+
+// Step 31: the placeholders of the search field and, on the map, the hints under it.
+const searchPlaceholders = [
+    ["placeholder_location", "Podpowiedź w polu: lokalizacja", "text"],
+    ["placeholder_name", "Podpowiedź w polu: nazwa obiektu", "text"]
+];
+const mapSearchFieldTexts = searchPlaceholders.map(spec => field(spec));
+const mapFieldTexts = [
+    ...searchPlaceholders,
+    ["hint_location", "Tekst pod polem: lokalizacja", "text"],
+    ["hint_loading", "Tekst pod polem: lokalizacja, zanim wczyta się mapa", "text"],
+    ["hint_name", "Tekst pod polem: nazwa obiektu", "text"]
+].map(spec => field(spec));
+
+// Step 32: album categories are posts of their own; an album and an entry of the manual
+// album list pick one instead of a select option the front end had to know.
+const albumCategoryPostType = pt("album_category", "Kategoria albumu", "Kategorie albumów", [
+    ["name", "Nazwa", "text"],
+    ["slug", "Adres w filtrze listy albumów (np. dziedzictwo-ziemi)", "text"],
+    ["color", "Kolor", "select", TRAIL_COLORS],
+    ["order", "Kolejność na liście albumów", "number"]
+]);
+const albumCategoryField = field(["category", "Kategoria", "post", "album_category"]);
 
 module.exports = {
+    albumCategoryPostType,
+    albumCategoryField,
+    mapSearchFieldTexts,
+    mapFieldTexts,
+    notFoundPostType,
     categoryListCategory,
     top50Markers,
     top50Featured,

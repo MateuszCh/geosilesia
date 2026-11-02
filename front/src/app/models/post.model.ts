@@ -2,9 +2,10 @@ import { PostRefs } from '../core/post-refs';
 
 /**
  * Post types used by the front end. `wydarzenie` (event) feeds the `news` component,
- * `top50` the TOP 50 route and `zasob` (a knowledge base resource) the knowledge base.
+ * `top50` the TOP 50 route, `zasob` (a knowledge base resource) the knowledge base and
+ * `not_found` the 404 page and `album_category` the categories of the gallery's albums.
  */
-export type PostType = 'marker' | 'icon' | 'navigation' | 'wydarzenie' | 'top50' | 'zasob';
+export type PostType = 'marker' | 'icon' | 'navigation' | 'wydarzenie' | 'top50' | 'zasob' | 'not_found' | 'album_category';
 
 export interface MarkerPostData {
     lat?: number | string;
@@ -61,6 +62,30 @@ export interface NavigationPostData {
     footer_note?: string;
     /** Not in the spec: the heading of the other albums on every album page. */
     albums_more_title?: string;
+}
+
+/** A category of the gallery's albums; the album list's filters follow `order`. */
+export interface AlbumCategoryPostData {
+    name?: string;
+    /** Names the category in the album list's address: "?kategoria=inne". */
+    slug?: string;
+    color?: TrailColorName | string;
+    order?: number | string;
+}
+
+/** The single post of "Strona 404": the texts and links of the 404 page. */
+export interface NotFoundPostData {
+    eyebrow?: string;
+    title?: string;
+    lead?: string;
+    /** The lead when the site works offline: a missing page may just not be cached yet. */
+    lead_offline?: string;
+    buttons?: ({ label?: string; link?: string } | null)[];
+    /** "Kierunek": "w prawo" or "w lewo"; empty = right. */
+    signpost?: ({ label?: string; link?: string; direction?: string } | null)[];
+    /** The notice when the browser is offline: a bold start, then the text. */
+    offline_title?: string;
+    offline_text?: string;
 }
 
 export interface EventPostData {
@@ -124,7 +149,8 @@ export type ResourcePost = Post<ResourcePostData>;
 export interface AlbumSummary {
     pageUrl: string;
     title?: string;
-    category?: string;
+    /** The `album_category` post the album picks. */
+    category?: PostRefs | null;
     cover?: string;
     count: number;
     hidden?: boolean;

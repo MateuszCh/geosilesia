@@ -41,6 +41,13 @@ export interface MapData {
     marker_cluster?: boolean;
     /** "Tytuł jako nagłówek strony": the title is the page's h1. */
     page_title?: boolean;
+    /** Placeholders of the search field in the location and name modes. */
+    placeholder_location?: string;
+    placeholder_name?: string;
+    /** The hints under the field: location mode, location mode before the map loads, name mode. */
+    hint_location?: string;
+    hint_loading?: string;
+    hint_name?: string;
 }
 
 /** Stored values of `paragraph_class`: older pages hold a CSS class, newer ones a choice. */
@@ -168,11 +175,10 @@ export interface TabsData {
     hide_toc?: boolean;
 }
 
-export type AlbumCategory = 'dziedzictwo Ziemi' | 'dziedzictwo geokulturowe' | 'inne';
-
 export interface GalleryListData {
     galleries?: {
-        category?: AlbumCategory | string;
+        /** The `album_category` post. */
+        category?: PostRefs | null;
         link?: string;
         image?: string;
         title?: string;
@@ -201,7 +207,8 @@ export interface GalleryData {
      * Variant C. From here on the album's own values: an "album" page keeps them in its
      * `typeData` and layoutPage puts them here.
      */
-    category?: AlbumCategory | string;
+    /** The `album_category` post the album picks. */
+    category?: PostRefs | null;
     cover?: string;
     author?: string;
     updated?: string | number;
@@ -235,6 +242,9 @@ export interface MapSearchData {
     title?: string;
     map_link?: string;
     button_label?: string;
+    /** Placeholders of the search field in the location and name modes. */
+    placeholder_location?: string;
+    placeholder_name?: string;
 }
 
 export type FactsAuto = 'obiekty na mapie' | 'kategorie' | 'TOP 50' | 'albumy' | 'wydarzenia';

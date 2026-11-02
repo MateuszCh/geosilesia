@@ -537,22 +537,25 @@ app-row {
     }
 }
 
-// The 404 signpost: arrow-shaped boards on a post, used only here.
+// The 404 signpost: arrow-shaped boards on a post, used only here. The boards come from the
+// CMS, so a label may be long: it wraps onto a second line and the board grows.
 .signpost {
+    --post-x: 200px;
+    --board-width: 210px;
+    --boards: 3;
     position: relative;
-    flex: 0 0 360px;
-    height: 520px;
+    flex: 0 0 400px;
+    height: calc(100px + var(--boards) * 90px + 90px);
     margin: 0 auto;
 
     @include below($bp-phone) {
-        transform: scale(0.8);
-        transform-origin: top center;
-        height: 440px;
+        // zoom, unlike a transform, shrinks the layout box too, so the page does not scroll sideways.
+        zoom: 0.8;
     }
 
     &__post {
         position: absolute;
-        left: 168px;
+        left: calc(var(--post-x) - 12px);
         top: 30px;
         bottom: 0;
         width: 24px;
@@ -562,55 +565,70 @@ app-row {
 
     &__mark {
         position: absolute;
-        left: 172px;
+        left: calc(var(--post-x) - 8px);
         top: 40px;
         width: 16px;
         height: 22px;
     }
 
+    // The outline is the board's own ink background and the white face a slightly smaller
+    // copy of the same arrow underneath the text, so the border follows the slanted tip
+    // (a border would be cut off by clip-path).
     &__board {
+        --tip: 28px;
         position: absolute;
+        top: calc(90px + var(--index, 0) * 90px);
+        isolation: isolate;
         display: flex;
         align-items: center;
-        width: 180px;
-        height: 56px;
-        border: 3px solid var(--ink);
-        background: #fff;
+        width: var(--board-width);
+        min-height: 60px;
+        padding: 8px 16px;
+        background: var(--ink);
         color: var(--ink);
         font-family: var(--font-display);
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 800;
+        line-height: 1.1;
+        overflow-wrap: anywhere;
         text-decoration: none;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            z-index: -1;
+            background: #fff;
+        }
 
         &:hover {
             color: var(--ink);
-            filter: brightness(1.1);
-            background: var(--surface-alt);
+
+            &::before {
+                background: var(--surface-alt);
+            }
         }
 
         &--right {
-            left: 180px;
-            padding-left: 16px;
-            clip-path: polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%);
+            left: calc(var(--post-x) - 12px);
+            padding-right: calc(var(--tip) + 8px);
+
+            &,
+            &::before {
+                clip-path: polygon(0 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, 0 100%);
+            }
         }
 
         &--left {
-            left: 0;
+            left: calc(var(--post-x) + 12px - var(--board-width));
             justify-content: flex-end;
-            padding-right: 16px;
-            clip-path: polygon(15% 0, 100% 0, 100% 100%, 15% 100%, 0 50%);
-        }
+            padding-left: calc(var(--tip) + 8px);
+            text-align: right;
 
-        &--1 {
-            top: 90px;
-        }
-
-        &--2 {
-            top: 170px;
-        }
-
-        &--3 {
-            top: 250px;
+            &,
+            &::before {
+                clip-path: polygon(var(--tip) 0, 100% 0, 100% 100%, var(--tip) 100%, 0 50%);
+            }
         }
     }
 

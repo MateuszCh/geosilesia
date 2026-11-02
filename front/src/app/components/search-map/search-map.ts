@@ -111,6 +111,13 @@ export class SearchMap implements OnInit {
     /** The Google script has not loaded yet – the map is replaced by a placeholder then. */
     readonly mapsReady = inject(MapService).ready;
 
+    /** The hint under the search field, from the CMS: by mode, and until the map loads. */
+    readonly searchHint = computed(() => {
+        const data = this.component();
+        if (this.searchMode() === 'name') return data.hint_name ?? '';
+        return (this.mapsReady() ? data.hint_location : data.hint_loading) ?? '';
+    });
+
     protected readonly placesLabel = placesLabel;
     protected readonly formatKm = formatKm;
     protected readonly directionsUrl = directionsUrl;

@@ -19,6 +19,7 @@ import { ResourceService } from '../../core/resource.service';
 import { SeoService } from '../../core/seo.service';
 import { pageKeyFromUrl } from '../../core/page-key';
 import { NavigationService } from '../../core/navigation.service';
+import { NotFoundService } from '../../core/not-found.service';
 import { BylinePlace, PageLayout, layoutPage } from '../../core/page-layout';
 import * as seoMeta from '../../../../../shared/seo-meta';
 import { PageHero, bylineText } from '../page-hero/page-hero';
@@ -48,6 +49,8 @@ export class PageView implements RowContext {
     readonly loaded = signal(false);
 
     protected readonly navigation = inject(NavigationService);
+    /** The texts and links of the 404 page, loaded when one is shown. */
+    protected readonly notFound = inject(NotFoundService);
 
     /** Normalized path of the displayed page – "/budowa-geologiczna-wojewodztwa-slaskiego". */
     readonly path = computed(() => seoMeta.normalizePath(this.displayed()?.pageUrl ?? ''));
@@ -80,10 +83,6 @@ export class PageView implements RowContext {
     readonly hasSide = computed(
         () => this.layout().side.length > 0 || !!this.sideMenu() || !!this.sideNext() || !!this.sideByline()
     );
-    readonly top50Link = computed(() => {
-        const item = this.navigation.items().find(entry => /top\s*50/i.test(entry.title ?? ''));
-        return item ? this.navigation.sectionLink(item) : undefined;
-    });
     /** Only for the 404 page, which is never server-rendered. */
     readonly offline = signal(
         isPlatformBrowser(inject(PLATFORM_ID)) && globalThis.navigator?.onLine === false
@@ -147,6 +146,7 @@ export class PageView implements RowContext {
         if (current?.pageUrl) {
             this.seo.applyForPage(current);
         } else {
+            this.notFound.load();
             this.seo.applyNotFound(this.router.url);
         }
     }

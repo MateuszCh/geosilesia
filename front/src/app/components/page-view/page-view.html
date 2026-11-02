@@ -68,20 +68,28 @@
     @if (!displayed()?.rows?.length && !displayed()?.pageUrl && loaded()) {
         <section class="not-found container">
             <div class="not-found__text">
-                <span class="eyebrow eyebrow--red">
-                    <span class="trail-mark"
-                          aria-hidden="true"></span>
-                    Błąd 404
-                </span>
-                <h1 class="not-found__title">Przepraszamy, nie możemy znaleźć tej strony!</h1>
-                <p class="lead">Strona prawdopodobnie nie istnieje{{ offlineAvailable ? ' lub nie została wcześniej zapisana, jeśli jesteś w trybie offline' : '' }}.</p>
-                <div class="not-found__actions">
-                    <a class="btn btn--primary btn--large"
-                       routerLink="/">Przejdź do strony głównej</a>
-                    <a class="btn btn--secondary btn--large"
-                       [routerLink]="navigation.cta().link">Szukaj na mapie</a>
-                </div>
-                @if (offline()) {
+                @if (notFound.eyebrow()) {
+                    <span class="eyebrow eyebrow--red">
+                        <span class="trail-mark"
+                              aria-hidden="true"></span>
+                        {{ notFound.eyebrow() }}
+                    </span>
+                }
+                <h1 class="not-found__title">{{ notFound.title() }}</h1>
+                @if (offlineAvailable ? notFound.leadOffline() : notFound.lead(); as lead) {
+                    <p class="lead">{{ lead }}</p>
+                }
+                @if (notFound.buttons().length) {
+                    <div class="not-found__actions">
+                        @for (button of notFound.buttons(); track $index) {
+                            <a class="btn btn--large"
+                               [class.btn--primary]="$first"
+                               [class.btn--secondary]="!$first"
+                               [routerLink]="button.link">{{ button.label }}</a>
+                        }
+                    </div>
+                }
+                @if (offline() && (notFound.offlineTitle() || notFound.offlineText())) {
                     <div class="notice-box"
                          role="note">
                         <svg width="20"
@@ -94,27 +102,29 @@
                                   stroke-width="2"
                                   stroke-linecap="round" />
                         </svg>
-                        <span><b>Jesteś offline.</b> Wyświetlamy strony zapisane podczas wcześniejszych wizyt. Mapa i wyszukiwanie zadziałają po odzyskaniu połączenia.</span>
+                        <span><b>{{ notFound.offlineTitle() }}</b> {{ notFound.offlineText() }}</span>
                     </div>
                 }
             </div>
-            <nav class="signpost"
-                 aria-label="Drogowskaz">
-                <span class="signpost__post"
-                      aria-hidden="true"></span>
-                <span class="signpost__mark trail-mark"
-                      aria-hidden="true"></span>
-                <a class="signpost__board signpost__board--right signpost__board--1"
-                   routerLink="/">Strona główna</a>
-                <a class="signpost__board signpost__board--left signpost__board--2"
-                   [routerLink]="navigation.cta().link">{{ navigation.cta().label }}</a>
-                @if (top50Link(); as link) {
-                    <a class="signpost__board signpost__board--right signpost__board--3"
-                       [routerLink]="link">TOP 50</a>
-                }
-                <span class="signpost__shadow"
-                      aria-hidden="true"></span>
-            </nav>
+            @if (notFound.signpost().length) {
+                <nav class="signpost"
+                     aria-label="Drogowskaz"
+                     [style.--boards]="notFound.signpost().length">
+                    <span class="signpost__post"
+                          aria-hidden="true"></span>
+                    <span class="signpost__mark trail-mark"
+                          aria-hidden="true"></span>
+                    @for (board of notFound.signpost(); track $index) {
+                        <a class="signpost__board"
+                           [class.signpost__board--left]="board.left"
+                           [class.signpost__board--right]="!board.left"
+                           [style.--index]="$index"
+                           [routerLink]="board.link">{{ board.label }}</a>
+                    }
+                    <span class="signpost__shadow"
+                          aria-hidden="true"></span>
+                </nav>
+            }
         </section>
     }
 </main>
