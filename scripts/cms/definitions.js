@@ -382,7 +382,22 @@ const notFoundPostType = pt("not_found", "Strona 404", "Strona 404", [
     ["offline_text", "Brak połączenia: komunikat", "textarea"]
 ]);
 
+// Step 31: the placeholders of the search field and, on the map, the hints under it.
+const searchPlaceholders = [
+    ["placeholder_location", "Podpowiedź w polu: lokalizacja", "text"],
+    ["placeholder_name", "Podpowiedź w polu: nazwa obiektu", "text"]
+];
+const mapSearchFieldTexts = searchPlaceholders.map(spec => field(spec));
+const mapFieldTexts = [
+    ...searchPlaceholders,
+    ["hint_location", "Tekst pod polem: lokalizacja", "text"],
+    ["hint_loading", "Tekst pod polem: lokalizacja, zanim wczyta się mapa", "text"],
+    ["hint_name", "Tekst pod polem: nazwa obiektu", "text"]
+].map(spec => field(spec));
+
 module.exports = {
+    mapSearchFieldTexts,
+    mapFieldTexts,
     notFoundPostType,
     categoryListCategory,
     top50Markers,

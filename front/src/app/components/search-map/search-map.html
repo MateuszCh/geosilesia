@@ -66,7 +66,7 @@
                            type="text"
                            autocomplete="off"
                            enterkeyhint="search"
-                           [placeholder]="searchMode() === 'name' ? 'Wpisz nazwę obiektu' : 'Skąd ruszasz? np. Zawiercie'"
+                           [placeholder]="(searchMode() === 'name' ? component().placeholder_name : component().placeholder_location) ?? ''"
                            [value]="currentInput()"
                            (input)="onSearchInput($event)">
                     @if (currentInput()) {
@@ -98,15 +98,9 @@
                 <p class="map-panel__message"
                    role="alert">{{ searchMessage() }}</p>
             } @else {
-                <p class="map-panel__hint">
-                    @if (searchMode() === 'name') {
-                        Lista zawęża się podczas pisania. Polskie znaki są opcjonalne.
-                    } @else if (mapsReady()) {
-                        Po zatwierdzeniu obiekty ułożą się od najbliższego.
-                    } @else {
-                        Wyszukiwanie miejsc zadziała po wczytaniu mapy.
-                    }
-                </p>
+                @if (searchHint(); as hint) {
+                    <p class="map-panel__hint">{{ hint }}</p>
+                }
             }
 
             <div id="map-filters"

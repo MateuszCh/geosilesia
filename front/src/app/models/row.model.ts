@@ -41,6 +41,13 @@ export interface MapData {
     marker_cluster?: boolean;
     /** "Tytuł jako nagłówek strony": the title is the page's h1. */
     page_title?: boolean;
+    /** Placeholders of the search field in the location and name modes. */
+    placeholder_location?: string;
+    placeholder_name?: string;
+    /** The hints under the field: location mode, location mode before the map loads, name mode. */
+    hint_location?: string;
+    hint_loading?: string;
+    hint_name?: string;
 }
 
 /** Stored values of `paragraph_class`: older pages hold a CSS class, newer ones a choice. */
@@ -235,6 +242,9 @@ export interface MapSearchData {
     title?: string;
     map_link?: string;
     button_label?: string;
+    /** Placeholders of the search field in the location and name modes. */
+    placeholder_location?: string;
+    placeholder_name?: string;
 }
 
 export type FactsAuto = 'obiekty na mapie' | 'kategorie' | 'TOP 50' | 'albumy' | 'wydarzenia';

@@ -23,7 +23,7 @@
            class="map-search__input"
            type="text"
            autocomplete="off"
-           [placeholder]="mode() === 'name' ? 'Wpisz nazwę obiektu' : 'Skąd ruszasz? np. Zawiercie'"
+           [placeholder]="(mode() === 'name' ? component().placeholder_name : component().placeholder_location) ?? ''"
            [value]="query()"
            (input)="query.set($any($event.target).value)">
     <button class="btn btn--secondary btn--large map-search__locate"
