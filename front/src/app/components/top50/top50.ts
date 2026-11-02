@@ -27,8 +27,6 @@ import { RowView } from '../row/row';
 const PREVIEW_LIMIT = 7;
 /** The full list opens with this many places; "Dalej: miejsca 16–50" shows the rest at once. */
 const FIRST_STOPS = 15;
-/** "Nowe obiekty od numeru" left empty: the first place past the original fifty. */
-const NEW_FROM = 51;
 
 interface Stop {
     id: string | number;
@@ -77,6 +75,8 @@ export class Top50 implements OnInit {
     });
     readonly stops = signal<Stop[]>([]);
     private readonly expanded = signal(false);
+    /** The full list opens short only when the CMS names the button that lengthens it. */
+    private readonly collapsed = computed(() => !this.expanded() && !!this.component().more_label);
     /** The place pointed at in the preview list (mouse or keyboard); stays when the pointer leaves. */
     private readonly pointed = signal<Stop | undefined>(undefined);
     private preloaded = false;
@@ -105,20 +105,27 @@ export class Top50 implements OnInit {
 
     readonly shown = computed(() => {
         const limit = this.limit();
-        return this.stops().slice(0, limit ?? (this.expanded() ? undefined : FIRST_STOPS));
+        return this.stops().slice(0, limit ?? (this.collapsed() ? FIRST_STOPS : undefined));
     });
 
     /**
      * "Nagłówek nowych obiektów": places added after the original route, from "Nowe obiekty
-     * od numeru" on, follow it in a list of their own. Without the heading the route runs on.
+     * od numeru" on, follow it in a list of their own. Without either the route runs on.
      */
     readonly newTitle = computed(() => this.component().new_title?.trim() ?? '');
-    private readonly newFrom = computed(() => Number(this.component().new_from) || NEW_FROM);
-    private readonly isNew = (stop: Stop): boolean => !!this.newTitle() && stop.number >= this.newFrom();
+    private readonly newFrom = computed(() => Number(this.component().new_from) || 0);
+    private readonly isNew = (stop: Stop): boolean =>
+        !!this.newTitle() && !!this.newFrom() && stop.number >= this.newFrom();
     readonly shownRoute = computed(() => this.shown().filter(stop => !this.isNew(stop)));
     readonly shownNew = computed(() => this.shown().filter(stop => this.isNew(stop)));
 
-    readonly hasMore = computed(() => !this.limit() && !this.expanded() && this.stops().length > FIRST_STOPS);
+    readonly hasMore = computed(() => !this.limit() && this.collapsed() && this.stops().length > FIRST_STOPS);
+    /** "Dalej: miejsca 16–50" from the CMS's "Napis przycisku dalszych miejsc". */
+    readonly moreLabel = computed(() =>
+        (this.component().more_label ?? '')
+            .replace(/\{od\}/g, String(this.shown().length + 1))
+            .replace(/\{do\}/g, String(this.stops().length))
+    );
 
     /** The place chosen in the CMS ("Wyróżniona atrakcja"). */
     private readonly chosen = computed(() => {

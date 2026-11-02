@@ -79,12 +79,16 @@
             }
         </div>
         <div class="top50-preview__text">
-            <span class="eyebrow eyebrow--red">
-                <span class="trail-mark"
-                      aria-hidden="true"></span>
-                {{ component().eyebrow || 'Szlak czerwony · TOP 50' }}
-            </span>
-            <h2 class="h-section">{{ component().title || '50 miejsc, które trzeba zobaczyć' }}</h2>
+            @if (component().eyebrow) {
+                <span class="eyebrow eyebrow--red">
+                    <span class="trail-mark"
+                          aria-hidden="true"></span>
+                    {{ component().eyebrow }}
+                </span>
+            }
+            @if (component().title) {
+                <h2 class="h-section">{{ component().title }}</h2>
+            }
             @if (component().intro) {
                 <div class="prose"
                      [appHtml]="component().intro | trusted"></div>
@@ -113,9 +117,9 @@
                     </li>
                 }
             </ol>
-            @if (link()) {
+            @if (link() && component().link_label) {
                 <a class="btn btn--primary top50-preview__button"
-                   [routerLink]="link()">{{ component().link_label || 'Cała trasa TOP 50' }} →</a>
+                   [routerLink]="link()">{{ component().link_label }} →</a>
             }
         </div>
     </section>
@@ -133,10 +137,10 @@
                              [appHtml]="component().intro | trusted"></div>
                     }
                 </div>
-                @if (link()) {
+                @if (link() && component().link_label) {
                     <a class="btn btn--signal btn--large"
                        [routerLink]="link()"
-                       [queryParams]="linkParams()">{{ component().link_label || 'Pokaż wszystkie 50 na mapie' }}</a>
+                       [queryParams]="linkParams()">{{ component().link_label }}</a>
                 }
             </div>
         }
@@ -161,7 +165,7 @@
                 </span>
                 <button class="btn btn--outline"
                         type="button"
-                        (click)="more()">Dalej: miejsca {{ shown().length + 1 }}–{{ stops().length }}</button>
+                        (click)="more()">{{ moreLabel() }}</button>
             </div>
         }
         <ng-container *ngTemplateOutlet="belowTpl" />

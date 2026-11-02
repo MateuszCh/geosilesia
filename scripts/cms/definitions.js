@@ -405,7 +405,21 @@ const albumCategoryPostType = pt("album_category", "Kategoria albumu", "Kategori
 ]);
 const albumCategoryField = field(["category", "Kategoria", "post", "album_category"]);
 
+// Step 33: what the front end knew about TOP 50 – the route's page, found by the section
+// title, and the "TOP 50 nr …" labels – in a post type of its own with a single post.
+const top50SettingsPostType = pt("top50_settings", "Ustawienia TOP 50", "Ustawienia TOP 50", [
+    ["route_link", "Strona trasy TOP 50 (adres)", "text"],
+    ["place_label", "Etykieta miejsca na mapie ({nr} = numer)", "text"],
+    ["album_label", "Etykieta na stronie albumu ({nr} = numer)", "text"]
+]);
+const top50MoreLabel = field(["more_label", "Napis przycisku dalszych miejsc ({od}, {do} = numery)", "text"]);
+// The field of step 29 loses its default: an empty number means no group of new places.
+const top50NewFromTitle = "Nowe obiekty od numeru (puste = trasa bez przerwy)";
+
 module.exports = {
+    top50SettingsPostType,
+    top50MoreLabel,
+    top50NewFromTitle,
     albumCategoryPostType,
     albumCategoryField,
     mapSearchFieldTexts,

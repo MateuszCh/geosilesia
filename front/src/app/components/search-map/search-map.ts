@@ -20,6 +20,7 @@ import { MapData } from '../../models/row.model';
 import { IconPost, MarkerPost, Top50Post } from '../../models/post.model';
 import { MapCategory, MapMarker } from '../../core/map.types';
 import { MapService, directionsUrl, formatKm, markerColor } from '../../core/map.service';
+import { Top50Settings } from '../../core/top50-settings.service';
 import { ResourceService } from '../../core/resource.service';
 import { ScrollService } from '../../core/scroll.service';
 import { GeoMap } from '../geo-map/geo-map';
@@ -123,6 +124,7 @@ export class SearchMap implements OnInit {
     protected readonly directionsUrl = directionsUrl;
 
     private readonly mapService = inject(MapService);
+    private readonly top50Settings = inject(Top50Settings);
     private readonly resource = inject(ResourceService);
     private readonly scroll = inject(ScrollService);
     private readonly route = inject(ActivatedRoute);
@@ -248,7 +250,7 @@ export class SearchMap implements OnInit {
         return {
             ...marker,
             color,
-            tag: [category?.name, marker.top50 ? `TOP 50 nr ${marker.top50}` : ''].filter(Boolean).join(' · '),
+            tag: [category?.name, this.top50Settings.placeLabel(marker.top50)].filter(Boolean).join(' · '),
             tagColor: color === '#f2c200' ? 'var(--ink)' : color,
             meta: this.joinMeta(
                 marker.rock,
@@ -299,6 +301,7 @@ export class SearchMap implements OnInit {
     private nameTimer: ReturnType<typeof setTimeout> | undefined;
 
     ngOnInit(): void {
+        this.top50Settings.load();
         this.resultsQty = Number(this.component().number_results) || DEFAULT_RESULTS;
         this.resultsLimit.set(this.resultsQty);
         this.destroyRef.onDestroy(() => {
