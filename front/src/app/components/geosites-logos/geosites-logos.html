@@ -1,8 +1,10 @@
 @if (bases().length) {
     <section class="databases"
-             aria-labelledby="databases-title">
-        <h2 id="databases-title"
-            class="databases__title">{{ title() }}</h2>
+             [attr.aria-labelledby]="title() ? 'databases-title' : null">
+        @if (title()) {
+            <h2 id="databases-title"
+                class="databases__title">{{ title() }}</h2>
+        }
         <ul class="databases__list">
             @for (base of bases(); track $index) {
                 <li>

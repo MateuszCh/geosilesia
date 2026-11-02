@@ -416,7 +416,11 @@ const top50MoreLabel = field(["more_label", "Napis przycisku dalszych miejsc ({o
 // The field of step 29 loses its default: an empty number means no group of new places.
 const top50NewFromTitle = "Nowe obiekty od numeru (puste = trasa bez przerwy)";
 
+// Step 34: each database of "Loga geostanowisk" picks the colour of its mark.
+const geositesLogosColor = { type: "geosites_logos", title: "Loga geostanowisk", fields: [field(["logos", "Logos", "repeater", [["color", "Kolor znacznika", "select", TRAIL_COLORS]]])] };
+
 module.exports = {
+    geositesLogosColor,
     top50SettingsPostType,
     top50MoreLabel,
     top50NewFromTitle,

@@ -119,8 +119,11 @@ export interface HeadingData {
 export interface GeositesLogosData {
     /** Not in the spec: the heading above the databases ("Sprawdź w bazach PIG-PIB"). */
     title?: string;
-    /** Variant C: `name` of the database, shown with its domain instead of the logo alone. */
-    logos?: { link?: string; image?: string; name?: string }[];
+    /**
+     * Variant C: `name` of the database, shown with its domain instead of the logo alone;
+     * `color`, "Kolor znacznika", the trail colour of its mark.
+     */
+    logos?: { link?: string; image?: string; name?: string; color?: TrailColorName | string }[];
 }
 
 export interface TableCell {
