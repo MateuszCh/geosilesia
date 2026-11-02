@@ -363,8 +363,27 @@ const titleAndTextListOrder = field(["list_order", "Kolejność list (pusta = ja
 // Step 29: places added after the original fifty follow a heading of their own.
 const top50NewTitle = field(["new_title", "Nagłówek nowych obiektów (pusty = trasa bez przerwy)", "text"]);
 const top50NewFrom = field(["new_from", "Nowe obiekty od numeru (puste = 51)", "number"]);
+// Step 30: the texts and links of the 404 page, in a post type of their own with a single post.
+const notFoundPostType = pt("not_found", "Strona 404", "Strona 404", [
+    ["eyebrow", "Nadtytuł", "text"],
+    ["title", "Tytuł", "text"],
+    ["lead", "Wstęp", "textarea"],
+    ["lead_offline", "Wstęp, gdy strona działa offline (pusty = jak wyżej)", "textarea"],
+    ["buttons", "Przyciski", "repeater", [
+        ["label", "Napis", "text"],
+        ["link", "Adres", "text"]
+    ]],
+    ["signpost", "Drogowskaz", "repeater", [
+        ["label", "Napis", "text"],
+        ["link", "Adres", "text"],
+        ["direction", "Kierunek", "select", "w prawo;w lewo"]
+    ]],
+    ["offline_title", "Brak połączenia: pogrubiony początek", "text"],
+    ["offline_text", "Brak połączenia: komunikat", "textarea"]
+]);
 
 module.exports = {
+    notFoundPostType,
     categoryListCategory,
     top50Markers,
     top50Featured,
