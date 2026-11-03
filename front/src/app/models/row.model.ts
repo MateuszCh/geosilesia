@@ -248,6 +248,13 @@ export interface MapSearchData {
     /** Placeholders of the search field in the location and name modes. */
     placeholder_location?: string;
     placeholder_name?: string;
+    /** Labels of the mode buttons and of the "my location" button. */
+    mode_location?: string;
+    mode_name?: string;
+    locate_label?: string;
+    /** Names for screen readers: the form when it has no title, and the mode switch. */
+    form_label?: string;
+    modes_label?: string;
 }
 
 export type FactsAuto = 'obiekty na mapie' | 'kategorie' | 'TOP 50' | 'albumy' | 'wydarzenia';
