@@ -48,6 +48,14 @@ export interface MapData {
     hint_location?: string;
     hint_loading?: string;
     hint_name?: string;
+    /** Labels of the mode buttons (also the field's hidden label). */
+    mode_location?: string;
+    mode_name?: string;
+    /** What the field shows once the visitor's position is found. */
+    locate_label?: string;
+    /** Names for screen readers: the search panel and the mode switch. */
+    form_label?: string;
+    modes_label?: string;
 }
 
 /** Stored values of `paragraph_class`: older pages hold a CSS class, newer ones a choice. */
