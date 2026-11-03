@@ -1,24 +1,24 @@
 <form class="map-search"
       role="search"
-      [attr.aria-label]="component().title || 'Wyszukiwarka atrakcji'"
+      [attr.aria-label]="component().title || component().form_label"
       (submit)="submit($event)">
     @if (component().title) {
         <h2 class="map-search__title">{{ component().title }}</h2>
     }
     <div class="segmented map-search__modes"
          role="group"
-         aria-label="Tryb wyszukiwania">
+         [attr.aria-label]="component().modes_label">
         <button class="segmented__button"
                 type="button"
                 [attr.aria-pressed]="mode() === 'location'"
-                (click)="mode.set('location')">Lokalizacja</button>
+                (click)="mode.set('location')">{{ component().mode_location }}</button>
         <button class="segmented__button"
                 type="button"
                 [attr.aria-pressed]="mode() === 'name'"
-                (click)="mode.set('name')">Nazwa obiektu</button>
+                (click)="mode.set('name')">{{ component().mode_name }}</button>
     </div>
     <label class="visually-hidden"
-           for="home-search">{{ mode() === 'name' ? 'Nazwa obiektu' : 'Lokalizacja' }}</label>
+           for="home-search">{{ mode() === 'name' ? component().mode_name : component().mode_location }}</label>
     <input id="home-search"
            class="map-search__input"
            type="text"
@@ -39,8 +39,8 @@
                   stroke-width="2"
                   stroke-linejoin="round" />
         </svg>
-        Moja lokalizacja
+        {{ component().locate_label }}
     </button>
     <button class="btn btn--primary btn--large map-search__submit"
-            type="submit">{{ component().button_label || 'Szukaj na mapie' }}</button>
+            type="submit">{{ component().button_label }}</button>
 </form>

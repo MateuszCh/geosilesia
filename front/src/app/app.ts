@@ -3,11 +3,9 @@ import {
     Component,
     DOCUMENT,
     DestroyRef,
-    ElementRef,
     afterNextRender,
     inject,
-    signal,
-    viewChild
+    signal
 } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -31,13 +29,11 @@ export class App {
     /** Controls the "back to top" button – visible only after scrolling away from the top. */
     readonly scrolled = signal(false);
 
-    private readonly page = viewChild.required<ElementRef<HTMLElement>>('page');
     private readonly router = inject(Router);
     private readonly doc = inject(DOCUMENT);
     private readonly scroll = inject(ScrollService);
     private readonly resource = inject(ResourceService);
     private readonly destroyRef = inject(DestroyRef);
-    private firstNavigation = true;
 
     constructor() {
         this.router.events
@@ -50,6 +46,10 @@ export class App {
         afterNextRender(() => {
             const view = this.doc.defaultView;
             if (!view) return;
+
+            // From now on things that appear animate in (the `enter` mixin). Set after
+            // hydration, so the server-rendered view does not fade in a second time.
+            this.doc.documentElement.classList.add('motion');
 
             const onScroll = () => this.scrolled.set(view.scrollY > 0);
             onScroll();
@@ -76,24 +76,6 @@ export class App {
         // The photo preview may have locked page scrolling; leaving the gallery through
         // a link has to unlock it.
         this.doc.body.classList.remove('closedScroll');
-
-        // The first navigation is the page load: server-rendered content is already
-        // visible, so the enter animation would hide it and show it again. As a bonus,
-        // on the server we do not touch the view before it exists.
-        if (this.firstNavigation) {
-            this.firstNavigation = false;
-            return;
-        }
-        this.restartFade();
-    }
-
-    /** Recreates the former ngAnimate crossfade: removing and re-adding the class
-        restarts the CSS animation, merely setting it does not. */
-    private restartFade(): void {
-        const element = this.page().nativeElement;
-        element.classList.remove('fade--in');
-        void element.offsetWidth;
-        element.classList.add('fade--in');
     }
 
     /**

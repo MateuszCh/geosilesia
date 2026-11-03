@@ -472,7 +472,7 @@ export class SearchMap implements OnInit {
             position => {
                 this.locating.set(false);
                 this.searchMode.set('location');
-                this.locationInput.set('Moja lokalizacja');
+                this.locationInput.set(this.component().locate_label ?? '');
                 this.setLocation({
                     id: 0,
                     type: 'home',

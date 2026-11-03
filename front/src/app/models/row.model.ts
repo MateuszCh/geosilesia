@@ -48,6 +48,14 @@ export interface MapData {
     hint_location?: string;
     hint_loading?: string;
     hint_name?: string;
+    /** Labels of the mode buttons (also the field's hidden label). */
+    mode_location?: string;
+    mode_name?: string;
+    /** What the field shows once the visitor's position is found. */
+    locate_label?: string;
+    /** Names for screen readers: the search panel and the mode switch. */
+    form_label?: string;
+    modes_label?: string;
 }
 
 /** Stored values of `paragraph_class`: older pages hold a CSS class, newer ones a choice. */
@@ -248,6 +256,13 @@ export interface MapSearchData {
     /** Placeholders of the search field in the location and name modes. */
     placeholder_location?: string;
     placeholder_name?: string;
+    /** Labels of the mode buttons and of the "my location" button. */
+    mode_location?: string;
+    mode_name?: string;
+    locate_label?: string;
+    /** Names for screen readers: the form when it has no title, and the mode switch. */
+    form_label?: string;
+    modes_label?: string;
 }
 
 export type FactsAuto = 'obiekty na mapie' | 'kategorie' | 'TOP 50' | 'albumy' | 'wydarzenia';

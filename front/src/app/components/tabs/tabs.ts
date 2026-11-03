@@ -2,6 +2,8 @@ import {
     ChangeDetectionStrategy,
     Component,
     DOCUMENT,
+    Injector,
+    afterNextRender,
     computed,
     inject,
     input,
@@ -44,6 +46,7 @@ export class Tabs {
 
     private readonly doc = inject(DOCUMENT);
     private readonly scroll = inject(ScrollService);
+    private readonly injector = inject(Injector);
 
     readonly tabs = computed(() => this.component().tabs ?? []);
 
@@ -97,7 +100,11 @@ export class Tabs {
         event.preventDefault();
         this.currentHeading.set(id);
         this.tocOpen.set(false);
-        this.scroll.scrollToElement(this.doc.getElementById(id));
+        // Only once the list above has folded: a smooth scroll keeps the target it started
+        // with, so it would stop the list's height too far, past the heading.
+        afterNextRender(() => this.scroll.scrollToElement(this.doc.getElementById(id)), {
+            injector: this.injector
+        });
     }
 
     sectionsLabel(count: number): string {

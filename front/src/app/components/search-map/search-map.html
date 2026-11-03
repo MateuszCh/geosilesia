@@ -4,7 +4,7 @@
 <div class="map-app"
      id="mapa">
     <aside class="map-panel"
-           aria-label="Wyszukiwanie atrakcji">
+           [attr.aria-label]="component().form_label">
         <form class="map-panel__search"
               (submit)="search($event)">
             <div class="map-panel__heading">
@@ -60,7 +60,7 @@
                         }
                     </svg>
                     <label class="visually-hidden"
-                           for="map-query">{{ searchMode() === 'name' ? 'Nazwa obiektu' : 'Lokalizacja' }}</label>
+                           for="map-query">{{ searchMode() === 'name' ? component().mode_name : component().mode_location }}</label>
                     <input id="map-query"
                            class="search-field__input"
                            type="text"
@@ -131,15 +131,15 @@
                     <span class="map-filters__label">Szukaj według</span>
                     <div class="segmented"
                          role="group"
-                         aria-label="Tryb wyszukiwania">
+                         [attr.aria-label]="component().modes_label">
                         <button class="segmented__button"
                                 type="button"
                                 [attr.aria-pressed]="searchMode() === 'location'"
-                                (click)="setSearchMode('location')">Lokalizacja</button>
+                                (click)="setSearchMode('location')">{{ component().mode_location }}</button>
                         <button class="segmented__button"
                                 type="button"
                                 [attr.aria-pressed]="searchMode() === 'name'"
-                                (click)="setSearchMode('name')">Nazwa obiektu</button>
+                                (click)="setSearchMode('name')">{{ component().mode_name }}</button>
                     </div>
                     <span class="map-filters__label">Kategorie</span>
                     <button class="map-categories-toggle"

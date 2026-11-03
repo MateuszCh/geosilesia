@@ -395,6 +395,27 @@ const mapFieldTexts = [
     ["hint_name", "Tekst pod polem: nazwa obiektu", "text"]
 ].map(spec => field(spec));
 
+// Step 35: the remaining texts of "Wyszukiwarka atrakcji" – the mode buttons, the location
+// button and the labels screen readers hear.
+const mapSearchLabels = [
+    ["mode_location", "Napis trybu: lokalizacja", "text"],
+    ["mode_name", "Napis trybu: nazwa", "text"],
+    ["locate_label", "Napis przycisku lokalizacji", "text"],
+    ["form_label", "Nazwa wyszukiwarki dla czytników ekranu (gdy brak tytułu)", "text"],
+    ["modes_label", "Nazwa przełącznika trybów dla czytników ekranu", "text"]
+].map(spec => field(spec));
+
+// Step 36: the same texts of "Mapa atrakcji": the mode buttons (also the field's hidden
+// label), the text the field shows once the visitor's position is found, and the names
+// screen readers hear for the search panel and the mode switch.
+const mapLabels = [
+    ["mode_location", "Napis trybu: lokalizacja", "text"],
+    ["mode_name", "Napis trybu: nazwa", "text"],
+    ["locate_label", "Napis w polu po ustaleniu lokalizacji odwiedzającego", "text"],
+    ["form_label", "Nazwa panelu wyszukiwania dla czytników ekranu", "text"],
+    ["modes_label", "Nazwa przełącznika trybów dla czytników ekranu", "text"]
+].map(spec => field(spec));
+
 // Step 32: album categories are posts of their own; an album and an entry of the manual
 // album list pick one instead of a select option the front end had to know.
 const albumCategoryPostType = pt("album_category", "Kategoria albumu", "Kategorie albumów", [
@@ -427,6 +448,8 @@ module.exports = {
     albumCategoryPostType,
     albumCategoryField,
     mapSearchFieldTexts,
+    mapSearchLabels,
+    mapLabels,
     mapFieldTexts,
     notFoundPostType,
     categoryListCategory,

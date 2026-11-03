@@ -420,6 +420,7 @@
     padding: 20px 24px 24px;
     background: var(--night);
     color: #fff;
+    @include enter(0, $duration: var(--motion-base));
 
     @include below($bp-tablet) {
         overflow-y: auto;

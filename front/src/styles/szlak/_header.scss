@@ -203,6 +203,7 @@
         background: var(--surface);
         box-shadow: var(--shadow-card);
         list-style: none;
+        @include enter(-4px, $duration: var(--motion-fast));
     }
 
     &__item--open &__menu {
@@ -271,6 +272,7 @@ body.menu-open {
     flex-direction: column;
     background: var(--forest);
     color: var(--on-forest);
+    @include enter(-8px);
 
     &__bar {
         display: flex;
@@ -339,6 +341,17 @@ body.menu-open {
 
     &__item {
         border-bottom: 1px solid var(--forest-line);
+
+        // The sections follow the panel one after another; the rest come with the sixth.
+        @for $i from 1 through 6 {
+            &:nth-child(#{$i}) {
+                @include enter(6px, $delay: #{40 + $i * 25}ms);
+            }
+        }
+
+        &:nth-child(n + 7) {
+            @include enter(6px, $delay: 190ms);
+        }
     }
 
     &__section {
@@ -374,6 +387,7 @@ body.menu-open {
         margin: 0;
         padding: 0 0 10px;
         list-style: none;
+        @include enter(-4px, $duration: var(--motion-fast));
     }
 
     &__sub-link {
