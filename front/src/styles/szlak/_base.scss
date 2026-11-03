@@ -61,6 +61,16 @@ a {
     }
 }
 
+// Hover colours of links, cards, chips and buttons change smoothly rather than flip. A class
+// with a transition of its own replaces this one.
+a,
+button {
+    transition:
+        color var(--motion-fast),
+        background-color var(--motion-fast),
+        border-color var(--motion-fast);
+}
+
 :focus-visible {
     outline: 2px solid var(--ink);
     outline-offset: 2px;
@@ -69,7 +79,10 @@ a {
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
-    *::after {
+    *::after,
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
         transition-duration: 0.01ms !important;
         animation-duration: 0.01ms !important;
     }
@@ -209,9 +222,9 @@ a {
     text-decoration: none;
     text-align: center;
     transition:
-        background-color 0.2s,
-        border-color 0.2s,
-        color 0.2s;
+        background-color var(--motion-fast),
+        border-color var(--motion-fast),
+        color var(--motion-fast);
 
     svg {
         flex-shrink: 0;
@@ -417,19 +430,12 @@ a {
     }
 }
 
-// The view crossfade: the App component removes and re-adds the --in class after each
-// navigation, which restarts the animation.
-@keyframes fade-in {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-.fade--in {
-    animation: fade-in 0.3s ease-out;
+// The page crossfade of the router's view transitions (app.config.ts). The browser's own
+// crossfade, only a little quicker.
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: var(--motion-base);
+    animation-timing-function: var(--ease-out);
 }
 
 @keyframes spin {

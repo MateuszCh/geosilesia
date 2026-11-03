@@ -1,5 +1,5 @@
 // Variant C ("Szlak") of the redesign. Tokens first, then base styles, then one partial
-// per area of the site.
+// per area of the site, and the decorative motion last.
 @use 'szlak/tokens';
 @use 'szlak/base';
 @use 'szlak/header';
@@ -12,3 +12,4 @@
 @use 'szlak/lists';
 @use 'szlak/gallery';
 @use 'szlak/sections';
+@use 'szlak/motion';

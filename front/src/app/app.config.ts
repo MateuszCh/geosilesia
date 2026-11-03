@@ -7,9 +7,11 @@ import {
 } from '@angular/core';
 import { ViewportScroller } from '@angular/common';
 import {
+    ActivatedRouteSnapshot,
     provideRouter,
     withComponentInputBinding,
-    withInMemoryScrolling
+    withInMemoryScrolling,
+    withViewTransitions
 } from '@angular/router';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import {
@@ -21,6 +23,15 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { routes } from './app.routes';
 import { provideScrollRestoration } from './core/scroll-restoration';
 import { provideInternalLinks } from './core/internal-links';
+
+/** The URL path of a router state, from its root snapshot down to the leaf. */
+function routePath(root: ActivatedRouteSnapshot): string {
+    const segments: string[] = [];
+    for (let route: ActivatedRouteSnapshot | null = root; route; route = route.firstChild) {
+        segments.push(...route.url.map(segment => segment.path));
+    }
+    return segments.join('/');
+}
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -34,6 +45,15 @@ export const appConfig: ApplicationConfig = {
             withInMemoryScrolling({
                 scrollPositionRestoration: 'enabled',
                 anchorScrolling: 'enabled'
+            }),
+            // Pages crossfade (styles in _base.scss). Not on the page load – the server
+            // already rendered it – and not when only the fragment or query changes, which
+            // keeps the reader on the same page.
+            withViewTransitions({
+                skipInitialTransition: true,
+                onViewTransitionCreated: ({ transition, from, to }) => {
+                    if (routePath(from) === routePath(to)) transition.skipTransition();
+                }
             })
         ),
         // A little room above the fragment's element.

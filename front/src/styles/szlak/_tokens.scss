@@ -20,6 +20,23 @@ $bp-tablet: 900px;
     }
 }
 
+// An element that appears (inserted by Angular, or shown after display: none) fades in and
+// slides $y into place. Only once the app runs in the browser (`html.motion`, set by the App
+// component): the server-rendered view is already on screen and must not blink at startup.
+// Leaving is instant on purpose – a closed menu should get out of the way at once.
+@mixin enter($y: 6px, $x: 0, $duration: var(--motion-base), $delay: 0s) {
+    html.motion & {
+        transition:
+            opacity $duration var(--ease-out) $delay,
+            translate $duration var(--ease-out) $delay;
+
+        @starting-style {
+            opacity: 0;
+            translate: $x $y;
+        }
+    }
+}
+
 :root {
     // Frame
     --forest: #1e4d2f;
@@ -77,6 +94,12 @@ $bp-tablet: 900px;
     --shadow-popup: 0 16px 40px #18201b33;
     --shadow-control: 0 4px 14px #18201b26;
     --shadow-pin: 0 2px 6px #18201b40;
+
+    // Motion – short and quiet: things settle into place, nothing bounces
+    --motion-fast: 150ms;
+    --motion-base: 220ms;
+    --motion-slow: 400ms;
+    --ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
 
     // Layout
     --gutter: 28px;
