@@ -51,7 +51,10 @@ function glide(element: HTMLElement, left: number, duration = 300): () => void {
     selector: 'app-photo-viewer',
     templateUrl: './photo-viewer.html',
     imports: [RouterLink, SwipeDirective],
-    host: { '(document:keydown)': 'onKeyDown($event)' },
+    host: {
+        '(document:keydown)': 'onKeyDown($event)',
+        '(document:pointerdown)': 'usedKeyboard = false'
+    },
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PhotoViewer {
@@ -88,13 +91,21 @@ export class PhotoViewer {
     private readonly doc = inject(DOCUMENT);
     private readonly thumbs = viewChild<ElementRef<HTMLElement>>('thumbs');
 
+    /**
+     * Whether the last input was a key rather than a pointer. Focus returned to the opener on
+     * closing shows its focus ring only then, so a mouse visitor doesn't get a black frame
+     * around the photo they clicked.
+     */
+    protected usedKeyboard = false;
+
     constructor() {
         const returnFocus = this.doc.activeElement as HTMLElement | null;
+        this.usedKeyboard = !!returnFocus?.matches(':focus-visible');
         this.doc.body.classList.add('closedScroll');
         afterNextRender(() => this.doc.querySelector<HTMLElement>('.lightbox__close')?.focus());
         inject(DestroyRef).onDestroy(() => {
             this.doc.body.classList.remove('closedScroll');
-            returnFocus?.focus();
+            returnFocus?.focus({ focusVisible: this.usedKeyboard } as FocusOptions);
         });
 
         afterRenderEffect(onCleanup => {
@@ -146,6 +157,7 @@ export class PhotoViewer {
     }
 
     onKeyDown(event: KeyboardEvent): void {
+        this.usedKeyboard = true;
         if (event.defaultPrevented) return;
         switch (event.key) {
             case 'ArrowLeft':
