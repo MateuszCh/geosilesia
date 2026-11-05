@@ -1,8 +1,9 @@
 import { Injectable, PLATFORM_ID, TransferState, inject, makeStateKey } from '@angular/core';
 import { isPlatformServer } from '@angular/common';
-import { Observable, from, map, of, shareReplay, switchMap, tap } from 'rxjs';
+import { Observable, combineLatest, from, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import { ResourceService } from './resource.service';
-import { AlbumSummary, MarkerPostData, Post } from '../models/post.model';
+import { AlbumSummary, MarkerPostData, Post, Top50PostData } from '../models/post.model';
+import { postIds } from './post-refs';
 
 /**
  * Posts and albums shared by several rows of one page (the home page counts markers in the
@@ -85,6 +86,27 @@ export class ContentService {
         return this.summary('count:marker-located', () =>
             this.posts<MarkerPostData>('marker', false).pipe(
                 map(markers => markers.filter(marker => marker.data?.lat && marker.data?.long).length)
+            )
+        );
+    }
+
+    /**
+     * Map objects tied to the TOP 50: one place may list several markers and a marker may
+     * belong to more than one place, so distinct ids that still exist and have coordinates.
+     */
+    top50MarkerCount(): Observable<number> {
+        return this.summary('count:top50-markers', () =>
+            combineLatest([
+                this.posts<Top50PostData>('top50', false),
+                this.posts<MarkerPostData>('marker', false)
+            ]).pipe(
+                map(([places, markers]) => {
+                    const located = new Set(
+                        markers.filter(marker => marker.data?.lat && marker.data?.long).map(marker => Number(marker.id))
+                    );
+                    const ids = new Set(places.flatMap(place => postIds(place.data?.markers)));
+                    return [...ids].filter(id => located.has(id)).length;
+                })
             )
         );
     }

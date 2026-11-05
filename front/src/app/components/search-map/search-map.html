@@ -216,6 +216,20 @@
                             {{ place.tag }}
                         </span>
                     }
+                    <button class="map-sheet__close"
+                            type="button"
+                            aria-label="Zamknij informacje o miejscu"
+                            (click)="currentResult.set(undefined)">
+                        <svg width="14"
+                             height="14"
+                             viewBox="0 0 18 18"
+                             aria-hidden="true">
+                            <path d="M3 3l12 12M15 3L3 15"
+                                  stroke="currentColor"
+                                  stroke-width="2.4"
+                                  stroke-linecap="round" />
+                        </svg>
+                    </button>
                     <span class="map-sheet__title">{{ place.title }}</span>
                     @if (place.meta) {
                         <span class="map-sheet__meta">{{ place.meta }}</span>
@@ -339,6 +353,7 @@
                          [currentResult]="currentResult()"
                          [markerCluster]="!!component().marker_cluster"
                          [infoWindow]="!phone()"
+                         [controlsInset]="phone() ? 66 : 0"
                          (selected)="onPinSelected($event)" />
             <div class="map-area__controls">
                 <button class="map-control"
