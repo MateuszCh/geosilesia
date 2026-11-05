@@ -583,9 +583,11 @@
         height: auto;
         min-height: 0;
 
+        // Under Google's zoom buttons, which geo-map pushes below the search bar
+        // (66px spacer + 10px margin + 81px buttons + 10px gap).
         &__controls {
-            top: 82px;
-            right: 12px;
+            top: 167px;
+            right: 10px;
         }
     }
 
@@ -857,6 +859,7 @@
         }
 
         &__card {
+            position: relative;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -866,6 +869,29 @@
             > * {
                 @include enter(8px);
             }
+        }
+
+        &__close {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border: 0;
+            border-radius: 50%;
+            background: #fff;
+            color: var(--ink);
+            box-shadow: var(--shadow-control);
+        }
+
+        // The title and the tag must not run under the close button.
+        &__tag,
+        &__title {
+            padding-right: 44px;
         }
 
         &__image {

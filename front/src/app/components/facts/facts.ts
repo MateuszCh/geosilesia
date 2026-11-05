@@ -11,7 +11,7 @@ import { FactsAuto, FactsData } from '../../models/row.model';
 const COUNTERS: Record<FactsAuto, (content: ContentService) => Observable<number>> = {
     'obiekty na mapie': content => content.locatedMarkerCount(),
     kategorie: content => content.posts('icon').pipe(map(posts => posts.length)),
-    'TOP 50': content => content.posts('top50').pipe(map(posts => posts.length)),
+    'TOP 50': content => content.top50MarkerCount(),
     albumy: content => content.albums().pipe(map(albums => albums.filter(album => !album.hidden).length)),
     wydarzenia: content => content.postCount('wydarzenie')
 };

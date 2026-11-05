@@ -40,6 +40,11 @@ export class GeoMap {
     readonly currentResult = input<string | number | undefined>();
     /** Phones show the selected place in a bottom sheet instead of the InfoWindow. */
     readonly infoWindow = input(true);
+    /**
+     * Pixels kept free above Google's top controls (zoom, map type): phones float the search
+     * bar over the top of the map.
+     */
+    readonly controlsInset = input(0);
     /** A pin was clicked. */
     readonly selected = output<string | number>();
 
@@ -51,6 +56,8 @@ export class GeoMap {
     private bubble: google.maps.InfoWindow | undefined;
     private markers: google.maps.Marker[] = [];
     private highlighted: google.maps.Marker | undefined;
+    /** Empty boxes that push the top controls down, see `controlsInset`. */
+    private spacers: { position: google.maps.ControlPosition; element: HTMLElement }[] = [];
 
     constructor() {
         afterNextRender(() => this.initMap());
@@ -64,6 +71,11 @@ export class GeoMap {
         effect(() => {
             const id = this.currentResult();
             untracked(() => this.focusMarker(id));
+        });
+
+        effect(() => {
+            const inset = this.controlsInset();
+            untracked(() => this.insetControls(inset));
         });
     }
 
@@ -98,8 +110,34 @@ export class GeoMap {
         );
         this.bubble = new google.maps.InfoWindow({ maxWidth: 320 });
         this.bubble.addListener('closeclick', () => this.unhighlight());
+        this.insetControls(this.controlsInset());
         this.updateMap();
         this.focusMarker(this.currentResult());
+    }
+
+    /**
+     * Custom controls go after Google's own ones in a corner unless their index is negative,
+     * so a spacer with index -1 stands above the zoom buttons and the map type menu.
+     */
+    private insetControls(inset: number): void {
+        const map = this.map;
+        if (!map) return;
+        this.spacers.forEach(({ position, element }) => {
+            const controls = map.controls[position];
+            const index = controls.getArray().indexOf(element);
+            if (index >= 0) controls.removeAt(index);
+        });
+        this.spacers = [];
+        if (inset <= 0) return;
+        [google.maps.ControlPosition.RIGHT_TOP, google.maps.ControlPosition.LEFT_TOP].forEach(position => {
+            const element = document.createElement('div');
+            element.style.height = `${inset}px`;
+            element.style.pointerEvents = 'none';
+            element.setAttribute('aria-hidden', 'true');
+            Object.assign(element, { index: -1 });
+            map.controls[position].push(element);
+            this.spacers.push({ position, element });
+        });
     }
 
     private updateMap(): void {
