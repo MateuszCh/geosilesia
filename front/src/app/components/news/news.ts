@@ -2,13 +2,16 @@ import {
     ChangeDetectionStrategy,
     Component,
     DestroyRef,
+    Injector,
     OnInit,
+    afterNextRender,
     computed,
     inject,
     input,
     signal
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ViewportScroller } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { ContentService } from '../../core/content.service';
@@ -24,6 +27,8 @@ import { HtmlDirective } from '../../shared/html.directive';
 
 const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_PREVIEW = 3;
+/** Latest years with a button of their own when the CMS leaves "Lata z osobnym przyciskiem" empty. */
+const DEFAULT_YEAR_BUTTONS = 2;
 /** The CMS default label of an event link – variant C shows "Szczegóły" instead. */
 const GENERIC_LINK_TEXT = /^link zewn/i;
 const MONTHS_GENITIVE =
@@ -49,7 +54,7 @@ interface EventView {
     time: number;
 }
 
-/** Year filter: one of the two latest years, or everything older; 'all' until events load. */
+/** Year filter: one of the latest years, everything older, or every event (also until events load). */
 type YearFilter = number | 'older' | 'all';
 
 /** Place of an event: the variant C field, else what follows the date in `date_and_place`. */
@@ -136,22 +141,37 @@ export class News implements OnInit {
         return this.preview() ? DEFAULT_PREVIEW : DEFAULT_PAGE_SIZE;
     });
 
+    /** How many of the latest years get a button of their own; the rest go under "Starsze". */
+    private readonly yearButtons = computed(() => {
+        const value = this.component().year_buttons;
+        if (value === undefined || value === null || String(value).trim() === '') return DEFAULT_YEAR_BUTTONS;
+        const count = Number(value);
+        return count > 0 ? count : Infinity;
+    });
+
+    /** Years with events, newest first. */
+    private readonly eventYears = computed(() =>
+        [...new Set(this.events().map(event => event.year).filter((y): y is number => !!y))].sort((a, b) => b - a)
+    );
+
+    /** The years with a button of their own. */
+    private readonly ownYears = computed(() => this.eventYears().slice(0, this.yearButtons()));
+
     readonly years = computed(() => {
-        const years = [...new Set(this.events().map(event => event.year).filter((y): y is number => !!y))].sort(
-            (a, b) => b - a
-        );
-        const shown = years.slice(0, 2).map(year => ({ value: year as YearFilter, label: String(year) }));
-        return years.length > 2
-            ? [...shown, { value: 'older' as YearFilter, label: 'Starsze' }]
-            : shown;
+        const all = this.eventYears();
+        const own = this.ownYears();
+        const buttons: { value: YearFilter; label: string }[] = own.map(year => ({ value: year, label: String(year) }));
+        if (all.length > own.length) buttons.push({ value: 'older', label: 'Starsze' });
+        if (this.component().all_filter && buttons.length > 1) buttons.unshift({ value: 'all', label: 'Wszystkie' });
+        return buttons;
     });
 
     private readonly filtered = computed(() => {
         const year = this.selectedYear();
-        const latest = this.years().slice(0, 2).map(entry => entry.value);
+        const own = this.ownYears();
         return this.events().filter(event => {
             if (year === 'all') return true;
-            if (year === 'older') return !!event.year && !latest.includes(event.year);
+            if (year === 'older') return !!event.year && !own.includes(event.year);
             return event.year === year;
         });
     });
@@ -186,6 +206,11 @@ export class News implements OnInit {
     private readonly resource = inject(ResourceService);
     private readonly content = inject(ContentService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly injector = inject(Injector);
+    private readonly route = inject(ActivatedRoute);
+    private readonly scroller = inject(ViewportScroller);
+    /** The event named in the URL fragment has been opened – a later reload of the list keeps the reader's choice. */
+    private targetRevealed = false;
     /** Network data takes precedence – once it has arrived, the IndexedDB result will not overwrite it. */
     private loadedFromNetwork = false;
 
@@ -241,6 +266,10 @@ export class News implements OnInit {
         this.currentPage.set(1);
     }
 
+    eventId(event: EventView): string {
+        return `wydarzenie-${event.id}`;
+    }
+
     goToPage(page: number): void {
         this.currentPage.set(page);
     }
@@ -249,11 +278,34 @@ export class News implements OnInit {
         const views = publishedViews(events);
         this.events.set(views);
         this.loaded.set(true);
-        // The list opens on the latest year, as in the mockup.
+        // The list opens on the first button: "Wszystkie" when the CMS asks for it, else the
+        // latest year, as in the mockup.
         if (this.selectedYear() === 'all' && this.years().length > 1) {
             this.selectedYear.set(this.years()[0].value);
         }
+        if (this.revealTarget()) return;
         // The newest event starts open, as in the mockup.
         if (this.openId() === undefined) this.openId.set(views[0]?.id);
+    }
+
+    /**
+     * An event clicked in the home page preview opens the list at that event ("#wydarzenie-12"):
+     * its year and page are selected, it is open and scrolled into view.
+     */
+    private revealTarget(): boolean {
+        if (this.targetRevealed) return false;
+        const target = this.route.snapshot.fragment;
+        const id = /^wydarzenie-(.+)$/.exec(target ?? '')?.[1];
+        const event = id ? this.events().find(view => String(view.id) === id) : undefined;
+        if (!event) return false;
+        this.targetRevealed = true;
+        if (this.years().length > 1 && !this.component().all_filter) {
+            this.selectedYear.set(event.year && this.ownYears().includes(event.year) ? event.year : 'older');
+        }
+        const index = this.filtered().findIndex(view => view.id === event.id);
+        this.currentPage.set(Math.floor(Math.max(index, 0) / this.limit()) + 1);
+        this.openId.set(event.id);
+        afterNextRender(() => this.scroller.scrollToAnchor(target!), { injector: this.injector });
+        return true;
     }
 }

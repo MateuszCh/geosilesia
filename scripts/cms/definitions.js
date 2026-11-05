@@ -437,10 +437,17 @@ const top50MoreLabel = field(["more_label", "Napis przycisku dalszych miejsc ({o
 // The field of step 29 loses its default: an empty number means no group of new places.
 const top50NewFromTitle = "Nowe obiekty od numeru (puste = trasa bez przerwy)";
 
+// Step 37: the year filter of the events list: how many latest years get a button and an
+// optional "Wszystkie" button.
+const newsYearFilter = [
+    field(["year_buttons", "Lata z osobnym przyciskiem (puste = 2, 0 = każdy rok)", "number"]),
+    field(["all_filter", "Przycisk „Wszystkie” (lista otwiera się na nim)", "checkbox"])
+];
 // Step 34: each database of "Loga geostanowisk" picks the colour of its mark.
 const geositesLogosColor = { type: "geosites_logos", title: "Loga geostanowisk", fields: [field(["logos", "Logos", "repeater", [["color", "Kolor znacznika", "select", TRAIL_COLORS]]])] };
 
 module.exports = {
+    newsYearFilter,
     geositesLogosColor,
     top50SettingsPostType,
     top50MoreLabel,
