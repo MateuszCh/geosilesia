@@ -283,6 +283,14 @@ export class SearchMap implements OnInit {
             this.destroyRef.onDestroy(() => media.removeEventListener('change', onChange));
         });
 
+        // The full-screen filters lock page scrolling, so a swipe on them doesn't move the page.
+        effect(onCleanup => {
+            if (!this.filtersOpen() || !this.phone()) return;
+            const body = this.doc.body;
+            body.classList.add('closedScroll');
+            onCleanup(() => body.classList.remove('closedScroll'));
+        });
+
         effect(() => {
             const location = this.pendingLocation();
             if (!this.mapsReady() || !this.markersCount() || !location) return;

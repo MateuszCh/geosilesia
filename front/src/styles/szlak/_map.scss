@@ -746,6 +746,13 @@
             gap: 8px;
             padding: 14px 16px 6px;
             overflow-y: auto;
+            overscroll-behavior: contain;
+
+            // A scrolling column would shrink its rows to fit; the mode switch (overflow:
+            // hidden, so no content-based minimum height) collapsed to its border on iOS.
+            > * {
+                flex-shrink: 0;
+            }
         }
 
         &__label {
