@@ -882,10 +882,10 @@
             width: 36px;
             height: 36px;
             border: 0;
-            border-radius: 50%;
-            background: #fff;
+            // Flat like the filters' close button: the card scrolls, so a shadow is clipped.
+            border-radius: var(--radius-md);
+            background: var(--surface-alt);
             color: var(--ink);
-            box-shadow: var(--shadow-control);
         }
 
         // The title and the tag must not run under the close button.
