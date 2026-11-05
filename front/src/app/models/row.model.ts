@@ -95,6 +95,10 @@ export interface NewsData {
     link_label?: string;
     /** "Wybrane wydarzenia": `wydarzenie` posts of the preview, in this order; empty = the latest. */
     picked?: PostRefs | null;
+    /** "Lata z osobnym przyciskiem": the latest years with a filter button each; empty = 2, 0 = every year. */
+    year_buttons?: number | string;
+    /** "Przycisk „Wszystkie”": a first filter button showing every event; the list opens on it. */
+    all_filter?: boolean;
 }
 
 export interface DictionaryItem {

@@ -49,6 +49,7 @@ be replayed on production later in the same order.
 | `34-geosites-logos-colors.js` | Each database of "Loga geostanowisk" gets "Kolor znacznika" (a trail colour) with the colour the front end gave it in turn (red, blue, green); the front end drops its fallback headings, as every row has one since step 17 (the run stops otherwise) |
 | `35-map-search-labels.js` | "Wyszukiwarka atrakcji" gets the rest of its texts: the mode buttons (the name mode renamed to "Nazwa miejsca"), the "Moja lokalizacja" button and the names screen readers hear for the form and the mode switch; every row gets them and the submit label where empty, and the front end holds none of them any more |
 | `36-map-labels.js` | "Mapa atrakcji" gets the same texts as the search card in step 35: the mode buttons (the name mode as "Nazwa miejsca"), the text in the field once the visitor's position is found and the names screen readers hear for the search panel and the mode switch; the map's other texts stay in the front end for now |
+| `37-news-year-filter.js` | "Wiadomości" gets "Lata z osobnym przyciskiem" (how many latest years get a filter button; empty = 2, 0 = every year) and "Przycisk „Wszystkie”" (a first button showing every event, which the list opens on); the events list gets 0, a button for each year |
 | `legacy/page-layout.ts` | The front end's layout as of step 20, which step 18 checks its pages with |
 | `check-fallbacks.js` | Read-only: pages and posts that still need a front-end fallback (run after the scripts) |
 | `restore.js` | Restores collections from a backup |

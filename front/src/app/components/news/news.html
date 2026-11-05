@@ -15,7 +15,8 @@
             @for (event of visible(); track event.id) {
                 <li>
                     <a class="events-preview__item"
-                       [routerLink]="internalLink(component().link) ?? null">
+                       [routerLink]="internalLink(component().link) ?? null"
+                       [fragment]="'wydarzenie-' + event.id">
                         <span class="events-preview__date">{{ event.short }}</span>
                         <span class="events-preview__text">
                             <span class="events-preview__title">{{ event.title }}</span>
@@ -54,6 +55,7 @@
             <ol class="events__list">
                 @for (event of visible(); track event.id) {
                     <li class="event"
+                        [id]="eventId(event)"
                         [class.event--open]="openId() === event.id">
                         <button class="event__head"
                                 type="button"
