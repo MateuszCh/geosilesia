@@ -1,0 +1,570 @@
+[
+  {
+    "number": 1,
+    "top50": "Rezerwat przyrody Szachownica w Lipiu",
+    "markers": [
+      {
+        "id": 8702,
+        "title": "Wyrobisko d. kamieniołomu Chełmno k. Lipia, górnojurajskie wapienie i jaskinia proglacjalna (RPN Szachownica, GK)"
+      }
+    ]
+  },
+  {
+    "number": 2,
+    "top50": "Kamieniołom Lipówka w Rudnikach",
+    "markers": [
+      {
+        "id": 8695,
+        "title": "Wyrobisko d. kamieniołomu Lipówka w Rudnikach, górnojurajskie wapienie (ścieżka dydaktyczna, PGR, SzP)"
+      }
+    ]
+  },
+  {
+    "number": 3,
+    "top50": "Przełom Warty koło Mstowa",
+    "markers": [
+      {
+        "id": 8829,
+        "title": "Skała Miłości - Przełom Warty k. Mstowa (PP, GR, SzP, GPJ)"
+      }
+    ]
+  },
+  {
+    "number": 4,
+    "top50": "Rezerwat przyrody Zielona Góra w Kusiętach",
+    "markers": [
+      {
+        "id": 8894,
+        "title": "Jaskinia i schronisko w Zielonej Górze k. Kusiąt (RPN Zielona Góra, GR, GPJ, dostęp ograniczony)"
+      },
+      {
+        "id": 8895,
+        "title": "Skałka Diabelskie Kowadło w Kusiętach, górnojurajskie wapienie (RPN Zielona Góra, GR, GPJ)"
+      }
+    ]
+  },
+  {
+    "number": 5,
+    "top50": "Góra Zamkowa, Biakło i Sokole Góry w Olsztynie",
+    "markers": [
+      {
+        "id": 9839,
+        "title": "Góra Zamkowa w Olsztynie, górnojurajskie wapienie (GPJ; punkt widokowy, Jaskinia Zamkowa Dolna)"
+      },
+      {
+        "id": 9175,
+        "title": "Wzgórze Biakło (Brodło) k. Olsztyna, górnojurajskie wapienie (GR, SzP, GPJ)"
+      },
+      {
+        "id": 8868,
+        "title": "Ścieżka dydaktyczna po rezerwacie Sokole Góry k. Olsztyna (RP, EGN, SzP)"
+      }
+    ]
+  },
+  {
+    "number": 6,
+    "top50": "Rezerwat przyrody Parkowe w Złotym Potoku i Siedlcu",
+    "markers": [
+      {
+        "id": 8838,
+        "title": "Ścieżka dydaktyczna po rezerwacie Parkowe k. Złotego Potoku (RP, SzP)"
+      }
+    ]
+  },
+  {
+    "number": 7,
+    "top50": "Pustynia Siedlecka w Siedlcu",
+    "markers": [
+      {
+        "id": 8834,
+        "title": "Pustynia Siedlecka w Siedlcu (GR, SzP, GPJ)"
+      }
+    ]
+  },
+  {
+    "number": 8,
+    "top50": "Kuesta jurajska w Żarkach",
+    "markers": [
+      {
+        "id": 8744,
+        "title": "Kuesta jurajska w Żarkach, osady środkowo- i górnojurajskie (GK, GPJ, punkt widokowy)"
+      }
+    ]
+  },
+  {
+    "number": 9,
+    "top50": "Grzęda Mirowsko-Bobolicka",
+    "markers": [
+      {
+        "id": 9972,
+        "title": "Grzęda Mirowsko-Bobolicka, górnojurajskie wapienie – jeden z najciekawszych murów skalnych Północnej Jury"
+      }
+    ]
+  },
+  {
+    "number": 10,
+    "top50": "Skały Rzędkowickie w Rzędkowicach",
+    "markers": [
+      {
+        "id": 9086,
+        "title": "Skały Rzędkowickie, górnojurajskie wapienie (PP) – jeden z najciekawszych murów skalnych Północnej Jury"
+      }
+    ]
+  },
+  {
+    "number": 11,
+    "top50": "Rezerwat przyrody Góra Zborów koło Kroczyc",
+    "markers": [
+      {
+        "id": 8821,
+        "title": "Góra Zborów (Góra Berkowa) k. Podlesic, górnojurajskie wapienie i jaskinie (RPN Góra Zborów, EGN, GK, SZP, punkt widokowy)"
+      }
+    ]
+  },
+  {
+    "number": 12,
+    "top50": "Okiennik Wielki w Piasecznie",
+    "markers": [
+      {
+        "id": 8864,
+        "title": "Skałka Okiennik Wielki w Piasecznie, górnojurajskie wapienie (GK)"
+      }
+    ]
+  },
+  {
+    "number": 13,
+    "top50": "Źródła Warty w Kromołowie",
+    "markers": [
+      {
+        "id": 8724,
+        "title": "Źródło Warty I w Kromołowie (GR po rewitalizacji)"
+      },
+      {
+        "id": 8951,
+        "title": "Źródło Warty II w Kromołowie (GL po rewitalizacji)"
+      }
+    ]
+  },
+  {
+    "number": 14,
+    "top50": "Skalne miasto na Górze Janowskiego w Podzamczu",
+    "markers": [
+      {
+        "id": 8778,
+        "title": "Góra Janowskiego 516 m w Podzamczu, górnojurajskie wapienie (PSD, GK) – najwyższe wzniesienie Wyżyny Krakowsko–Częstochowskiej"
+      }
+    ]
+  },
+  {
+    "number": 15,
+    "top50": "Rezerwat przyrody Smoleń i dolina wodąca",
+    "markers": [
+      {
+        "id": 8952,
+        "title": "Wzgórze zamkowe w Smoleniu, górnojurajskie wapienie (RP Smoleń, GK, SzP, punkt widokowy)"
+      },
+      {
+        "id": 9762,
+        "title": "Dolina Wodąca w Smoleniu (SzP)"
+      }
+    ]
+  },
+  {
+    "number": 16,
+    "top50": "Muzeum Górnictwa Rud Żelaza w Częstochowie",
+    "markers": [
+      {
+        "id": 8649,
+        "title": "Muzeum Górnictwa Rud Żelaza w Częstochowie (imitacja podziemi kopalni rud żelaza; SZT)"
+      }
+    ]
+  },
+  {
+    "number": 17,
+    "top50": "Muzeum Paleontologiczne w Lisowicach",
+    "markers": [
+      {
+        "id": 8696,
+        "title": "Muzeum Paleontologiczne w Lisowicach (SzP)"
+      }
+    ]
+  },
+  {
+    "number": 18,
+    "top50": "Zabytkowa Kopalnia Srebra i Sztolnia Czarnego Pstrąga w Tarnowskich Górach",
+    "markers": [
+      {
+        "id": 8713,
+        "title": "Zabytkowa Kopalnia Srebra w Tarnowskich Górach, środkowotriasowe dolomity (ZT, EGN, SZT, PH, ERIH, GM, UNESCO)"
+      },
+      {
+        "id": 8707,
+        "title": "Sztolnia Czarnego Pstrąga w Tarnowskich Górach – Szyb Sylwester (wejście), środkowotriasowe dolomity i wapienie (SZT, PH, GK, UNESCO, SzP)"
+      }
+    ]
+  },
+  {
+    "number": 19,
+    "top50": "Muzeum Geologii Złóż Politechniki Śląskiej w Gliwicach",
+    "markers": [
+      {
+        "id": 8752,
+        "title": "Muzeum Geologii Złóż Politechniki Śląskiej w Gliwicach"
+      }
+    ]
+  },
+  {
+    "number": 20,
+    "top50": "Muzeum Górnictwa Węglowego w Zabrzu",
+    "markers": [
+      {
+        "id": 8683,
+        "title": "Muzeum Górnictwa Węglowego w Zabrzu (ZT)"
+      }
+    ]
+  },
+  {
+    "number": 21,
+    "top50": "Geopark w Zabrzu-Grzybowicach",
+    "markers": [
+      {
+        "id": 9358,
+        "title": "Teren d. glinianek Grzybowice w Zabrzu, czwartorzędowe gliny zwałowe (obecnie Zabrzański Gopark)"
+      }
+    ]
+  },
+  {
+    "number": 22,
+    "top50": "Rezerwat przyrody Segiet i stanowisko dokumentacyjne Blachówka w Bytomiu",
+    "markers": [
+      {
+        "id": 9282,
+        "title": "Ślady d. eksploatacji srebra, ołowiu i żelaza na Srebrnej Górze w Bytomiu i Tarnowskich Górach, środkowotriasowe dolomity i wapienie (RP Segiet, UNESCO, SzP)"
+      },
+      {
+        "id": 8660,
+        "title": "Wyrobisko d. kamieniołomu Blachówka w Bytomiu, środkowotriasowe dolomity kruszconośne (SD, GR, SzP)"
+      }
+    ]
+  },
+  {
+    "number": 23,
+    "top50": "Zespół Przyrodniczo Krajobrazowy Żabie Doły w Bytomiu i Chorzowie",
+    "markers": [
+      {
+        "id": 8993,
+        "title": "Teren XIX i XX-w. eksploatacji węgla kamiennego, rud cynku i ołowiu oraz żelaziaków brunatnych w Bytomiu (ZPK Żabie Doły, SzP)"
+      }
+    ]
+  },
+  {
+    "number": 24,
+    "top50": "Muzeum Hutnictwa w Chorzowie",
+    "markers": [
+      {
+        "id": 8995,
+        "title": "Zespół zabudowy d. huty żelaza Królewska (Kościuszko) w Chorzowie (ZT, SZT, ERIH; Muzeum Hutnictwa)"
+      }
+    ]
+  },
+  {
+    "number": 25,
+    "top50": "Muzeum Śląskie w Katowicach",
+    "markers": [
+      {
+        "id": 8691,
+        "title": "Zespół zabudowy d. KWK Katowice (SZT; obecnie Muzeum Śląskie w Katowicach, wieża widokowa)"
+      }
+    ]
+  },
+  {
+    "number": 26,
+    "top50": "Muzeum Hutnictwa Cynku Walcownia w Katowicach",
+    "markers": [
+      {
+        "id": 8708,
+        "title": "Hala walcowni d. huty cynku Uthemann w Szopienicach (ZT, SZT, ERIH; obecnie Muzeum Hutnictwa Cynku Walcownia)"
+      }
+    ]
+  },
+  {
+    "number": 27,
+    "top50": "Muzeum Saturn w Czeladzi",
+    "markers": [
+      {
+        "id": 8671,
+        "title": "Zespół zabudowań d. KWK Saturn w Czeladzi (ZT, SZT; obecnie Muzeum Saturn: Galeria Elektrownia i Cechownia)"
+      }
+    ]
+  },
+  {
+    "number": 28,
+    "top50": "Muzeum Nauk o Ziemi w Sosnowcu",
+    "markers": [
+      {
+        "id": 8712,
+        "title": "Muzeum i Lapidarium Instytutu Nauk o Ziemi w Sosnowcu (SzP)"
+      }
+    ]
+  },
+  {
+    "number": 29,
+    "top50": "Sala ekspozycyjna Oddziału Górnośląskiego PIG-PIB w Sosnowcu",
+    "markers": [
+      {
+        "id": 8735,
+        "title": "Sala ekspozycyjna Oddziału PIG–PIB w Sosnowcu"
+      }
+    ]
+  },
+  {
+    "number": 30,
+    "top50": "Zbiorniki Pogoria w Dąbrowie Górniczej",
+    "markers": [
+      {
+        "id": 8689,
+        "title": "Teren d. piaskowni w Dąbrowie Górniczej, czwartorzędowe piaski podsadzkowe (obecnie zbiornik Pogoria I; SzP)"
+      },
+      {
+        "id": 10012,
+        "title": "Teren d. piaskowni w Dąbrowie Górniczej, czwartorzędowe piaski podsadzkowe (obecnie zbiornik Pogoria II; SzP)"
+      },
+      {
+        "id": 10013,
+        "title": "Teren d. piaskowni w Dąbrowie Górniczej, czwartorzędowe piaski podsadzkowe (obecnie zbiornik Pogoria III; SzP)"
+      },
+      {
+        "id": 10014,
+        "title": "Teren d. piaskowni w Dąbrowie Górniczej, czwartorzędowe piaski podsadzkowe (obecnie zbiornik Pogoria IV; SzP)"
+      }
+    ]
+  },
+  {
+    "number": 31,
+    "top50": "Muzeum Sztygarka w Dąbrowie Górniczej",
+    "markers": [
+      {
+        "id": 8673,
+        "title": "Muzeum Miejskie Sztygarka w Dąbrowie Górniczej"
+      },
+      {
+        "id": 8654,
+        "title": "Kopalnia Ćwiczebna w Dąbrowie Górniczej, górnokarbońskie utwory górnośląskiej serii piaskowcowej (SZT, GK)"
+      }
+    ]
+  },
+  {
+    "number": 32,
+    "top50": "Stanowisko dokumentacyjne Srocza Góra w Dąbrowie Górniczej",
+    "markers": [
+      {
+        "id": 8827,
+        "title": "Wyrobiska d. kamieniołomów z ruinami wapienników (x3) na Sroczej Górze w Dąbrowie Górniczej, środkowotriasowe wapienie (SD, PGK)"
+      }
+    ]
+  },
+  {
+    "number": 33,
+    "top50": "Dolina Białej Przemszy w Sławkowie",
+    "markers": [
+      {
+        "id": 9297,
+        "title": "Ścieżka dydaktyczna w Parku Dolina Białej Przemszy w Sławkowie"
+      },
+      {
+        "id": 9114,
+        "title": "Meandry Białej Przemszy w Sławkowie (PGR)"
+      }
+    ]
+  },
+  {
+    "number": 34,
+    "top50": "Ośrodek Edukacji Ekologiczno-Geologicznej GEOsfera w Jaworznie",
+    "markers": [
+      {
+        "id": 8700,
+        "title": "Wyrobiska d. kamieniołomu Sadowa Góra w Jaworznie, środkowotriasowe wapienie (obecnie Ośrodek Edukacji Ekologiczno-Geologicznej GEOsfera; GK, SzP, SDx4)"
+      }
+    ]
+  },
+  {
+    "number": 35,
+    "top50": "Park Gródek w Jaworznie",
+    "markers": [
+      {
+        "id": 8932,
+        "title": "Wyrobisko d. kamieniołomu Gródek w Jaworznie, środkowotriasowe dolomity (obecnie Park Gródek; ścieżka dydaktyczna, PGR)"
+      }
+    ]
+  },
+  {
+    "number": 36,
+    "top50": "Kompleks kamieniołomów i wapienników w Mikołowie Mokrem",
+    "markers": [
+      {
+        "id": 8767,
+        "title": "Wyrobisko d. kamieniołomu w Mikołowie Mokrem (1), środkowotriasowe wapienie w-w gogolińskich (GR)"
+      },
+      {
+        "id": 10654,
+        "title": "Zrewitalizowany wapiennik w Mikołowie-Mokrem (1) – najliczniejszy zespół pieców szybowych w WSL"
+      }
+    ]
+  },
+  {
+    "number": 37,
+    "top50": "Graniczne Meandry rzeki Odry w Chałupkach",
+    "markers": [
+      {
+        "id": 8820,
+        "title": "Ścieżka przyrodnicza Meandry rzeki Odry k. Chałupek (SzP)"
+      },
+      {
+        "id": 9036,
+        "title": "Chałupki 195 m – geomorfologia granicznego meandru Odry (OChK, SzP)"
+      }
+    ]
+  },
+  {
+    "number": 38,
+    "top50": "Stanowisko dokumentacyjne Skałka w Rydułtowach",
+    "markers": [
+      {
+        "id": 8836,
+        "title": "Wychodnia (d. kamieniołom) Skałka w Rydułtowach, w-wy porębskie górnokarbońskiej serii paralicznej (SD, EGN, GR, SzP)"
+      }
+    ]
+  },
+  {
+    "number": 39,
+    "top50": "Zabytkowa Kopalnia Ignacy w Rybniku",
+    "markers": [
+      {
+        "id": 8851,
+        "title": "Zabytkowa KWK Ignacy w Rybniku  (ZT, SZT, PGR, ERIH; wieża widokowa) – pierwsza państwowa kopalnia na ziemi rybnickiej"
+      }
+    ]
+  },
+  {
+    "number": 40,
+    "top50": "Carbonarium – Łaźnia Moszczenica w Jastrzębiu Zdroju",
+    "markers": [
+      {
+        "id": 9663,
+        "title": "Teren d. KWK Moszczenica w Jastrzębiu Zdroju (obecnie min. Łaźnia Moszczenica - Carbonarium)"
+      }
+    ]
+  },
+  {
+    "number": 41,
+    "top50": "Kompleks kamieniołomów Jasieniowa w Goleszowie",
+    "markers": [
+      {
+        "id": 8780,
+        "title": "Kompleks d. kamieniołomów na Górze Jasieniowej w Goleszowie, wapienie cieszyńskie serii śląskiej (SD, EGN, PGK, SzP)"
+      }
+    ]
+  },
+  {
+    "number": 42,
+    "top50": "Zabytki przemysłowe Ustronia",
+    "markers": [
+      {
+        "id": 8810,
+        "title": "Szlak Industrialnego Dziedzictwa Ustronia"
+      },
+      {
+        "id": 8746,
+        "title": "Zabudowania d. huty żelaza Klemensa i odlewni Elżbiety w Ustroniu (obecnie Muzeum Ustrońskie; ZT, SZT)"
+      }
+    ]
+  },
+  {
+    "number": 43,
+    "top50": "Malinów i Malinowska Skała w Beskidzie Śląskim",
+    "markers": [
+      {
+        "id": 8823,
+        "title": "Malinowska Skała, stratotyp zlepieńca z Malinowskiej Skały wśród w-w godulskich górnych serii śląskiej (PP, GB, SzP, punkt widokowy)"
+      }
+    ]
+  },
+  {
+    "number": 44,
+    "top50": "Masyw Baraniej Góry – źródła rzeki Wisła",
+    "markers": [
+      {
+        "id": 9014,
+        "title": "Barania Góra 1215 m w Wiśle – geomorfologia najwyższych partii Beskidu Śląskiego (GB, SzP)"
+      },
+      {
+        "id": 8677,
+        "title": "Kaskady Rodła w dolinie Białej Wisełki k. Wisły, stratotyp kontaktu w-w godulskich górnych i istebniańskich dolnych serii śląskiej (RP Wisła, PSD, EGN, GR, GB, SzP)"
+      }
+    ]
+  },
+  {
+    "number": 45,
+    "top50": "Kamieniołom w Kozach",
+    "markers": [
+      {
+        "id": 8867,
+        "title": "Wyrobisko d. kamieniołomu w Kozach, największe w całych Karpatach odsłonięcie w-w lgockich serii śląskiej (PSD, EGN, GR, SzP, punkt widokowy)"
+      }
+    ]
+  },
+  {
+    "number": 46,
+    "top50": "Przełom Soły przez Beskid Mały",
+    "markers": [
+      {
+        "id": 8792,
+        "title": "Przełom Soły przez Beskid Mały (PGK)"
+      }
+    ]
+  },
+  {
+    "number": 47,
+    "top50": "Stanowisko dokumentacyjne Zamczysko na Ściszków Groniu w Łysinie",
+    "markers": [
+      {
+        "id": 8733,
+        "title": "Zespół skałek Zamczysko na Ściszków (Ścieszków) Groniu w Łysinie, w-wy godulskie górne serii śląskiej (SD) + najniżej położona w Polsce jaskinia lodowa"
+      }
+    ]
+  },
+  {
+    "number": 48,
+    "top50": "Wzgórze Grojec w Żywcu",
+    "markers": [
+      {
+        "id": 9270,
+        "title": "Ruina wapiennika na Górze Grojec w Żywcu"
+      },
+      {
+        "id": 10301,
+        "title": "Teren d. eksploatacji rud żelaza na Górze Grojec w Żywcu, w-wy cieszyńskie serii śląskiej"
+      }
+    ]
+  },
+  {
+    "number": 49,
+    "top50": "Masyw Pilska w Beskidzie Żywiecko-Orawskim",
+    "markers": [
+      {
+        "id": 8750,
+        "title": "Formy rzeźby glacjalnej i wychodnie skalne serii magurskiej - raczańskiej w masywie Pilska (GB, SzP, punkt widokowy) – najwyżej położony punkt wysokościowy w WSL (1534 m)"
+      }
+    ]
+  },
+  {
+    "number": 50,
+    "top50": "Geo-Park Glinka w Glince",
+    "markers": [
+      {
+        "id": 8710,
+        "title": "Geo-Park Glinka w d. kamieniołomie Groniczek, piaskowce serii magurskiej - raczańskiej (PSD, GK, GB)"
+      }
+    ]
+  }
+]

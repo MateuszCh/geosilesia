@@ -1,6 +1,29 @@
-import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
-import { TabsData } from '../../models/row.model';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    DOCUMENT,
+    Injector,
+    afterNextRender,
+    computed,
+    inject,
+    input,
+    linkedSignal
+} from '@angular/core';
+import { ChartBar, TabsData } from '../../models/row.model';
+import { colorByName, periodColor } from '../../core/categories';
+import { ScrollService } from '../../core/scroll.service';
+import { plural } from '../../shared/plural';
 
+interface TocEntry {
+    id: string;
+    title: string;
+}
+
+/**
+ * Sections of one content page as tabs, with "Na tej stronie" listing the headings of the
+ * open tab. Every panel is rendered (the inactive ones `hidden`), so the whole text is in
+ * the server HTML.
+ */
 @Component({
     selector: 'app-tabs',
     templateUrl: './tabs.html',
@@ -8,5 +31,125 @@ import { TabsData } from '../../models/row.model';
 })
 export class Tabs {
     readonly component = input.required<TabsData>();
-    readonly activeTab = signal(0);
+    /** "Bez spisu „Na tej stronie”", as beside the section menu of Położenie and Rzeźba terenu. */
+    readonly showToc = computed(() => !this.component().hide_toc);
+    // Linked to the input: the router reuses this instance when another page with tabs
+    // opens, and each page starts on its first tab with the contents list closed.
+    readonly activeTab = linkedSignal({ source: this.component, computation: () => 0 });
+    readonly tocOpen = linkedSignal({ source: this.component, computation: () => false });
+    readonly currentHeading = linkedSignal<TabsData, string | undefined>({
+        source: this.component,
+        computation: () => undefined
+    });
+
+    protected readonly periodColor = periodColor;
+
+    private readonly doc = inject(DOCUMENT);
+    private readonly scroll = inject(ScrollService);
+    private readonly injector = inject(Injector);
+
+    readonly tabs = computed(() => this.component().tabs ?? []);
+
+    readonly toc = computed<TocEntry[]>(() => {
+        const tabIndex = this.activeTab();
+        return (this.tabs()[tabIndex]?.rows ?? [])
+            .map((row, rowIndex) => ({ id: this.headingId(tabIndex, rowIndex), title: row.heading ?? '' }))
+            .filter(entry => entry.title);
+    });
+    /** The heading picked in "Na tej stronie"; the first one until then, as in the mockup. */
+    readonly current = computed(() => this.currentHeading() ?? this.toc()[0]?.id);
+
+    tabId(index: number): string {
+        return `tab-${index}`;
+    }
+
+    panelId(index: number): string {
+        return `tab-panel-${index}`;
+    }
+
+    headingId(tabIndex: number, rowIndex: number): string {
+        return `tab-${tabIndex}-sekcja-${rowIndex}`;
+    }
+
+    select(index: number): void {
+        this.activeTab.set(index);
+        this.currentHeading.set(undefined);
+        this.tocOpen.set(false);
+    }
+
+    /** Arrow keys move between tabs, as in the WAI-ARIA tabs pattern. */
+    onTabKey(event: KeyboardEvent, index: number): void {
+        const count = this.tabs().length;
+        const target =
+            event.key === 'ArrowRight'
+                ? (index + 1) % count
+                : event.key === 'ArrowLeft'
+                  ? (index - 1 + count) % count
+                  : event.key === 'Home'
+                    ? 0
+                    : event.key === 'End'
+                      ? count - 1
+                      : -1;
+        if (target === -1) return;
+        event.preventDefault();
+        this.select(target);
+        this.doc.getElementById(this.tabId(target))?.focus();
+    }
+
+    goTo(event: Event, id: string): void {
+        event.preventDefault();
+        this.currentHeading.set(id);
+        this.tocOpen.set(false);
+        // Only once the list above has folded: a smooth scroll keeps the target it started
+        // with, so it would stop the list's height too far, past the heading.
+        afterNextRender(() => this.scroll.scrollToElement(this.doc.getElementById(id)), {
+            injector: this.injector
+        });
+    }
+
+    sectionsLabel(count: number): string {
+        return plural(count, 'sekcja', 'sekcje', 'sekcji');
+    }
+
+    protected readonly chipColors = [
+        'var(--trail-red)',
+        'var(--trail-blue)',
+        'var(--trail-green)',
+        'var(--trail-yellow)',
+        'var(--trail-black)'
+    ];
+
+    /** A list of a few short names reads as chips, as in the mockups; sentences stay a list. */
+    isChipList(list: { item?: string }[] | undefined): boolean {
+        return !!list && list.length > 1 && list.every(entry => !!entry.item && entry.item.length <= 40);
+    }
+
+    /** A figure's own trail colour; ink when none is set. */
+    factColor(name: string | undefined): string | null {
+        return colorByName(name) ?? null;
+    }
+
+    /**
+     * One highlighted bar is the subject compared with the rest (the region's mean height
+     * against Europe and Poland): forest against muted bars. Several highlighted bars mark
+     * a group instead (state borders among the others): red against green.
+     */
+    isComparison(bars: ChartBar[] | undefined): boolean {
+        return (bars ?? []).filter(bar => bar.highlight).length === 1;
+    }
+
+    /** Bar length relative to the largest value of the chart. */
+    barWidth(bars: ChartBar[] | undefined, value: number | string | undefined): number {
+        const values = (bars ?? []).map(bar => Number(bar.value) || 0);
+        const max = Math.max(...values, 0);
+        return max ? Math.round(((Number(value) || 0) / max) * 100) : 0;
+    }
+
+    /** The bar's figure in Polish notation ("55,3", "12 334"); text is shown as typed. */
+    barValue(value: number | string | undefined): string {
+        const number = typeof value === 'number' ? value : Number(value);
+        return value !== '' && value !== undefined && Number.isFinite(number)
+            ? number.toLocaleString('pl-PL')
+            : String(value ?? '');
+    }
 }

@@ -12,7 +12,12 @@ import { Observable } from 'rxjs';
 export class ApiService {
     private readonly http = inject(HttpClient);
 
-    get<T>(url: string): Observable<T> {
-        return this.http.get<T>(url, { withCredentials: true });
+    /**
+     * `transfer: false` keeps a response made during the server render out of the HTTP
+     * transfer cache, i.e. out of the HTML – for data the page only derives something
+     * small from (ContentService.summary).
+     */
+    get<T>(url: string, { transfer = true }: { transfer?: boolean } = {}): Observable<T> {
+        return this.http.get<T>(url, { withCredentials: true, ...(transfer ? {} : { transferCache: false }) });
     }
 }

@@ -1,10 +1,12 @@
 const express = require("express"),
     bodyParser = require("body-parser"),
+    compression = require("compression"),
     path = require("path"),
     fs = require("fs"),
     MongoClient = require("mongodb").MongoClient,
     config = require("./config"),
     seoMeta = require("./shared/seo-meta"),
+    { REDIRECTS } = require("./shared/redirects"),
     { createRenderer } = require("./ssr");
 
 const app = express();
@@ -17,6 +19,12 @@ app.set("port", process.env.PORT || 3000);
 // nor the Host header itself is trustworthy – the client can forge both if the proxy
 // does not overwrite them – so "siteUrl" in config.json is mandatory in production.
 app.set("trust proxy", 1);
+
+// Brotli or gzip for every text response – rendered pages, the JS bundle, CSS and API JSON.
+// Without it the first visit on a phone downloads several times more: main.js shrinks from
+// ~530 kB to ~160 kB. Images are left alone (already compressed). A proxy in front of the
+// app does not compress again a response that already has Content-Encoding.
+app.use(compression());
 
 // Global indexing switch – one flag for the whole site, no per-page settings.
 // Deliberately OFF by default: a fresh clone or a staging instance without the entry
@@ -79,20 +87,37 @@ function postsOfType(type) {
     return collections.posts.find({ type }).toArray();
 }
 
-// Replaces the catalogue name in "gallery" rows with the list of files from the files
-// collection. Each gallery gets the result of its own query – previously responses were
-// assigned by index among all galleries while queries were only made for those with
-// a catalogue, so a gallery without one shifted the files of the following ones
-// (visible in /api/appData/).
+// Calls `fn` for every row of a page and every component nested in one or in the page's
+// type values: a "component" field stores a component as { type, title, data } – the shape
+// of a row – in a column of "Kolumny", in the side column of a "tresc" page and so on.
+function forEachRow(page, fn) {
+    const visit = value => {
+        if (Array.isArray(value)) {
+            value.forEach(visit);
+        } else if (value && typeof value === "object") {
+            if (typeof value.type === "string" && value.data && typeof value.data === "object") fn(value);
+            Object.keys(value).forEach(key => visit(value[key]));
+        }
+    };
+    visit(page.rows);
+    visit(page.typeData);
+}
+
+// Replaces the catalogue name in "gallery" rows (and in "photos" rows that take their
+// photos from a catalogue) with the list of files from the files collection – nested ones
+// included. Each row gets the result of its own query – previously responses were assigned
+// by index among all galleries while queries were only made for those with a catalogue, so
+// a gallery without one shifted the files of the following ones (visible in /api/appData/).
 function attachGalleries(pages) {
     const galleries = [];
-    (pages || []).forEach(page => {
-        (page.rows || []).forEach(row => {
-            if (row.type === "gallery" && row.data && row.data.catalogue) {
+    (pages || []).forEach(page =>
+        forEachRow(page, row => {
+            const usesCatalogue = row.type === "gallery" || (row.type === "photos" && row.data.source === "katalog");
+            if (usesCatalogue && typeof row.data.catalogue === "string" && row.data.catalogue) {
                 galleries.push(row);
             }
-        });
-    });
+        })
+    );
     return Promise.all(
         galleries.map(gallery =>
             collections.files
@@ -123,6 +148,90 @@ function pageData(pageUrl) {
         .then(attachGalleries)
         .then(pages => ({ pages }));
 }
+
+// Albums for the gallery list and the "Inne albumy" section: every page with a "gallery"
+// row. Variant C keeps the category, cover and "hidden" flag on the album itself – in the
+// values of an "album" page, before scripts/cms/18 in its gallery row (the front merges
+// them the same way, page-layout.ts); albums with neither take the category and cover from
+// the manual gallery_list. An album
+// whose "hidden" flag was never set is hidden only while the list is kept by hand ("ręcznie")
+// and the album is not on it – as on the old site. In the "automatycznie" mode it is shown,
+// otherwise a new album would stay invisible until someone also added it to the manual list.
+function galleriesList() {
+    return Promise.all([
+        collections.pages
+            .find(
+                { "rows.type": "gallery" },
+                { projection: { pageUrl: 1, title: 1, rows: 1, updated: 1, type: 1, typeData: 1 } }
+            )
+            .toArray(),
+        collections.pages.find({ "rows.type": "gallery_list" }, { projection: { rows: 1 } }).toArray()
+    ]).then(([albumPages, listPages]) => {
+        const listed = new Map();
+        let automatic = false;
+        listPages.forEach(page =>
+            (page.rows || []).forEach(row => {
+                if (row.type !== "gallery_list" || !row.data) return;
+                if (row.data.mode === "automatycznie") automatic = true;
+                (row.data.galleries || []).forEach(entry => {
+                    const key = entry && entry.link ? seoMeta.normalizePath(decodePath(entry.link.replace(/^https?:\/\/[^/]+/, ""))) : "";
+                    if (key && !listed.has(key)) listed.set(key, { entry, order: listed.size });
+                });
+            })
+        );
+
+        const albums = albumPages.map(page => {
+            const gallery = Object.assign(
+                {},
+                (page.rows.find(row => row.type === "gallery") || {}).data,
+                page.type === "album" ? page.typeData : undefined
+            );
+            const pageUrl = seoMeta.normalizePath(page.pageUrl);
+            const manual = listed.get(pageUrl);
+            return {
+                pageUrl,
+                title: gallery.title || (manual && manual.entry.title) || page.title,
+                category: gallery.category || (manual && manual.entry.category) || "",
+                cover: gallery.cover || (manual && manual.entry.image) || "",
+                catalogue: typeof gallery.catalogue === "string" ? gallery.catalogue : "",
+                hidden: typeof gallery.hidden === "boolean" ? gallery.hidden : !automatic && !manual,
+                updated: page.updated,
+                order: manual ? manual.order : Number.MAX_SAFE_INTEGER
+            };
+        });
+
+        const catalogues = albums.map(album => album.catalogue).filter(Boolean);
+        return collections.files
+            .aggregate([
+                { $match: { catalogues: { $in: catalogues } } },
+                { $unwind: "$catalogues" },
+                { $match: { catalogues: { $in: catalogues } } },
+                { $sort: { position: 1, id: 1 } },
+                { $group: { _id: "$catalogues", count: { $sum: 1 }, first: { $first: "$src" } } }
+            ])
+            .toArray()
+            .then(groups => {
+                const byCatalogue = new Map(groups.map(group => [group._id, group]));
+                return albums
+                    .map(({ catalogue, order, ...album }) => {
+                        const files = byCatalogue.get(catalogue);
+                        return Object.assign(album, {
+                            count: files ? files.count : 0,
+                            cover: album.cover || (files && files.first) || "",
+                            order
+                        });
+                    })
+                    .sort((a, b) => a.order - b.order || String(a.title).localeCompare(String(b.title), "pl"))
+                    .map(({ order, ...album }) => album);
+            });
+    });
+}
+
+app.get("/api/galleries", (req, res, next) => {
+    galleriesList()
+        .then(albums => res.send(albums))
+        .catch(next);
+});
 
 app.get("/api/posts/:type", (req, res, next) => {
     postsOfType(req.params.type)
@@ -386,18 +495,21 @@ function injectSeo(html, block) {
 // SSR (Angular rendering) //
 ///////////////////////////
 
-// Counterparts of the /api/page/:pageUrl and /api/posts/:type routes for server-side
+// Counterparts of the /api/page/:pageUrl, /api/posts/:type and /api/galleries routes for server-side
 // rendering. Requests made during a render do not go over the network – under Passenger
 // the process has no predictable port. The JSON round trip yields exactly what the
 // browser receives (ObjectIds and dates as strings) – otherwise the server HTML would
 // differ from the client's first render.
 function ssrApi(apiPath) {
+    if (databaseError) {
+        return Promise.reject(new Error("Database unavailable"));
+    }
+    if (apiPath === "/api/galleries") {
+        return galleriesList().then(result => JSON.parse(JSON.stringify(result)));
+    }
     const match = /^\/api\/(page|posts)\/([^/]+)$/.exec(apiPath);
     if (!match) {
         return Promise.reject(new Error(`unsupported request ${apiPath}`));
-    }
-    if (databaseError) {
-        return Promise.reject(new Error("Database unavailable"));
     }
     const param = decodePath(match[2]);
     const data = match[1] === "page" ? pageData(param) : postsOfType(param);
@@ -438,6 +550,8 @@ app.get("/sitemap.xml", (req, res) => {
             pages.forEach(page => {
                 if (!page || !page.pageUrl) return;
                 const pagePath = seoMeta.normalizePath(page.pageUrl);
+                // A redirected address is not a page of its own.
+                if (REDIRECTS[pagePath]) return;
                 const updated = seoMeta.updatedIso(page);
                 const current = byPath.get(pagePath);
                 if (!current || updated > current) byPath.set(pagePath, updated);
@@ -493,6 +607,14 @@ app.get(["/index.html", "/index.csr.html"], (req, res, next) => {
             res.type("html").send(html);
         })
         .catch(next);
+});
+
+// Retired addresses (shared/redirects.js), before the pages: a permanent redirect that
+// keeps the query string.
+app.get(Object.keys(REDIRECTS), (req, res) => {
+    const at = req.originalUrl.indexOf("?");
+    const query = at >= 0 ? req.originalUrl.slice(at) : "";
+    res.redirect(301, REDIRECTS[seoMeta.normalizePath(req.path)] + query);
 });
 
 app.use("/uploads", express.static(`${__dirname}/uploads`));

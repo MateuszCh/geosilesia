@@ -4,7 +4,7 @@ import { catchError, map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { IdbService } from './idb.service';
 import { Page, PagesResponse } from '../models/page.model';
-import { AppData, Post } from '../models/post.model';
+import { AlbumSummary, AppData, Post } from '../models/post.model';
 
 /**
  * The single place all API data passes through.
@@ -52,8 +52,8 @@ export class ResourceService {
         return this.idb.getPage(pageKey);
     }
 
-    loadPostsFromNetwork<T>(type: string): Observable<Post<T>[]> {
-        return this.api.get<Post<T>[]>(`/api/posts/${type}`).pipe(
+    loadPostsFromNetwork<T>(type: string, transfer = true): Observable<Post<T>[]> {
+        return this.api.get<Post<T>[]>(`/api/posts/${type}`, { transfer }).pipe(
             map(posts => posts ?? []),
             tap(posts => {
                 // An empty response is information too, but it does not wipe the cache:
@@ -63,6 +63,14 @@ export class ResourceService {
                 }
             }),
             catchError(() => of([] as Post<T>[]))
+        );
+    }
+
+    /** Every album (page with a `gallery` row) with its category, cover and photo count. */
+    loadAlbums(): Observable<AlbumSummary[]> {
+        return this.api.get<AlbumSummary[]>('/api/galleries').pipe(
+            map(albums => albums ?? []),
+            catchError(() => of([] as AlbumSummary[]))
         );
     }
 

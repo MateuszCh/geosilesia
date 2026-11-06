@@ -1,0 +1,644 @@
+@use 'tokens' as *;
+
+// Page frame: the header of content pages, the main column with an optional side panel,
+// the "Dalej w dziale" card and the 404 page.
+
+.crumbs {
+    font-size: 15px;
+    line-height: 20px;
+    color: var(--muted);
+
+    &__link {
+        color: inherit;
+    }
+}
+
+.page-hero {
+    &--photo {
+        position: relative;
+        height: 440px;
+        background: var(--forest);
+
+        @include below($bp-phone) {
+            height: 360px;
+        }
+    }
+
+    &__image {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    &__overlay {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 32px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+
+        @include below($bp-phone) {
+            bottom: 12px;
+            padding: 0 12px;
+        }
+    }
+
+    &__panel {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: 680px;
+        padding: 22px 28px;
+        border-radius: var(--radius-lg);
+        background: var(--forest);
+        color: var(--on-forest);
+
+        .crumbs {
+            font-size: 14px;
+            color: var(--on-forest-muted);
+        }
+
+        .page-hero__byline {
+            color: var(--on-forest-muted);
+        }
+
+        @include below($bp-phone) {
+            padding: 16px 18px;
+        }
+    }
+
+    &__title {
+        font-family: var(--font-display);
+        font-size: 72px;
+        font-weight: 800;
+        line-height: 0.95;
+
+        @include below($bp-tablet) {
+            font-size: 52px;
+        }
+
+        @include below($bp-phone) {
+            font-size: 40px;
+        }
+    }
+
+    &__caption {
+        padding: 8px 12px;
+        border-radius: var(--radius-md);
+        background: #fff;
+        color: var(--ink);
+        font-size: 14px;
+        line-height: 20px;
+
+        @include below($bp-phone) {
+            display: none;
+        }
+    }
+
+    &__lead {
+        max-width: 760px;
+        padding-top: 32px;
+    }
+
+    &--plain {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px 32px;
+        padding-top: 44px;
+
+        @include below($bp-phone) {
+            padding-top: 28px;
+        }
+    }
+
+    &__head {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 760px;
+    }
+
+    // The dictionary pages: a light band with the section's pages above the title and the
+    // figures or the search on the right.
+    &--light {
+        border-bottom: 1px solid var(--line);
+        background: var(--surface-alt);
+
+        // The lead gives way to the figures or the search beside it, as in the mockups.
+        .page-hero__head {
+            flex: 1 1 420px;
+            max-width: 820px;
+        }
+
+        .page-hero__lead-text {
+            font-size: 21px;
+            line-height: 32px;
+
+            @include below($bp-phone) {
+                font-size: 18px;
+                line-height: 28px;
+            }
+        }
+    }
+
+    &__band {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding-top: 44px;
+        padding-bottom: 28px;
+
+        @include below($bp-phone) {
+            padding-top: 28px;
+            padding-bottom: 24px;
+        }
+    }
+
+    &__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px 32px;
+    }
+
+    // "Położenie": a forest band holding the page's figures.
+    &--dark {
+        background: var(--forest);
+        color: var(--on-forest);
+
+        .page-hero__band {
+            gap: 22px;
+            padding-top: 40px;
+            padding-bottom: 36px;
+        }
+
+        .crumbs {
+            color: var(--on-forest-muted);
+        }
+
+        .page-hero__title {
+            @include above($bp-tablet) {
+                font-size: 76px;
+            }
+        }
+
+        .page-hero__lead-text {
+            max-width: 760px;
+            color: var(--on-forest);
+        }
+    }
+
+    &__byline {
+        font-size: 15px;
+        line-height: 22px;
+        color: var(--muted);
+    }
+}
+
+// "W nagłówku": figures on the right of the light band, under the title in the dark one.
+.page-hero__component {
+    .facts__list {
+        border-top: 0;
+    }
+
+    .page-hero--light & {
+        .facts__list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 28px;
+        }
+
+        .facts__item {
+            max-width: 200px;
+            padding: 0;
+        }
+
+        .facts__value {
+            font-size: 56px;
+        }
+
+        @include below($bp-phone) {
+            .facts__list {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .facts__value {
+                font-size: 44px;
+            }
+        }
+    }
+
+    .page-hero--dark & {
+        .facts__list {
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            border-top: 1px solid var(--forest-line);
+
+            @include below($bp-phone) {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .facts__item {
+            padding: 16px 16px 4px 0;
+        }
+
+        .facts__value {
+            font-size: 44px;
+        }
+
+        .facts__label,
+        .facts__source {
+            color: var(--on-forest-muted);
+        }
+    }
+}
+
+.page-hero__search {
+    flex: 0 1 380px;
+    max-width: 100%;
+
+    .dictionary__search {
+        width: 100%;
+        height: 54px;
+        border: 2px solid var(--ink);
+        padding-left: 13px;
+    }
+}
+
+.page-body__byline {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.page-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 48px;
+    padding-top: 40px;
+    padding-bottom: 96px;
+
+    @include below($bp-phone) {
+        gap: 32px;
+        padding-top: 24px;
+        padding-bottom: 48px;
+    }
+
+    &__main {
+        display: flex;
+        flex: 999 1 560px;
+        flex-direction: column;
+        gap: 40px;
+        min-width: 0;
+
+        @include below($bp-phone) {
+            gap: 28px;
+        }
+    }
+
+    &__side {
+        display: flex;
+        flex: 1 1 280px;
+        flex-direction: column;
+        gap: 16px;
+        max-width: 340px;
+
+        @include below($bp-tablet) {
+            max-width: none;
+        }
+    }
+}
+
+// The album list's lead continues the title, as in the mockup of the gallery.
+.page-body:has(> .page-body__main > .row:first-child[data-row='gallery_list']) {
+    padding-top: 12px;
+}
+
+// Beside a side column the text keeps the mockups' width; an article with tabs has its
+// "Na tej stronie" list in the same column and the places of "Skarby natury" open their
+// photos beside the text, so these take what is left.
+.page-body--side .page-body__main:not(:has(> .row[data-row='tabs'], .numbered__body)) {
+    max-width: 780px;
+}
+
+// Article rows keep a comfortable reading width when the page has no side panel.
+.page-body:not(.page-body--side) .row {
+    &[data-row='title_and_text'],
+    &[data-row='heading'],
+    &[data-row='literature'],
+    &[data-row='footnotes'],
+    &[data-row='marker_category_list'],
+    &[data-row='notice'] {
+        max-width: 780px;
+    }
+}
+
+.section-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    &__link {
+        display: flex;
+        padding: 10px 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        color: var(--ink);
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 22px;
+        text-decoration: none;
+
+        @include below($bp-phone) {
+            padding: 8px 12px;
+            font-size: 15px;
+            line-height: 20px;
+        }
+
+        &:hover {
+            border-color: var(--ink);
+            color: var(--ink);
+        }
+
+        &--current,
+        &--current:hover {
+            border-color: var(--ink);
+            background: var(--ink);
+            color: #fff;
+            font-weight: 700;
+        }
+    }
+}
+
+// The section's pages beside the text (Położenie, Rzeźba terenu).
+.section-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    &__title {
+        padding-bottom: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 20px;
+    }
+
+    &__link {
+        display: flex;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        color: var(--ink);
+        font-weight: 600;
+        line-height: 22px;
+        text-decoration: none;
+
+        &:hover {
+            border-color: var(--ink);
+            color: var(--ink);
+        }
+
+        &--current,
+        &--current:hover {
+            border-color: var(--ink);
+            background: var(--ink);
+            color: #fff;
+            font-weight: 700;
+        }
+    }
+}
+
+// Several forest cards of one side list, one under another.
+.side-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.next-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2px 16px;
+    max-width: 780px;
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    background: var(--forest);
+    color: var(--on-forest);
+    text-decoration: none;
+
+    &:hover {
+        background: var(--forest-dark);
+        color: var(--on-forest);
+    }
+
+    &__label {
+        font-size: 14px;
+        line-height: 20px;
+        color: var(--on-forest-muted);
+    }
+
+    &__title {
+        grid-row: 2;
+        font-family: var(--font-display);
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.05;
+    }
+
+    &__arrow {
+        grid-row: 1 / span 2;
+        grid-column: 2;
+        font-size: 24px;
+    }
+}
+
+// A row's component in place of its wrapper (RowView): the page's styles see the component.
+app-row {
+    display: contents;
+}
+
+// Home page and album: rows run full width; contained ones get the container here.
+.page--home,
+.page--album {
+    padding-bottom: 96px;
+
+    > .row:not([data-row='homepage_banner']):not([data-row='map']) {
+        width: 100%;
+        max-width: $bp-container;
+        margin-right: auto;
+        margin-left: auto;
+        padding: 0 var(--gutter);
+    }
+
+    > .row + .row {
+        margin-top: var(--section-gap);
+    }
+
+    // A page that ends with the full-bleed map (the map page) meets the footer without a gap.
+    &:has(> .row[data-row='map']:last-child) {
+        padding-bottom: 0;
+    }
+}
+
+.not-found {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 56px;
+    padding-top: 56px;
+    padding-bottom: 72px;
+
+    &__text {
+        display: flex;
+        flex: 1 1 460px;
+        flex-direction: column;
+        gap: 18px;
+        min-width: 0;
+    }
+
+    &__title {
+        font-family: var(--font-display);
+        font-size: 72px;
+        font-weight: 800;
+        line-height: 0.95;
+
+        @include below($bp-phone) {
+            font-size: 44px;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 6px;
+    }
+
+    .notice-box {
+        margin-top: 14px;
+
+        svg {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+    }
+}
+
+// The 404 signpost: arrow-shaped boards on a post, used only here. The boards come from the
+// CMS, so a label may be long: it wraps onto a second line and the board grows.
+.signpost {
+    --post-x: 200px;
+    --board-width: 210px;
+    --boards: 3;
+    position: relative;
+    flex: 0 0 400px;
+    height: calc(100px + var(--boards) * 90px + 90px);
+    margin: 0 auto;
+
+    @include below($bp-phone) {
+        // zoom, unlike a transform, shrinks the layout box too, so the page does not scroll sideways.
+        zoom: 0.8;
+    }
+
+    &__post {
+        position: absolute;
+        left: calc(var(--post-x) - 12px);
+        top: 30px;
+        bottom: 0;
+        width: 24px;
+        border-radius: 4px;
+        background: #8a6a45;
+    }
+
+    &__mark {
+        position: absolute;
+        left: calc(var(--post-x) - 8px);
+        top: 40px;
+        width: 16px;
+        height: 22px;
+    }
+
+    // The outline is the board's own ink background and the white face a slightly smaller
+    // copy of the same arrow underneath the text, so the border follows the slanted tip
+    // (a border would be cut off by clip-path).
+    &__board {
+        --tip: 28px;
+        position: absolute;
+        top: calc(90px + var(--index, 0) * 90px);
+        isolation: isolate;
+        display: flex;
+        align-items: center;
+        width: var(--board-width);
+        min-height: 60px;
+        padding: 8px 16px;
+        background: var(--ink);
+        color: var(--ink);
+        font-family: var(--font-display);
+        font-size: 20px;
+        font-weight: 800;
+        line-height: 1.1;
+        overflow-wrap: anywhere;
+        text-decoration: none;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            z-index: -1;
+            background: #fff;
+        }
+
+        &:hover {
+            color: var(--ink);
+
+            &::before {
+                background: var(--surface-alt);
+            }
+        }
+
+        &--right {
+            left: calc(var(--post-x) - 12px);
+            padding-right: calc(var(--tip) + 8px);
+
+            &,
+            &::before {
+                clip-path: polygon(0 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, 0 100%);
+            }
+        }
+
+        &--left {
+            left: calc(var(--post-x) + 12px - var(--board-width));
+            justify-content: flex-end;
+            padding-left: calc(var(--tip) + 8px);
+            text-align: right;
+
+            &,
+            &::before {
+                clip-path: polygon(var(--tip) 0, 100% 0, 100% 100%, var(--tip) 100%, 0 50%);
+            }
+        }
+    }
+
+    &__shadow {
+        position: absolute;
+        left: 60px;
+        right: 60px;
+        bottom: -8px;
+        height: 16px;
+        border-radius: 50%;
+        background: #e4ebe2;
+    }
+}

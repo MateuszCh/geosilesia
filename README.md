@@ -81,12 +81,23 @@ npm run watch                 # root, or plain `node app.js`
 Open `http://localhost:3000`. This is exactly the path used in production: rendering
 through `app.js`, injected meta, cache, and the `X-Render` response header.
 
+### Both watchers in one terminal
+
+```bash
+npm run dev                   # root: front/ `npm run watch` + root `npm run watch` together
+```
+
+`dev.sh` runs the development build of the front end in watch mode and the backend on
+`:3000`, which nodemon restarts after every build. Open `http://localhost:3000` — the
+same path as production, with a development build. Until the first build finishes the
+backend serves whatever is already in `front/dist`. Ctrl+C stops both; if either one
+exits, the other is stopped too.
+
 ### Debugging hydration
 
-Replace `npm run build` with `cd front && npm run watch`. It keeps rebuilding a
-development build into `front/dist`, `npm run watch` in the root restarts the backend after
-every build,
-and the browser console shows hydration statistics and hydration errors (NG05xx).
+Use `npm run dev` (or `cd front && npm run watch` next to `npm run watch` in the root). It
+keeps rebuilding a development build into `front/dist`, the backend restarts after every
+build, and the browser console shows hydration statistics and hydration errors (NG05xx).
 
 ### When to restart the backend
 
@@ -100,9 +111,14 @@ the front end bundles `shared/seo-meta.js`.
 On the server:
 
 ```bash
-git pull
-npm run deploy   # root: npm install --omit=dev; front: npm ci + ng build; then devil www restart <deployDomain>
+npm run deploy   # git pull --ff-only; root: npm install --omit=dev; front: npm ci + ng build into tmp/; swap; devil www restart <deployDomain>
 ```
+
+The script pulls the code itself (`--ff-only`: a server clone with commits of its own
+stops there) and then runs again from the start, since the pull may have changed it. The
+build goes to `tmp/front-build` and replaces `front/dist/geosilesia` only once it has
+succeeded: the running process keeps serving the old build until the restart, and a failed
+or hung build leaves the site as it was.
 
 Every deployment restarts the Node process, always after the build — the new server
 expects the new build. The restart is also what clears all in-memory caches (rendered
@@ -139,6 +155,10 @@ root `package.json` needs no manual step.
   functions from `app.js` passed in `REQUEST_CONTEXT`. It is a backend, not an
   interceptor: only this way do the responses end up in the HTTP transfer cache, from
   which the browser takes data during hydration.
+- **Lists a page only derives something from stay out of the HTML.** The home page
+  counts all markers and shows three events; sending the lists would add over 1 MB, and the
+  browser hydrates only after the whole HTML has arrived. `ContentService.summary` sends
+  the result alone in TransferState and fetches the lists past the transfer cache.
 - **`<head>` is assembled by `app.js`** (`injectSeo`) for every response, rendered or
   not; `SeoService` does nothing on the server and only updates meta on in-app navigation.
 - The first navigation on a server-rendered page skips IndexedDB in the resolver (the
@@ -159,10 +179,13 @@ root `package.json` needs no manual step.
   SSR the CSR shell has this name; it is the offline navigation fallback. `app.js` serves
   it (and `/index.html`) byte for byte, because ngsw checks its hash.
 - **Hydration requires the server DOM to be identical to the client's first render.**
-  Components with CMS HTML in `<p [innerHTML]>` (`TitleAndText`, `Gallery`,
-  `MarkerCategoryList`) have `ngSkipHydration`, and tables have an explicit `<tbody>` —
-  the browser rearranges the DOM of such constructs while parsing. A new component of
-  this kind needs the same.
+  CMS HTML goes in with `[appHtml]` (`front/src/app/shared/html.directive.ts`), never
+  `[innerHTML]`: hydration would write innerHTML again, repaint the text and move LCP to
+  the moment the JS runs. Put it on a `<div>`. Components with CMS HTML in a `<p>` or
+  `<li>` (`TitleAndText`, `Gallery`, `MarkerCategoryList`) have `ngSkipHydration`, and
+  tables have an explicit `<tbody>` — the browser rearranges the DOM of such constructs
+  while parsing. A new component of this kind needs the same. `ngSkipHydration` costs LCP
+  too: the component's server DOM is thrown away and painted again.
 - **The IndexedDB schema in `front/src/app/core/idb.service.ts`** — database `geosilesia`
   v1, store `pages` (key `pageUrl`) and `posts` (key `id`, index `type`). Users have these
   databases on disk; changing the version wipes their offline data.

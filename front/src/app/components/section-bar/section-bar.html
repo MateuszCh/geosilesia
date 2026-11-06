@@ -1,0 +1,22 @@
+@if (form() === 'menu') {
+    <nav class="section-menu"
+         [attr.aria-label]="'Dział ' + section().title">
+        <span class="section-menu__title">{{ section().title }}</span>
+        @for (link of section().links; track link.link) {
+            <a class="section-menu__link"
+               [routerLink]="link.link"
+               [class.section-menu__link--current]="link.current"
+               [attr.aria-current]="link.current ? 'page' : null">{{ link.title }}</a>
+        }
+    </nav>
+} @else {
+    <nav class="section-bar"
+         [attr.aria-label]="'Dział ' + section().title">
+        @for (link of section().links; track link.link) {
+            <a class="section-bar__link"
+               [routerLink]="link.link"
+               [class.section-bar__link--current]="link.current"
+               [attr.aria-current]="link.current ? 'page' : null">{{ link.title }}</a>
+        }
+    </nav>
+}

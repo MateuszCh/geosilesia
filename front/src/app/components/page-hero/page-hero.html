@@ -1,0 +1,137 @@
+<ng-template #crumbsTpl>
+    @if (header().eyebrow) {
+        <span class="eyebrow eyebrow--red">
+            <span class="trail-mark"
+                  aria-hidden="true"></span>
+            {{ header().eyebrow }}
+        </span>
+    } @else if (crumbs().length) {
+        <nav class="crumbs"
+             aria-label="Ścieżka">
+            @for (crumb of crumbs(); track $index) {
+                @if (crumb.link) {
+                    <a class="crumbs__link"
+                       [routerLink]="crumb.link">{{ crumb.title }}</a>
+                } @else {
+                    <span>{{ crumb.title }}</span>
+                }
+                @if (!$last) {
+                    <span aria-hidden="true"> › </span>
+                }
+            }
+        </nav>
+    }
+</ng-template>
+
+<ng-template #sectionTpl>
+    @if (section(); as current) {
+        <app-section-bar [section]="current" />
+    }
+</ng-template>
+
+<ng-template #bylineTpl>
+    @if (bylineText(); as text) {
+        <p class="page-hero__byline">{{ text }}</p>
+    }
+</ng-template>
+
+<ng-template #leadTpl>
+    @if (hero().lead) {
+        <div class="page-hero__lead-text lead prose"
+             [appHtml]="hero().lead | trusted"></div>
+    }
+</ng-template>
+
+<!-- "W nagłówku", the dictionary's search and "Przycisk przy tytule". -->
+<ng-template #extrasTpl>
+    @if (header().component; as component) {
+        <div class="page-hero__component">
+            <app-row [row]="component" />
+        </div>
+    }
+    @if (header().searchCount !== undefined) {
+        <app-dictionary-search class="page-hero__search"
+                               [count]="header().searchCount ?? 0"
+                               [(query)]="query" />
+    }
+    @if (action(); as link) {
+        <a class="btn btn--signal btn--large"
+           [routerLink]="link.path"
+           [queryParams]="link.params">{{ link.label }}</a>
+    }
+</ng-template>
+
+@switch (header().style) {
+    @case ('photo') {
+        <section class="page-hero page-hero--photo">
+            <img class="page-hero__image"
+                 fetchpriority="high"
+                 [src]="hero().image"
+                 [alt]="hero().image_caption ?? ''">
+            <div class="page-hero__overlay container">
+                <div class="page-hero__panel">
+                    <ng-container *ngTemplateOutlet="sectionTpl" />
+                    <ng-container *ngTemplateOutlet="crumbsTpl" />
+                    <h1 class="page-hero__title">{{ hero().title }}</h1>
+                    <ng-container *ngTemplateOutlet="bylineTpl" />
+                </div>
+                @if (caption(); as text) {
+                    <span class="page-hero__caption">{{ text }}</span>
+                }
+            </div>
+        </section>
+        @if (hero().lead || hasExtras()) {
+            <div class="page-hero__below container">
+                @if (hero().lead) {
+                    <div class="page-hero__lead lead prose"
+                         [appHtml]="hero().lead | trusted"></div>
+                }
+                <ng-container *ngTemplateOutlet="extrasTpl" />
+            </div>
+        }
+    }
+    @case ('light') {
+        <section class="page-hero page-hero--light">
+            <div class="page-hero__band container">
+                <ng-container *ngTemplateOutlet="sectionTpl" />
+                <div class="page-hero__row">
+                    <div class="page-hero__head">
+                        <h1 class="page-title">{{ hero().title }}</h1>
+                        <ng-container *ngTemplateOutlet="leadTpl" />
+                        <ng-container *ngTemplateOutlet="bylineTpl" />
+                    </div>
+                    <ng-container *ngTemplateOutlet="extrasTpl" />
+                </div>
+            </div>
+        </section>
+    }
+    @case ('dark') {
+        <section class="page-hero page-hero--dark">
+            <div class="page-hero__band container">
+                <ng-container *ngTemplateOutlet="sectionTpl" />
+                <ng-container *ngTemplateOutlet="crumbsTpl" />
+                <h1 class="page-hero__title">{{ hero().title }}</h1>
+                <ng-container *ngTemplateOutlet="leadTpl" />
+                <ng-container *ngTemplateOutlet="bylineTpl" />
+                <ng-container *ngTemplateOutlet="extrasTpl" />
+            </div>
+        </section>
+    }
+    @default {
+        <section class="page-hero page-hero--plain container">
+            <div class="page-hero__head">
+                <ng-container *ngTemplateOutlet="sectionTpl" />
+                <ng-container *ngTemplateOutlet="crumbsTpl" />
+                <h1 class="page-title">{{ hero().title }}</h1>
+                <ng-container *ngTemplateOutlet="leadTpl" />
+                @if (action()) {
+                    <ng-container *ngTemplateOutlet="bylineTpl" />
+                }
+            </div>
+            <ng-container *ngTemplateOutlet="extrasTpl" />
+            @if (!action()) {
+                <ng-container *ngTemplateOutlet="bylineTpl" />
+            }
+        </section>
+    }
+}

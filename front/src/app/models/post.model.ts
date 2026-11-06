@@ -1,5 +1,12 @@
-/** Post types used by the front end. `wydarzenie` (event) feeds the `news` component. */
-export type PostType = 'marker' | 'icon' | 'navigation' | 'wydarzenie';
+import { PostRefs } from '../core/post-refs';
+
+/**
+ * Post types used by the front end. `wydarzenie` (event) feeds the `news` component,
+ * `top50` the TOP 50 route, `zasob` (a knowledge base resource) the knowledge base and
+ * `not_found` the 404 page, `album_category` the categories of the gallery's albums and
+ * `top50_settings` the route's page and labels.
+ */
+export type PostType = 'marker' | 'icon' | 'navigation' | 'wydarzenie' | 'top50' | 'zasob' | 'not_found' | 'album_category' | 'top50_settings';
 
 export interface MarkerPostData {
     lat?: number | string;
@@ -7,31 +14,129 @@ export interface MarkerPostData {
     link?: string;
     place?: string;
     categories?: string[];
+    /** Photo shown on the object card. Most markers have none. */
+    image?: string;
+    /** Rock or kind of object – a short line on the card and in the result list. */
+    rock?: string;
 }
 
+/** The colour names offered by the CMS for map categories and link cards. */
+export type TrailColorName =
+    | 'czerwony'
+    | 'zielony'
+    | 'niebieski'
+    | 'czarny'
+    | 'brązowy'
+    | 'turkusowy'
+    | 'fioletowy'
+    | 'żółty'
+    | 'pomarańczowy'
+    | 'różowy';
+
 export interface IconPostData {
+    /** Internal key the markers refer to – it does not always match the name. */
     category?: string;
     name?: string;
+    /** The category's line icon (SVG from the design system's "Ikony" group). */
     icon?: string;
     position?: number;
+    color?: TrailColorName | string;
+}
+
+export interface NavSubItem {
+    subtitle?: string;
+    link?: string;
+    hide_in_footer?: boolean;
 }
 
 export interface NavItem {
     title?: string;
     link?: string;
-    subnav?: { subtitle?: string; link?: string }[];
+    subnav?: NavSubItem[];
 }
 
 export interface NavigationPostData {
     nav?: NavItem[];
+    cta_label?: string;
+    cta_link?: string;
+    footer_text?: string;
+    footer_note?: string;
+    /** Not in the spec: the heading of the other albums on every album page. */
+    albums_more_title?: string;
+}
+
+/** The single post of "Ustawienia TOP 50". */
+export interface Top50SettingsPostData {
+    /** The page of the full route. */
+    route_link?: string;
+    /** "TOP 50 nr {nr}": a place on the map. */
+    place_label?: string;
+    /** "TOP 50 · nr {nr}": the place of an album. */
+    album_label?: string;
+}
+
+/** A category of the gallery's albums; the album list's filters follow `order`. */
+export interface AlbumCategoryPostData {
+    name?: string;
+    /** Names the category in the album list's address: "?kategoria=inne". */
+    slug?: string;
+    color?: TrailColorName | string;
+    order?: number | string;
+}
+
+/** The single post of "Strona 404": the texts and links of the 404 page. */
+export interface NotFoundPostData {
+    eyebrow?: string;
+    title?: string;
+    lead?: string;
+    /** The lead when the site works offline: a missing page may just not be cached yet. */
+    lead_offline?: string;
+    buttons?: ({ label?: string; link?: string } | null)[];
+    /** "Kierunek": "w prawo" or "w lewo"; empty = right. */
+    signpost?: ({ label?: string; link?: string; direction?: string } | null)[];
+    /** The notice when the browser is offline: a bold start, then the text. */
+    offline_title?: string;
+    offline_text?: string;
 }
 
 export interface EventPostData {
+    /** Older events: "8 marca 2018, Czeladź"; newer ones: just the publication date. */
     date_and_place?: string;
     date_of_publication?: string | number;
     paragraphs?: { item?: string }[];
     /** The CMS can store `null` here (an empty link) – AngularJS silently ignored it. */
     links?: ({ link?: string; text?: string } | null)[];
+    place?: string;
+    event_date?: string | number;
+}
+
+export type Top50LinkKind = 'artykuł' | 'www' | 'galeria' | 'przewodnik' | 'YouTube' | 'inne';
+
+export interface Top50PostData {
+    number?: number | string;
+    /** "Obiekty na mapie": the `marker` posts of the place; one place may have several. */
+    markers?: PostRefs | null;
+    image?: string;
+    links?: ({ kind?: Top50LinkKind | string; label?: string; url?: string } | null)[];
+    description?: string;
+}
+
+export type KnowledgeSection =
+    | 'Do posłuchania'
+    | 'Do poczytania'
+    | 'Do pobrania'
+    | 'Do pooglądania'
+    | 'Animacje i prezentacje'
+    | 'Mapy online'
+    | 'Wirtualne media';
+
+export interface ResourcePostData {
+    section?: KnowledgeSection | string;
+    source?: string;
+    url?: string;
+    file?: string;
+    note?: string;
+    position?: number | string;
 }
 
 /** A document from the `posts` collection. `id` is the IndexedDB key, `type` an index. */
@@ -40,6 +145,7 @@ export interface Post<TData = unknown> {
     type: PostType | string;
     title?: string;
     created?: number;
+    updated?: number;
     data: TData;
 }
 
@@ -47,6 +153,20 @@ export type MarkerPost = Post<MarkerPostData>;
 export type IconPost = Post<IconPostData>;
 export type NavigationPost = Post<NavigationPostData>;
 export type EventPost = Post<EventPostData>;
+export type Top50Post = Post<Top50PostData>;
+export type ResourcePost = Post<ResourcePostData>;
+
+/** One album as listed by /api/galleries – built from pages with a `gallery` row. */
+export interface AlbumSummary {
+    pageUrl: string;
+    title?: string;
+    /** The `album_category` post the album picks. */
+    category?: PostRefs | null;
+    cover?: string;
+    count: number;
+    hidden?: boolean;
+    updated?: number;
+}
 
 /** Response of /api/appData – the bulk prefetch for offline mode. */
 export interface AppData {

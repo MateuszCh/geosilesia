@@ -1,0 +1,484 @@
+// Component and post type definitions of variant C, from the CMS spec
+// ("GeoSilesia — wariant C: konfiguracja CMS"). Field labels are what editors see in the
+// panel, so they are Polish. Each spec is [id, label, type, selectOptions | nested specs].
+
+const { field } = require("./lib");
+
+const TRAIL_COLORS = "czerwony;zielony;niebieski;czarny;brązowy;turkusowy;fioletowy;żółty;pomarańczowy;różowy";
+const KB_SECTIONS = "Do posłuchania;Do poczytania;Do pobrania;Do pooglądania;Animacje i prezentacje;Mapy online;Wirtualne media";
+const ALBUM_CATEGORIES = "dziedzictwo Ziemi;dziedzictwo geokulturowe;inne";
+
+const def = (type, title, specs) => ({ type, title, fields: specs.map(spec => field(spec)) });
+
+/** The twelve new row types. */
+const newComponents = [
+    def("page_hero", "Nagłówek strony", [
+        ["title", "Tytuł", "text"],
+        ["lead", "Wstęp", "textarea"],
+        ["image", "Zdjęcie", "file"],
+        ["image_caption", "Podpis zdjęcia", "text"],
+        ["image_author", "Autor zdjęcia", "text"],
+        ["author", "Autor tekstu", "text"],
+        ["published", "Data publikacji", "date"],
+        ["updated", "Ostatnia aktualizacja", "date"],
+        // Not in the spec: the band of a header without a photo, as in the mockups (light
+        // on the dictionary pages, forest on "Położenie"); empty = a plain title.
+        ["variant", "Tło nagłówka bez zdjęcia", "select", ";jasne;ciemne"],
+        // Not in the spec: a line above the title in place of the breadcrumbs ("Szlak czerwony").
+        ["eyebrow", "Nadtytuł", "text"]
+    ]),
+    def("map_search", "Wyszukiwarka atrakcji", [
+        ["title", "Tytuł", "text"],
+        ["map_link", "Strona mapy", "text"],
+        ["button_label", "Napis przycisku", "text"]
+    ]),
+    def("facts", "Liczby", [
+        ["title", "Tytuł", "text"],
+        ["items", "Liczby", "repeater", [
+            ["value", "Wartość", "text"],
+            ["label", "Opis", "text"],
+            ["auto", "Licz automatycznie", "select", "obiekty na mapie;kategorie;TOP 50;albumy;wydarzenia"]
+        ]],
+        ["source", "Źródło danych", "text"]
+    ]),
+    def("category_grid", "Kategorie atrakcji", [
+        ["title", "Tytuł", "text"],
+        ["intro", "Wstęp", "textarea"],
+        ["map_link", "Strona mapy", "text"],
+        ["link_label", "Napis odnośnika", "text"]
+    ]),
+    def("top50", "TOP 50", [
+        // Not in the spec: the line above the title of the preview ("Szlak czerwony · TOP 50").
+        ["eyebrow", "Nadtytuł", "text"],
+        ["title", "Tytuł", "text"],
+        ["intro", "Wstęp", "textarea"],
+        ["variant", "Wariant", "select", "lista;zapowiedź"],
+        ["limit", "Liczba pozycji", "number"],
+        ["link", "Adres odnośnika", "text"],
+        ["link_label", "Napis odnośnika", "text"]
+    ]),
+    def("link_cards", "Karty z odnośnikami", [
+        ["title", "Tytuł", "text"],
+        ["intro", "Wstęp", "textarea"],
+        ["variant", "Wariant", "select", "karty;lista boczna"],
+        ["items", "Karty", "repeater", [
+            ["title", "Tytuł", "text"],
+            ["description", "Opis", "text"],
+            ["image", "Zdjęcie", "file"],
+            ["link", "Adres", "text"],
+            ["color", "Kolor znaku", "select", TRAIL_COLORS]
+        ]]
+    ]),
+    def("photos", "Zdjęcia", [
+        ["title", "Tytuł", "text"],
+        ["intro", "Wstęp", "textarea"],
+        ["variant", "Wariant", "select", "pasek;siatka z podglądem"],
+        ["source", "Źródło zdjęć", "select", "baner strony głównej;katalog"],
+        ["catalogue", "Katalog", "catalogue"],
+        ["link", "Adres odnośnika", "text"],
+        ["link_label", "Napis odnośnika", "text"]
+    ]),
+    def("timeline", "Oś czasu", [
+        ["title", "Tytuł", "text"],
+        ["intro", "Wstęp", "textarea"],
+        ["items", "Punkty", "repeater", [
+            ["year", "Rok", "text"],
+            ["title", "Nazwa", "text"],
+            ["note", "Dopisek", "text"],
+            ["highlight", "W regionie", "checkbox"],
+            ["link", "Adres", "text"]
+        ]],
+        // Not in the spec: the legend under the timeline.
+        ["legend_highlight", "Legenda: punkty wyróżnione", "text"],
+        ["legend_other", "Legenda: pozostałe punkty", "text"]
+    ]),
+    def("numbered_list", "Lista numerowana", [
+        ["title", "Tytuł", "text"],
+        ["intro", "Wstęp", "textarea"],
+        ["items", "Pozycje", "repeater", [
+            ["title", "Nazwa", "text"],
+            ["place", "Miejsce", "text"],
+            ["text", "Opis", "textarea"],
+            ["image", "Zdjęcie", "file"],
+            ["image_author", "Autor zdjęcia", "text"],
+            ["link", "Adres", "text"]
+        ]],
+        ["more_title", "Nagłówek uzupełnienia", "text"],
+        ["more_items", "Pozycje uzupełnienia", "repeater", [
+            ["text", "Pozycja", "text"],
+            ["link", "Adres", "text"]
+        ]]
+    ]),
+    def("knowledge_base", "Baza wiedzy", [
+        ["title", "Tytuł", "text"],
+        ["intro", "Wstęp", "textarea"],
+        ["variant", "Wariant", "select", "pełna;zapowiedź"],
+        ["section", "Dział", "select", `wszystkie;${KB_SECTIONS}`],
+        ["link", "Adres strony Bazy wiedzy", "text"]
+    ]),
+    def("contact", "Kontakt", [
+        ["person_role", "Rola", "text"],
+        ["person_name", "Imię i nazwisko", "text"],
+        ["email", "E-mail", "text"],
+        ["cards", "Karty", "repeater", [
+            ["title", "Tytuł", "text"],
+            ["text", "Treść", "textarea"]
+        ]]
+    ]),
+    def("notice", "Ramka", [
+        ["title", "Tytuł", "text"],
+        ["text", "Treść", "textarea"],
+        ["variant", "Rodzaj", "select", "cytowanie;uwaga;informacja"]
+    ])
+];
+
+/**
+ * New fields of existing components. Only the added fields are listed – upsert merges
+ * them into the stored definition; nested ones go into the repeater with the same id.
+ */
+const changedComponents = [
+    def("homepage_banner", "Homepage banner", [
+        ["eyebrow", "Nadtytuł", "text"],
+        ["slides", "Slides", "repeater", [
+            ["author", "Autor zdjęcia", "text"],
+            ["place", "Miejsce", "text"],
+            ["description", "Opis", "textarea"]
+        ]]
+    ]),
+    def("tabs", "Tabs", [
+        ["tabs", "Tabs", "repeater", [
+            ["rows", "Rows", "repeater", [
+                ["quote", "Cytat", "textarea"],
+                ["quote_author", "Autor cytatu", "text"],
+                ["image_author", "Autor ryciny", "text"],
+                ["facts", "Liczby", "repeater", [
+                    ["value", "Wartość", "text"],
+                    ["label", "Opis", "text"],
+                    ["note", "Dopisek", "text"],
+                    // Not in the spec: the figures of "Rzeźba terenu" are coloured in the mockup.
+                    ["color", "Kolor liczby", "select", `;${TRAIL_COLORS}`]
+                ]],
+                ["chart_title", "Tytuł wykresu", "text"],
+                ["chart_unit", "Jednostka", "text"],
+                ["chart", "Słupki", "repeater", [
+                    ["label", "Opis", "text"],
+                    ["value", "Wartość", "number"],
+                    ["highlight", "Wyróżnij", "checkbox"]
+                ]],
+                ["chart_source", "Źródło wykresu", "text"]
+            ]]
+        ]]
+    ]),
+    def("gallery", "Galeria", [
+        ["category", "Kategoria", "select", ALBUM_CATEGORIES],
+        ["cover", "Okładka", "file"],
+        ["author", "Autor", "text"],
+        // Not in the spec: albums show their publication date too, and once the byline
+        // paragraph is gone this is the only place left for it.
+        ["published", "Data publikacji", "date"],
+        ["updated", "Ostatnia aktualizacja", "date"],
+        ["hidden", "Ukryj na liście albumów", "checkbox"]
+    ]),
+    def("gallery_list", "Lista galerii", [
+        ["intro", "Wstęp", "textarea"],
+        ["mode", "Źródło listy", "select", "automatycznie;ręcznie"],
+        // Already a select on staging – listed so a database without it gets the field.
+        ["galleries", "Galleries", "repeater", [["category", "Kategoria", "select", ALBUM_CATEGORIES]]]
+    ]),
+    def("news", "Wiadomości", [
+        ["intro", "Wstęp", "textarea"],
+        ["variant", "Wariant", "select", "lista;zapowiedź"],
+        ["limit", "Liczba wpisów", "number"],
+        ["link", "Adres strony wydarzeń", "text"],
+        ["link_label", "Napis odnośnika", "text"]
+    ]),
+    def("title_and_text", "Tytuł i tekst", [
+        // Retyped from text to select (see RETYPE); the one stored value is rewritten too.
+        ["text", "Text", "repeater", [["paragraph_class", "Klasa akapitu", "select", ";pogrubiony;wstęp;cytat"]]]
+    ]),
+    def("dictionary", "Lista pojęć", [
+        ["items", "Items", "repeater", [["title_en", "Odpowiednik obcojęzyczny", "text"]]]
+    ]),
+    def("geosites_logos", "Loga geostanowisk", [
+        // Not in the spec: the heading above the databases.
+        ["title", "Nagłówek", "text"],
+        ["logos", "Logos", "repeater", [["name", "Nazwa bazy", "text"]]]
+    ])
+];
+
+/** Fields whose type changes: path inside the definition, as mergeFields reports it. */
+const RETYPE = ["text.paragraph_class"];
+
+const pt = (type, title, pluralTitle, specs) => ({ type, title, pluralTitle, fields: specs.map(spec => field(spec)) });
+
+const newPostTypes = [
+    pt("top50", "Atrakcja TOP 50", "Atrakcje TOP 50", [
+        ["number", "Miejsce w zestawieniu", "number"],
+        ["image", "Zdjęcie", "file"],
+        ["links", "Źródła", "repeater", [
+            ["kind", "Rodzaj", "select", "artykuł;www;galeria;przewodnik;YouTube;inne"],
+            ["label", "Własny podpis", "text"],
+            ["url", "Adres", "text"]
+        ]],
+        ["description", "Krótki opis", "textarea"]
+    ]),
+    pt("zasob", "Zasób bazy wiedzy", "Zasoby bazy wiedzy", [
+        ["section", "Dział", "select", KB_SECTIONS],
+        ["source", "Wydawca lub seria", "text"],
+        ["url", "Adres", "text"],
+        ["file", "Plik", "file"],
+        ["note", "Opis", "textarea"],
+        ["position", "Kolejność w dziale", "number"]
+    ])
+];
+
+const changedPostTypes = [
+    pt("marker", "Marker", "Markers", [
+        ["image", "Zdjęcie", "file"],
+        ["rock", "Skała lub rodzaj obiektu", "text"],
+        ["top50", "Numer w TOP 50", "number"]
+    ]),
+    // The category's line icon is its existing `icon` field (an SVG since step 12).
+    pt("icon", "Ikona", "Ikony", [["color", "Kolor kategorii", "select", TRAIL_COLORS]]),
+    pt("wydarzenie", "Wydarzenie", "Wydarzenia", [
+        ["place", "Miejsce lub organizator", "text"],
+        ["event_date", "Data wydarzenia", "date"]
+    ]),
+    pt("navigation", "Nawigacja", "navigation", [
+        ["cta_label", "Przycisk w nagłówku", "text"],
+        ["cta_link", "Adres przycisku", "text"],
+        ["footer_text", "Opis w stopce", "textarea"],
+        ["footer_note", "Dopisek w stopce", "text"],
+        // Not in the spec: the heading of the other albums on every album page.
+        ["albums_more_title", "Nagłówek innych albumów na stronie albumu", "text"],
+        ["nav", "Nav", "repeater", [["subnav", "Subnav", "repeater", [["hide_in_footer", "Ukryj w stopce", "checkbox"]]]]]
+    ])
+];
+
+/**
+ * Page types (step 18): what the page_hero row and the album fields of the gallery row held
+ * moves into the page's own values. Field ids stay the same, so the front end reads them
+ * as it read the rows.
+ */
+const pageTypes = [
+    def("tresc", "Strona treści", [
+        ["eyebrow", "Nadtytuł", "text"],
+        ["title", "Tytuł (pusty = nazwa strony)", "text"],
+        ["lead", "Wstęp", "textarea"],
+        ["image", "Zdjęcie", "file"],
+        ["image_caption", "Podpis zdjęcia", "text"],
+        ["image_author", "Autor zdjęcia", "text"],
+        ["variant", "Tło nagłówka bez zdjęcia", "select", ";jasne;ciemne"],
+        ["author", "Autor tekstu", "text"],
+        ["published", "Data publikacji", "date"],
+        ["updated", "Ostatnia aktualizacja (pusta = data zapisu)", "date"],
+        ["side", "Kolumna boczna", "repeater", [["component", "Komponent", "component"]]]
+    ]),
+    def("album", "Album", [
+        ["category", "Kategoria", "select", ALBUM_CATEGORIES],
+        ["cover", "Okładka", "file"],
+        ["author", "Autor", "text"],
+        ["published", "Data publikacji", "date"],
+        ["updated", "Ostatnia aktualizacja", "date"],
+        ["hidden", "Ukryj na liście albumów", "checkbox"]
+    ])
+];
+
+/** Step 19: columns side by side, each a list of components ("component" fields). */
+const columnsComponent = def("columns", "Kolumny", [
+    ["columns", "Kolumny", "repeater", [["components", "Komponenty", "repeater", [["component", "Komponent", "component"]]]]]
+]);
+
+/** Step 20: a component under the dictionary's terms, in their column (the literature). */
+const dictionaryComponent = def("dictionary", "Lista pojęć", [["below", "Pod listą pojęć", "component"]]);
+
+/**
+ * Step 21: what the front end used to work out from the kinds and order of the rows, as
+ * fields. The page type's new fields, then the order of all its fields in the panel.
+ */
+const contentLayoutFields = [
+    ["header_component", "W nagłówku", "component"],
+    ["action_label", "Przycisk przy tytule – napis", "text"],
+    ["action_link", "Przycisk przy tytule – adres", "text"],
+    ["byline", "Autor i daty (puste = w nagłówku)", "select", ";pod treścią;w kolumnie bocznej;w ramce literatury"],
+    ["section_menu", "Menu działu (puste = brak)", "select", ";w nagłówku;obok tekstu"],
+    ["next_card", "Karta „Dalej w dziale” na końcu kolumny bocznej", "checkbox"]
+].map(spec => field(spec));
+const contentFieldOrder = [
+    "eyebrow",
+    "title",
+    "lead",
+    "image",
+    "image_caption",
+    "image_author",
+    "variant",
+    "header_component",
+    "action_label",
+    "action_link",
+    "section_menu",
+    "author",
+    "published",
+    "updated",
+    "byline",
+    "side",
+    "next_card"
+];
+const layoutComponents = [
+    def("dictionary", "Lista pojęć", [["search_in_header", "Wyszukiwarka w nagłówku strony", "checkbox"]]),
+    def("tabs", "Tabs", [["hide_toc", "Bez spisu „Na tej stronie”", "checkbox"]]),
+    def("map", "Mapa atrakcji", [["page_title", "Tytuł jako nagłówek strony", "checkbox"]]),
+    def("top50", "TOP 50", [["below", "Pod trasą", "component"]]),
+    def("columns", "Kolumny", [["columns", "Kolumny", "repeater", [["wide", "Szersza kolumna", "checkbox"]]]])
+];
+
+/**
+ * Step 22: the size of the home page banner's title, with its desktop size in brackets.
+ * Frodo stores the label it shows; the front end reads only its first word.
+ */
+const BANNER_TITLE_SIZES = ["duży (68 px)", "średni (56 px)", "mały (44 px)"];
+const bannerTitleSize = def("homepage_banner", "Homepage banner", [
+    ["title_size", "Rozmiar tytułu", "select", BANNER_TITLE_SIZES.join(";")]
+]);
+
+/**
+ * Step 23: "Zdjęcia" shows the covers of the gallery's first albums, which becomes the first
+ * option and what an empty field means.
+ */
+const PHOTO_SOURCES = ["albumy z galerii", "baner strony głównej", "katalog"];
+const photosSource = field(["source", "Źródło zdjęć (puste = albumy z galerii)", "select", PHOTO_SOURCES.join(";")]);
+
+/**
+ * Steps 24–26: frodo's "post" field (a list of chosen posts of one post type, `{ ids }`)
+ * replaces links the front end made by matching file paths, numbers and keys.
+ */
+// Step 24: an entry of "Lista kategorii" picks its category instead of repeating its icon file.
+const categoryListCategory = field(["category", "Kategoria", "post", "icon"], true);
+// Step 25: a TOP 50 place picks its markers instead of the markers repeating its number.
+const top50Markers = field(["markers", "Obiekty na mapie", "post", "marker"]);
+// Step 26: the previews of TOP 50 and events take the places and events chosen in the CMS.
+const top50Featured = field(["featured", "Wyróżniona atrakcja (pusta = pierwsza ze zdjęciem)", "post", "top50"]);
+const newsPicked = field(["picked", "Wybrane wydarzenia w zapowiedzi (puste = najnowsze)", "post", "wydarzenie"]);
+// Step 28: a list of dated entries shown newest first, whatever order frodo stores them in.
+const titleAndTextListOrder = field(["list_order", "Kolejność list (pusta = jak w CMS)", "select", ";od najnowszej daty"]);
+// Step 29: places added after the original fifty follow a heading of their own.
+const top50NewTitle = field(["new_title", "Nagłówek nowych obiektów (pusty = trasa bez przerwy)", "text"]);
+const top50NewFrom = field(["new_from", "Nowe obiekty od numeru (puste = 51)", "number"]);
+// Step 30: the texts and links of the 404 page, in a post type of their own with a single post.
+const notFoundPostType = pt("not_found", "Strona 404", "Strona 404", [
+    ["eyebrow", "Nadtytuł", "text"],
+    ["title", "Tytuł", "text"],
+    ["lead", "Wstęp", "textarea"],
+    ["lead_offline", "Wstęp, gdy strona działa offline (pusty = jak wyżej)", "textarea"],
+    ["buttons", "Przyciski", "repeater", [
+        ["label", "Napis", "text"],
+        ["link", "Adres", "text"]
+    ]],
+    ["signpost", "Drogowskaz", "repeater", [
+        ["label", "Napis", "text"],
+        ["link", "Adres", "text"],
+        ["direction", "Kierunek", "select", "w prawo;w lewo"]
+    ]],
+    ["offline_title", "Brak połączenia: pogrubiony początek", "text"],
+    ["offline_text", "Brak połączenia: komunikat", "textarea"]
+]);
+
+// Step 31: the placeholders of the search field and, on the map, the hints under it.
+const searchPlaceholders = [
+    ["placeholder_location", "Podpowiedź w polu: lokalizacja", "text"],
+    ["placeholder_name", "Podpowiedź w polu: nazwa obiektu", "text"]
+];
+const mapSearchFieldTexts = searchPlaceholders.map(spec => field(spec));
+const mapFieldTexts = [
+    ...searchPlaceholders,
+    ["hint_location", "Tekst pod polem: lokalizacja", "text"],
+    ["hint_loading", "Tekst pod polem: lokalizacja, zanim wczyta się mapa", "text"],
+    ["hint_name", "Tekst pod polem: nazwa obiektu", "text"]
+].map(spec => field(spec));
+
+// Step 35: the remaining texts of "Wyszukiwarka atrakcji" – the mode buttons, the location
+// button and the labels screen readers hear.
+const mapSearchLabels = [
+    ["mode_location", "Napis trybu: lokalizacja", "text"],
+    ["mode_name", "Napis trybu: nazwa", "text"],
+    ["locate_label", "Napis przycisku lokalizacji", "text"],
+    ["form_label", "Nazwa wyszukiwarki dla czytników ekranu (gdy brak tytułu)", "text"],
+    ["modes_label", "Nazwa przełącznika trybów dla czytników ekranu", "text"]
+].map(spec => field(spec));
+
+// Step 36: the same texts of "Mapa atrakcji": the mode buttons (also the field's hidden
+// label), the text the field shows once the visitor's position is found, and the names
+// screen readers hear for the search panel and the mode switch.
+const mapLabels = [
+    ["mode_location", "Napis trybu: lokalizacja", "text"],
+    ["mode_name", "Napis trybu: nazwa", "text"],
+    ["locate_label", "Napis w polu po ustaleniu lokalizacji odwiedzającego", "text"],
+    ["form_label", "Nazwa panelu wyszukiwania dla czytników ekranu", "text"],
+    ["modes_label", "Nazwa przełącznika trybów dla czytników ekranu", "text"]
+].map(spec => field(spec));
+
+// Step 32: album categories are posts of their own; an album and an entry of the manual
+// album list pick one instead of a select option the front end had to know.
+const albumCategoryPostType = pt("album_category", "Kategoria albumu", "Kategorie albumów", [
+    ["name", "Nazwa", "text"],
+    ["slug", "Adres w filtrze listy albumów (np. dziedzictwo-ziemi)", "text"],
+    ["color", "Kolor", "select", TRAIL_COLORS],
+    ["order", "Kolejność na liście albumów", "number"]
+]);
+const albumCategoryField = field(["category", "Kategoria", "post", "album_category"]);
+
+// Step 33: what the front end knew about TOP 50 – the route's page, found by the section
+// title, and the "TOP 50 nr …" labels – in a post type of its own with a single post.
+const top50SettingsPostType = pt("top50_settings", "Ustawienia TOP 50", "Ustawienia TOP 50", [
+    ["route_link", "Strona trasy TOP 50 (adres)", "text"],
+    ["place_label", "Etykieta miejsca na mapie ({nr} = numer)", "text"],
+    ["album_label", "Etykieta na stronie albumu ({nr} = numer)", "text"]
+]);
+const top50MoreLabel = field(["more_label", "Napis przycisku dalszych miejsc ({od}, {do} = numery)", "text"]);
+// The field of step 29 loses its default: an empty number means no group of new places.
+const top50NewFromTitle = "Nowe obiekty od numeru (puste = trasa bez przerwy)";
+
+// Step 37: the year filter of the events list: how many latest years get a button and an
+// optional "Wszystkie" button.
+const newsYearFilter = [
+    field(["year_buttons", "Lata z osobnym przyciskiem (puste = 2, 0 = każdy rok)", "number"]),
+    field(["all_filter", "Przycisk „Wszystkie” (lista otwiera się na nim)", "checkbox"])
+];
+// Step 34: each database of "Loga geostanowisk" picks the colour of its mark.
+const geositesLogosColor = { type: "geosites_logos", title: "Loga geostanowisk", fields: [field(["logos", "Logos", "repeater", [["color", "Kolor znacznika", "select", TRAIL_COLORS]]])] };
+
+module.exports = {
+    newsYearFilter,
+    geositesLogosColor,
+    top50SettingsPostType,
+    top50MoreLabel,
+    top50NewFromTitle,
+    albumCategoryPostType,
+    albumCategoryField,
+    mapSearchFieldTexts,
+    mapSearchLabels,
+    mapLabels,
+    mapFieldTexts,
+    notFoundPostType,
+    categoryListCategory,
+    top50Markers,
+    top50Featured,
+    newsPicked,
+    titleAndTextListOrder,
+    top50NewTitle,
+    top50NewFrom,
+    newComponents,
+    changedComponents,
+    newPostTypes,
+    changedPostTypes,
+    RETYPE,
+    pageTypes,
+    columnsComponent,
+    dictionaryComponent,
+    contentLayoutFields,
+    contentFieldOrder,
+    layoutComponents,
+    BANNER_TITLE_SIZES,
+    bannerTitleSize,
+    PHOTO_SOURCES,
+    photosSource
+};

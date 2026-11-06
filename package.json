@@ -5,7 +5,8 @@
     "main": "app.js",
     "scripts": {
         "start": "node app.js",
-        "watch": "nodemon --watch app.js --watch ssr.js --watch shared --watch front/dist/geosilesia/server/server.mjs --delay 2 app.js",
+        "watch": "nodemon --watch app.js --watch ssr.js --watch shared --watch front/dist/geosilesia/server --delay 2 app.js",
+        "dev": "sh dev.sh",
         "deploy": "sh deploy.sh"
     },
     "keywords": [],
@@ -13,6 +14,7 @@
     "license": "ISC",
     "dependencies": {
         "body-parser": "^1.18.2",
+        "compression": "^1.8.2",
         "express": "^4.16.2",
         "mongodb": "4.17.0"
     },

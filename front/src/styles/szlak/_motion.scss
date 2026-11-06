@@ -1,0 +1,40 @@
+// Decorative motion, kept apart from the components: cards that settle in while the page
+// scrolls. It is optional – without support (or with reduced motion) the page simply stands
+// still. The state changes (menus, panels, sheets) animate with the `enter` mixin in their
+// own partials.
+//
+// Scroll-driven, so no script and nothing for the server render to hide: cards above the
+// fold have already "entered" and show at once. Only cards and stops – never a whole row
+// (it could hold the lightbox or the map's fixed filters, and a translated ancestor would
+// pin them to itself), and nothing of the hero, which is the LCP.
+@keyframes settle-in {
+    from {
+        opacity: 0;
+        translate: 0 12px;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+        .category-card,
+        .link-card,
+        .side-card,
+        .side-figure,
+        .album-card,
+        .photo-card,
+        .photos__item,
+        .kb-card,
+        .facts__item,
+        .events-preview__item,
+        .databases__card,
+        .contact__person,
+        .contact__card,
+        .next-card,
+        .route__stop,
+        .timeline__item {
+            animation: settle-in linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 100%;
+        }
+    }
+}

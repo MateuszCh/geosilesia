@@ -2,76 +2,133 @@ import {
     ChangeDetectionStrategy,
     Component,
     DestroyRef,
+    OnInit,
     computed,
     inject,
     input,
     signal
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Location, NgTemplateOutlet } from '@angular/common';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { internalLink, isExternalLink } from '../../core/cms-link';
+import { ALBUM_CATEGORY_PARAM, AlbumCategories } from '../../core/albums';
+import { ResourceService } from '../../core/resource.service';
+import { AlbumSummary } from '../../models/post.model';
 import { GalleryListData } from '../../models/row.model';
-import { ImageLoadedDirective } from '../../shared/image-loaded.directive';
+import { TrustedPipe } from '../../shared/trusted.pipe';
+import { plural } from '../../shared/plural';
+import { HtmlDirective } from '../../shared/html.directive';
 
-const ALL_CATEGORIES = 'wszystkie';
-/** Must match `transition: transform 0.3s` on .photos__list__item. */
-const COLLAPSE_MS = 300;
+interface AlbumCard {
+    link: string;
+    external: boolean;
+    title: string;
+    cover?: string;
+    categoryKey?: string;
+    categoryLabel?: string;
+    color: string;
+}
 
+/**
+ * The album list. In the "automatycznie" mode (variant C) it is built from the album pages
+ * themselves; otherwise from the albums entered by hand in this row. The chosen category
+ * lives in the address ("?kategoria=inne"), so an album page can link to its category and
+ * the filtered list can be shared.
+ */
 @Component({
     selector: 'app-gallery-list',
     templateUrl: './gallery-list.html',
-    imports: [ImageLoadedDirective, NgTemplateOutlet, RouterLink],
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class GalleryList {
+export class GalleryList implements OnInit {
     readonly component = input.required<GalleryListData>();
 
-    protected readonly internalLink = internalLink;
-    protected readonly isExternalLink = isExternalLink;
+    /** The category's slug from the address; the categories may arrive after it. */
+    private readonly slug = signal<string | null>(null);
+    readonly expanded = signal(false);
+    protected readonly collapsedCount = 11;
 
-    /**
-     * Briefly `undefined` after a category change – nothing matches then, so all tiles
-     * shrink to zero. Only after that animation ends is the new category set, and the
-     * matching tiles slide back in.
-     */
-    readonly selectedCategory = signal<string | undefined>(ALL_CATEGORIES);
+    private readonly auto = signal<AlbumSummary[] | undefined>(undefined);
+    private readonly resource = inject(ResourceService);
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly route = inject(ActivatedRoute);
+    private readonly location = inject(Location);
+    private readonly categories = inject(AlbumCategories);
 
-    readonly categories = computed(() => {
-        const galleries = this.component().galleries ?? [];
-        const unique = [
-            ...new Set(
-                galleries
-                    .map(gallery => gallery.category)
-                    .filter((category): category is string => !!category)
-            )
-        ];
-        unique.push(ALL_CATEGORIES);
-        return unique;
+    readonly selected = computed(() => this.categories.bySlug(this.slug())?.key);
+
+    readonly albums = computed<AlbumCard[]>(() => {
+        const auto = this.auto();
+        const source = auto
+            ? auto
+                  .filter(album => !album.hidden)
+                  .map(album => ({ link: album.pageUrl, title: album.title ?? '', cover: album.cover, category: album.category }))
+            : (this.component().galleries ?? [])
+                  .filter(entry => entry.link)
+                  .map(entry => ({ link: entry.link!, title: entry.title ?? '', cover: entry.image, category: entry.category }));
+        return source.map(album => {
+            const category = this.categories.picked(album.category);
+            const external = isExternalLink(album.link);
+            return {
+                link: external ? album.link : internalLink(album.link)!,
+                external,
+                title: album.title,
+                cover: album.cover || undefined,
+                categoryKey: category?.key,
+                categoryLabel: category?.label,
+                color: category?.color ?? 'var(--muted)'
+            };
+        });
     });
 
-    private timer: ReturnType<typeof setTimeout> | undefined;
+    readonly filters = computed(() =>
+        this.categories.all().map(category => ({
+            ...category,
+            count: this.albums().filter(album => album.categoryKey === category.key).length
+        })).filter(category => category.count)
+    );
 
-    constructor() {
-        inject(DestroyRef).onDestroy(() => clearTimeout(this.timer));
+    /**
+     * The intro from the CMS; "{albumy}" in it becomes the album count ("48 albumów"), so the
+     * lead of the mockup ("48 albumów fotograficznych z terenu: …") stays true.
+     */
+    readonly intro = computed(() => {
+        const intro = this.component().intro ?? '';
+        const count = this.albums().length;
+        return intro.replace(/\{albumy\}/g, `${count} ${this.albumsLabel(count)}`);
+    });
+
+    readonly shown = computed(() => {
+        const selected = this.selected();
+        return selected ? this.albums().filter(album => album.categoryKey === selected) : this.albums();
+    });
+
+    ngOnInit(): void {
+        this.categories.load();
+        this.route.queryParamMap
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(params => this.slug.set(params.get(ALBUM_CATEGORY_PARAM)));
+
+        if (this.component().mode !== 'automatycznie') return;
+        this.resource
+            .loadAlbums()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(albums => {
+                if (albums.length) this.auto.set(albums);
+            });
     }
 
-    matches(category: string | undefined): boolean {
-        const selected = this.selectedCategory();
-        return selected === ALL_CATEGORIES || selected === category;
+    select(key: string | undefined): void {
+        const slug = this.categories.byKey(key)?.slug;
+        this.slug.set(slug ?? null);
+        // replaceState, not a router navigation: the router would scroll back to the top.
+        const [path] = this.location.path().split('?');
+        this.location.replaceState(path, slug ? `${ALBUM_CATEGORY_PARAM}=${encodeURIComponent(slug)}` : '');
     }
 
-    /** Outside the collapse phase a filtered-out tile leaves the layout so it leaves no gap. */
-    isHidden(category: string | undefined): boolean {
-        return this.selectedCategory() !== undefined && !this.matches(category);
-    }
-
-    changeCategory(category: string): void {
-        if (this.selectedCategory() === category) return;
-        clearTimeout(this.timer);
-        this.selectedCategory.set(undefined);
-        this.timer = setTimeout(
-            () => this.selectedCategory.set(category),
-            COLLAPSE_MS
-        );
+    albumsLabel(count: number): string {
+        return plural(count, 'album', 'albumy', 'albumów');
     }
 }

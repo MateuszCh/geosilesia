@@ -1,34 +1,241 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    DestroyRef,
+    Injector,
     OnInit,
+    afterNextRender,
+    computed,
     inject,
     input,
     signal
 } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ViewportScroller } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DestroyRef } from '@angular/core';
+import { map } from 'rxjs';
+import { ContentService } from '../../core/content.service';
 import { ResourceService } from '../../core/resource.service';
+import { internalLink } from '../../core/cms-link';
+import { PostRefs, pickPosts, postIds } from '../../core/post-refs';
+import { MONTHS_SHORT, dateParts, toDate } from '../../core/dates';
 import { EventPost } from '../../models/post.model';
 import { NewsData } from '../../models/row.model';
+import { TrustedPipe } from '../../shared/trusted.pipe';
+import { plural } from '../../shared/plural';
+import { HtmlDirective } from '../../shared/html.directive';
 
+const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PREVIEW = 3;
+/** Latest years with a button of their own when the CMS leaves "Lata z osobnym przyciskiem" empty. */
+const DEFAULT_YEAR_BUTTONS = 2;
+/** The CMS default label of an event link – variant C shows "Szczegóły" instead. */
+const GENERIC_LINK_TEXT = /^link zewn/i;
+const MONTHS_GENITIVE =
+    'stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|października|listopada|grudnia';
+/** The date at the start of the older `date_and_place` values: "29 września 2023, Jaworzno". */
+const DATE_PREFIX = new RegExp(
+    `^[\\s\\d.\\-–]*(?:(?:${MONTHS_GENITIVE})\\s*(?:\\d{4})?\\s*(?:r\\.)?)?[\\s,;:–-]*`,
+    'i'
+);
+
+interface EventView {
+    id: string | number;
+    title: string;
+    day?: string;
+    month?: string;
+    year?: number;
+    /** dd.mm for the home page preview. */
+    short: string;
+    place: string;
+    lead: string;
+    paragraphs: string[];
+    links: { href: string; label: string }[];
+    time: number;
+}
+
+/** Year filter: one of the latest years, everything older, or every event (also until events load). */
+type YearFilter = number | 'older' | 'all';
+
+/** Place of an event: the variant C field, else what follows the date in `date_and_place`. */
+function placeOf(event: EventPost): string {
+    if (event.data?.place) return event.data.place;
+    const rest = (event.data?.date_and_place ?? '').replace(DATE_PREFIX, '').trim();
+    return /\p{L}/u.test(rest) ? rest : '';
+}
+
+function toView(event: EventPost): EventView {
+    const when = event.data?.event_date || event.data?.date_of_publication;
+    const parts = dateParts(when);
+    const paragraphs = (event.data?.paragraphs ?? [])
+        .map(paragraph => paragraph?.item?.trim() ?? '')
+        .filter(Boolean);
+    return {
+        id: event.id,
+        title: event.title ?? '',
+        day: parts ? String(parts.day).padStart(2, '0') : undefined,
+        month: parts ? MONTHS_SHORT[parts.month - 1] : undefined,
+        year: parts?.year,
+        short: parts ? `${String(parts.day).padStart(2, '0')}.${String(parts.month).padStart(2, '0')}` : '',
+        place: placeOf(event),
+        lead: paragraphs[0] ?? '',
+        paragraphs,
+        links: (event.data?.links ?? [])
+            .filter(link => !!link?.link)
+            .map(link => ({
+                href: link!.link!,
+                label: link!.text && !GENERIC_LINK_TEXT.test(link!.text) ? link!.text : 'Szczegóły'
+            })),
+        time: toDate(event.data?.date_of_publication)?.getTime() ?? event.created ?? 0
+    };
+}
+
+function isPublished(event: EventPost, now: number): boolean {
+    const publication = toDate(event.data?.date_of_publication);
+    return !!publication && publication.getTime() < now;
+}
+
+/** Events with a publication date in the future are hidden; the rest newest first. */
+function publishedViews(events: EventPost[]): EventView[] {
+    const now = Date.now();
+    return events
+        .filter(event => isPublished(event, now))
+        .map(toView)
+        .sort((a, b) => b.time - a.time);
+}
+
+/** The events chosen in the CMS ("Wybrane wydarzenia"), in the chosen order; unpublished ones hidden. */
+function pickedViews(picked: PostRefs | null | undefined, events: EventPost[]): EventView[] {
+    const now = Date.now();
+    return pickPosts(picked, events)
+        .filter(event => isPublished(event, now))
+        .map(toView);
+}
+
+/**
+ * Events: the full archive as an accordion with a year filter and pages, or – as
+ * "zapowiedź" on the home page – the latest few, or the ones chosen in the CMS.
+ */
 @Component({
     selector: 'app-news',
     templateUrl: './news.html',
+    imports: [RouterLink, TrustedPipe, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class News implements OnInit {
     readonly component = input.required<NewsData>();
 
-    readonly events = signal<EventPost[]>([]);
-    readonly active = signal<number | null>(0);
+    protected readonly internalLink = internalLink;
+
+    readonly events = signal<EventView[]>([]);
+    readonly loaded = signal(false);
+    readonly openId = signal<string | number | undefined>(undefined);
+    readonly selectedYear = signal<YearFilter>('all');
+    readonly currentPage = signal(1);
+
+    readonly preview = computed(() => this.component().variant === 'zapowiedź');
+
+    private readonly limit = computed(() => {
+        const limit = Number(this.component().limit);
+        if (limit > 0) return limit;
+        return this.preview() ? DEFAULT_PREVIEW : DEFAULT_PAGE_SIZE;
+    });
+
+    /** How many of the latest years get a button of their own; the rest go under "Starsze". */
+    private readonly yearButtons = computed(() => {
+        const value = this.component().year_buttons;
+        if (value === undefined || value === null || String(value).trim() === '') return DEFAULT_YEAR_BUTTONS;
+        const count = Number(value);
+        return count > 0 ? count : Infinity;
+    });
+
+    /** Years with events, newest first. */
+    private readonly eventYears = computed(() =>
+        [...new Set(this.events().map(event => event.year).filter((y): y is number => !!y))].sort((a, b) => b - a)
+    );
+
+    /** The years with a button of their own. */
+    private readonly ownYears = computed(() => this.eventYears().slice(0, this.yearButtons()));
+
+    readonly years = computed(() => {
+        const all = this.eventYears();
+        const own = this.ownYears();
+        const buttons: { value: YearFilter; label: string }[] = own.map(year => ({ value: year, label: String(year) }));
+        if (all.length > own.length) buttons.push({ value: 'older', label: 'Starsze' });
+        if (this.component().all_filter && buttons.length > 1) buttons.unshift({ value: 'all', label: 'Wszystkie' });
+        return buttons;
+    });
+
+    private readonly filtered = computed(() => {
+        const year = this.selectedYear();
+        const own = this.ownYears();
+        return this.events().filter(event => {
+            if (year === 'all') return true;
+            if (year === 'older') return !!event.year && !own.includes(event.year);
+            return event.year === year;
+        });
+    });
+
+    readonly pageCount = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.limit())));
+
+    readonly visible = computed(() => {
+        if (this.preview()) return this.events().slice(0, this.limit());
+        const start = (this.currentPage() - 1) * this.limit();
+        return this.filtered().slice(start, start + this.limit());
+    });
+
+    /** Page numbers with 0 for a gap: 1 2 3 … 9. */
+    readonly pages = computed(() => {
+        const count = this.pageCount();
+        const current = this.currentPage();
+        const wanted = new Set([1, count, current - 1, current, current + 1].filter(page => page >= 1 && page <= count));
+        const sorted = [...wanted].sort((a, b) => a - b);
+        const result: number[] = [];
+        sorted.forEach((page, index) => {
+            if (index && page - sorted[index - 1] > 1) result.push(0);
+            result.push(page);
+        });
+        return result;
+    });
+
+    readonly countLabel = computed(() => {
+        const count = this.events().length;
+        return count ? `${count} ${plural(count, 'wpis', 'wpisy', 'wpisów')} w archiwum` : '';
+    });
 
     private readonly resource = inject(ResourceService);
+    private readonly content = inject(ContentService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly injector = inject(Injector);
+    private readonly route = inject(ActivatedRoute);
+    private readonly scroller = inject(ViewportScroller);
+    /** The event named in the URL fragment has been opened – a later reload of the list keeps the reader's choice. */
+    private targetRevealed = false;
     /** Network data takes precedence – once it has arrived, the IndexedDB result will not overwrite it. */
     private loadedFromNetwork = false;
 
     ngOnInit(): void {
+        if (this.preview()) {
+            // Only the few shown travel in the HTML, not the whole archive.
+            const limit = this.limit();
+            const picked = postIds(this.component().picked);
+            this.content
+                .summary(picked.length ? `picked-events:${picked.join(',')}:${limit}` : `latest-events:${limit}`, () =>
+                    this.content
+                        .posts<EventPost['data']>('wydarzenie', false)
+                        .pipe(
+                            map(posts =>
+                                (picked.length ? pickedViews(this.component().picked, posts) : publishedViews(posts)).slice(0, limit)
+                            )
+                        )
+                )
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(views => {
+                    this.events.set(views);
+                    this.loaded.set(true);
+                });
+            return;
+        }
         if (this.resource.isOfflineAvailable()) {
             void this.resource
                 .loadPostsFromCache<EventPost['data']>('wydarzenie')
@@ -42,6 +249,7 @@ export class News implements OnInit {
             .loadPostsFromNetwork<EventPost['data']>('wydarzenie')
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(posts => {
+                this.loaded.set(true);
                 if (posts.length) {
                     this.loadedFromNetwork = true;
                     this.setEvents(posts);
@@ -49,21 +257,55 @@ export class News implements OnInit {
             });
     }
 
-    toggle(index: number): void {
-        this.active.update(active => (active === index ? null : index));
+    toggle(id: string | number): void {
+        this.openId.update(open => (open === id ? undefined : id));
     }
 
-    /** Events with a publication date in the future are hidden; the rest newest first. */
+    selectYear(year: YearFilter): void {
+        this.selectedYear.set(year);
+        this.currentPage.set(1);
+    }
+
+    eventId(event: EventView): string {
+        return `wydarzenie-${event.id}`;
+    }
+
+    goToPage(page: number): void {
+        this.currentPage.set(page);
+    }
+
     private setEvents(events: EventPost[]): void {
-        const now = Date.now();
-        this.events.set(
-            events
-                .filter(event => {
-                    const publication = event.data?.date_of_publication;
-                    if (!publication) return false;
-                    return new Date(publication).getTime() < now;
-                })
-                .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
-        );
+        const views = publishedViews(events);
+        this.events.set(views);
+        this.loaded.set(true);
+        // The list opens on the first button: "Wszystkie" when the CMS asks for it, else the
+        // latest year, as in the mockup.
+        if (this.selectedYear() === 'all' && this.years().length > 1) {
+            this.selectedYear.set(this.years()[0].value);
+        }
+        if (this.revealTarget()) return;
+        // The newest event starts open, as in the mockup.
+        if (this.openId() === undefined) this.openId.set(views[0]?.id);
+    }
+
+    /**
+     * An event clicked in the home page preview opens the list at that event ("#wydarzenie-12"):
+     * its year and page are selected, it is open and scrolled into view.
+     */
+    private revealTarget(): boolean {
+        if (this.targetRevealed) return false;
+        const target = this.route.snapshot.fragment;
+        const id = /^wydarzenie-(.+)$/.exec(target ?? '')?.[1];
+        const event = id ? this.events().find(view => String(view.id) === id) : undefined;
+        if (!event) return false;
+        this.targetRevealed = true;
+        if (this.years().length > 1 && !this.component().all_filter) {
+            this.selectedYear.set(event.year && this.ownYears().includes(event.year) ? event.year : 'older');
+        }
+        const index = this.filtered().findIndex(view => view.id === event.id);
+        this.currentPage.set(Math.floor(Math.max(index, 0) / this.limit()) + 1);
+        this.openId.set(event.id);
+        afterNextRender(() => this.scroller.scrollToAnchor(target!), { injector: this.injector });
+        return true;
     }
 }

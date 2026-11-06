@@ -1,0 +1,38 @@
+<footer class="site-footer">
+    <div class="site-footer__main container">
+        <div class="site-footer__about">
+            <span class="logo logo--on-forest">
+                <span class="trail-mark trail-mark--logo trail-mark--on-forest"
+                      aria-hidden="true"></span>
+                <span class="logo__text">GeoSilesia</span>
+            </span>
+            <p class="site-footer__text">{{ navigation.footerText() }}</p>
+            @if (navigation.footerNote()) {
+                <p class="site-footer__note">{{ navigation.footerNote() }}</p>
+            }
+        </div>
+        @if (navigation.footerColumns().length) {
+            <nav class="site-footer__nav"
+                 aria-label="Stopka">
+                @for (column of navigation.footerColumns(); track column.title) {
+                    <div class="site-footer__column">
+                        <span class="site-footer__heading">{{ column.title }}</span>
+                        @for (link of column.links; track link.link) {
+                            <a class="site-footer__link"
+                               [routerLink]="link.link">{{ link.title }}</a>
+                        }
+                    </div>
+                }
+            </nav>
+        }
+    </div>
+    <div class="site-footer__trails container"
+         aria-hidden="true">
+        <span style="--mark: var(--trail-red)"></span>
+        <span style="--mark: var(--trail-blue)"></span>
+        <span style="--mark: var(--trail-green)"></span>
+        <span style="--mark: var(--trail-yellow)"></span>
+        <span class="site-footer__trail--black"
+              style="--mark: var(--trail-black)"></span>
+    </div>
+</footer>

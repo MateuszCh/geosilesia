@@ -156,52 +156,72 @@
         return collapsed.length > 1 ? collapsed.replace(/\/+$/, '') : collapsed;
     }
 
-    // Title from the page content: 1) homepage_banner.title, 2) heading (prefer h1),
-    // 3) title_and_text.title.
-    function deriveTitle(page) {
-        if (!page || !page.rows || !page.rows.length) return '';
-        var rows = page.rows;
-        var i;
-        for (i = 0; i < rows.length; i++) {
-            if (rows[i].type === 'homepage_banner' && rows[i].data && rows[i].data.title) {
-                return stripHtml(rows[i].data.title);
-            }
-        }
-        var firstHeading = null;
-        for (i = 0; i < rows.length; i++) {
-            if (rows[i].type === 'heading' && rows[i].data && rows[i].data.text) {
-                if (rows[i].data.type === 'h1') return stripHtml(rows[i].data.text);
-                if (!firstHeading) firstHeading = rows[i].data.text;
-            }
-        }
-        if (firstHeading) return stripHtml(firstHeading);
-        for (i = 0; i < rows.length; i++) {
-            if (rows[i].type === 'title_and_text' && rows[i].data && rows[i].data.title) {
-                return stripHtml(rows[i].data.title);
+    function rowText(rows, type, field) {
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i] && rows[i].type === type && rows[i].data && rows[i].data[field]) {
+                return stripHtml(rows[i].data[field]);
             }
         }
         return '';
     }
 
-    // Description from the first paragraph of the content.
-    function deriveDescription(page) {
-        if (!page || !page.rows || !page.rows.length) return '';
-        var rows = page.rows;
+    // A field of the page header (variant C): a value of a "Strona treści" page, or of the
+    // page_hero row of a page without a type (scripts/cms/18-page-types.js).
+    function heroText(page, field) {
+        if (page.type === 'tresc') {
+            return page.typeData && page.typeData[field] ? stripHtml(page.typeData[field]) : '';
+        }
+        return rowText(page.rows || [], 'page_hero', field);
+    }
+
+    // Title from the page content: 1) homepage_banner.title, 2) the header's title,
+    // 3) heading (prefer h1), 4) gallery.title (albums), 5) title_and_text.title.
+    function deriveTitle(page) {
+        if (!page) return '';
+        var rows = page.rows || [];
+        var fromBanner = rowText(rows, 'homepage_banner', 'title');
+        if (fromBanner) return fromBanner;
+        var fromHero = heroText(page, 'title');
+        if (fromHero) return fromHero;
+        var firstHeading = null;
         for (var i = 0; i < rows.length; i++) {
-            if (
-                rows[i].type === 'title_and_text' &&
-                rows[i].data &&
-                rows[i].data.text &&
-                rows[i].data.text.length
-            ) {
-                for (var j = 0; j < rows[i].data.text.length; j++) {
-                    var para = rows[i].data.text[j].paragraph;
-                    if (para) {
-                        var text = stripHtml(para);
-                        if (text) return truncate(text, MAX_DESCRIPTION);
-                    }
-                }
+            if (rows[i] && rows[i].type === 'heading' && rows[i].data && rows[i].data.text) {
+                if (rows[i].data.type === 'h1') return stripHtml(rows[i].data.text);
+                if (!firstHeading) firstHeading = rows[i].data.text;
             }
+        }
+        if (firstHeading) return stripHtml(firstHeading);
+        return rowText(rows, 'gallery', 'title') || rowText(rows, 'title_and_text', 'title');
+    }
+
+    // The trailing "Ryszard Chybiorz / 03.06.2026 / Ostatnia aktualizacja 05.10.2026." of
+    // older pages is a byline, not a description.
+    var BYLINE = /^[^/:()]{2,60}\/\s*(\d{1,2}\.\d{1,2}\.\d{4}\s*\/\s*)?Ostatnia aktualizacja/i;
+
+    function firstParagraph(paragraphs, field) {
+        for (var j = 0; j < (paragraphs || []).length; j++) {
+            var para = paragraphs[j] && paragraphs[j][field];
+            if (para) {
+                var text = stripHtml(para);
+                if (text && !BYLINE.test(text)) return truncate(text, MAX_DESCRIPTION);
+            }
+        }
+        return '';
+    }
+
+    // Description: the lead of the page header (variant C), else the first paragraph of the
+    // content – a text row, or the album's own text.
+    function deriveDescription(page) {
+        if (!page) return '';
+        var rows = page.rows || [];
+        var lead = heroText(page, 'lead');
+        if (lead) return truncate(lead, MAX_DESCRIPTION);
+        for (var i = 0; i < rows.length; i++) {
+            if (!rows[i] || !rows[i].data) continue;
+            var text = '';
+            if (rows[i].type === 'title_and_text') text = firstParagraph(rows[i].data.text, 'paragraph');
+            else if (rows[i].type === 'gallery') text = firstParagraph(rows[i].data.paragraphs, 'paragraph');
+            if (text) return text;
         }
         return '';
     }

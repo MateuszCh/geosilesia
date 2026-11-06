@@ -1,12 +1,15 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    PLATFORM_ID,
+    computed,
     effect,
     inject,
     input,
     signal,
     untracked
 } from '@angular/core';
+import { NgTemplateOutlet, isPlatformBrowser } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
@@ -15,47 +18,75 @@ import { Page } from '../../models/page.model';
 import { ResourceService } from '../../core/resource.service';
 import { SeoService } from '../../core/seo.service';
 import { pageKeyFromUrl } from '../../core/page-key';
-import { Dictionary } from '../dictionary/dictionary';
-import { Footnotes } from '../footnotes/footnotes';
-import { Gallery } from '../gallery/gallery';
-import { GalleryList } from '../gallery-list/gallery-list';
-import { GeositesLogos } from '../geosites-logos/geosites-logos';
-import { Heading } from '../heading/heading';
-import { HomepageBanner } from '../homepage-banner/homepage-banner';
-import { Literature } from '../literature/literature';
-import { MarkerCategoryList } from '../marker-category-list/marker-category-list';
-import { News } from '../news/news';
-import { SearchMap } from '../search-map/search-map';
-import { Tabs } from '../tabs/tabs';
-import { TitleAndText } from '../title-and-text/title-and-text';
+import { NavigationService } from '../../core/navigation.service';
+import { NotFoundService } from '../../core/not-found.service';
+import { BylinePlace, PageLayout, layoutPage } from '../../core/page-layout';
+import * as seoMeta from '../../../../../shared/seo-meta';
+import { PageHero, bylineText } from '../page-hero/page-hero';
+import { SectionBar } from '../section-bar/section-bar';
+import { RowView } from '../row/row';
+import { RowContext } from '../../core/row-context';
 
 @Component({
     selector: 'app-page-view',
     templateUrl: './page-view.html',
     imports: [
+        NgTemplateOutlet,
         RouterLink,
-        Dictionary,
-        Footnotes,
-        Gallery,
-        GalleryList,
-        GeositesLogos,
-        Heading,
-        HomepageBanner,
-        Literature,
-        MarkerCategoryList,
-        News,
-        SearchMap,
-        Tabs,
-        TitleAndText
+        PageHero,
+        SectionBar,
+        RowView
     ],
+    // The rows read the page's shared state through RowContext – nested ones too.
+    providers: [{ provide: RowContext, useExisting: PageView }],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PageView {
+export class PageView implements RowContext {
     /** Resolver result, bound via withComponentInputBinding(). */
     readonly page = input<Page | undefined>();
 
     readonly displayed = signal<Page | undefined>(undefined);
     readonly loaded = signal(false);
+
+    protected readonly navigation = inject(NavigationService);
+    /** The texts and links of the 404 page, loaded when one is shown. */
+    protected readonly notFound = inject(NotFoundService);
+
+    /** Normalized path of the displayed page – "/budowa-geologiczna-wojewodztwa-slaskiego". */
+    readonly path = computed(() => seoMeta.normalizePath(this.displayed()?.pageUrl ?? ''));
+
+    readonly layout = computed<PageLayout>(() => {
+        const page = this.displayed();
+        return page?.pageUrl
+            ? layoutPage(page)
+            : { kind: 'content', rows: [], side: [], bylinePlace: 'header', nextCard: false };
+    });
+
+    /** The dictionary's search; the page header may hold the field. */
+    readonly dictionaryQuery = signal('');
+
+    /** The page header holds the search field of the dictionary that asks for it. */
+    readonly searchInHeader = computed(() => this.layout().header?.searchCount !== undefined);
+    readonly crumbs = computed(() => this.navigation.trail(this.path()));
+    readonly section = computed(() => this.navigation.section(this.path()));
+    readonly next = computed(() => this.navigation.next(this.path()));
+    /** "Menu działu": the section's pages in the header or beside the text. */
+    readonly headerMenu = computed(() => (this.layout().menu === 'header' ? this.section() : undefined));
+    readonly sideMenu = computed(() => (this.layout().menu === 'side' ? this.section() : undefined));
+    /** The "Dalej w dziale" card closing the side column. */
+    readonly sideNext = computed(() => (this.layout().nextCard ? this.next() : undefined));
+    /** "Autor i daty" outside the header: under the text, in the side column or in the literature box. */
+    readonly belowByline = computed(() => this.bylineAt('below'));
+    readonly sideByline = computed(() => this.bylineAt('side'));
+    readonly literatureByline = computed(() => this.bylineAt('literature'));
+    /** The side column: side rows, the section menu, "Dalej w dziale" and the byline. */
+    readonly hasSide = computed(
+        () => this.layout().side.length > 0 || !!this.sideMenu() || !!this.sideNext() || !!this.sideByline()
+    );
+    /** Only for the 404 page, which is never server-rendered. */
+    readonly offline = signal(
+        isPlatformBrowser(inject(PLATFORM_ID)) && globalThis.navigator?.onLine === false
+    );
 
     /** Changes the 404 message: only in offline mode can a missing page mean
         that it simply has not made it into the cache yet. */
@@ -74,6 +105,11 @@ export class PageView {
         });
     }
 
+    private bylineAt(place: BylinePlace): string {
+        const { bylinePlace, byline } = this.layout();
+        return bylinePlace === place ? bylineText(byline) : '';
+    }
+
     private load(resolved: Page | undefined): void {
         // The component is not recreated between pages (a single "**" route), so a late
         // response for the previous address would replace the content and meta of the
@@ -83,6 +119,7 @@ export class PageView {
 
         this.displayed.set(resolved);
         this.loaded.set(false);
+        this.dictionaryQuery.set('');
 
         // The resolver returned content from IndexedDB so the page appears immediately –
         // now the network version is fetched. Without offline mode the resolver already
@@ -109,6 +146,7 @@ export class PageView {
         if (current?.pageUrl) {
             this.seo.applyForPage(current);
         } else {
+            this.notFound.load();
             this.seo.applyNotFound(this.router.url);
         }
     }

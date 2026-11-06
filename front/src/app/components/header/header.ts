@@ -10,38 +10,50 @@ import {
 import { NavigationEnd, NavigationStart, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ResourceService } from '../../core/resource.service';
+import { NavigationService } from '../../core/navigation.service';
+import { NavItem, NavSubItem } from '../../models/post.model';
 import { internalLink } from '../../core/cms-link';
-import { NavItem, NavigationPost } from '../../models/post.model';
-
-/** Time reserved for the side panel slide animation (_aside-menu.scss). */
-const SUBNAV_RESET_MS = 500;
 
 @Component({
     selector: 'app-header',
     templateUrl: './header.html',
     imports: [RouterLink],
+    host: {
+        '(document:keydown.escape)': 'onEscape()'
+    },
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Header implements OnInit {
-    readonly nav = signal<NavItem[]>([]);
-    readonly asideOpen = signal(false);
-    readonly showSubNav = signal(false);
-    readonly subnav = signal<NavItem['subnav']>([]);
-    /** Index of the menu item under the cursor; false = none. */
-    readonly hoverNavItem = signal<number | false>(false);
+    protected readonly navigation = inject(NavigationService);
+    protected readonly internalLink = internalLink;
+    /** Trail colours of the subpage marks in the mobile menu, in turn. */
+    protected readonly markColors = [
+        'var(--trail-red)',
+        'var(--trail-blue)',
+        'var(--trail-green)',
+        'var(--trail-yellow)',
+        'var(--trail-black)'
+    ];
+
+    readonly menuOpen = signal(false);
+    /** Index of the desktop section whose subpage list is open from its button; -1 = none. */
+    readonly openNav = signal(-1);
+    /**
+     * After a click on a section or subpage link the pointer still hovers the list on the
+     * new page; hover stays off until the pointer leaves the navigation.
+     */
+    readonly hoverOff = signal(false);
+    /** Index of the expanded section in the mobile menu; -1 = none. */
+    readonly openSection = signal(-1);
     readonly currentPath = signal('/');
 
-    protected readonly internalLink = internalLink;
-
-    private readonly resource = inject(ResourceService);
     private readonly router = inject(Router);
     private readonly doc = inject(DOCUMENT);
     private readonly destroyRef = inject(DestroyRef);
-    private subnavTimer: ReturnType<typeof setTimeout> | undefined;
 
     ngOnInit(): void {
         this.currentPath.set(this.pathOf(this.router.url));
+        this.navigation.load();
 
         this.router.events
             .pipe(
@@ -49,8 +61,8 @@ export class Header implements OnInit {
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe(() => {
-                this.toggleAsideNav(false);
-                this.hoverNavItem.set(false);
+                this.closeMenu();
+                this.openNav.set(-1);
             });
 
         // The active item is computed only after NavigationEnd: on NavigationStart
@@ -61,77 +73,74 @@ export class Header implements OnInit {
                 filter(event => event instanceof NavigationEnd),
                 takeUntilDestroyed(this.destroyRef)
             )
-            .subscribe(event =>
-                this.currentPath.set(this.pathOf(event.urlAfterRedirects))
-            );
+            .subscribe(event => this.currentPath.set(this.pathOf(event.urlAfterRedirects)));
 
-        // The reverse of other screens: network first, IndexedDB only when it fails.
-        // There is one navigation for the whole site and it rarely changes, so there is
-        // no point in flashing an old version before the new one arrives.
-        this.resource
-            .loadPostsFromNetwork<NavigationPost['data']>('navigation')
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(posts => {
-                if (posts.length) {
-                    this.setNav(posts);
-                    return;
-                }
-                if (this.resource.isOfflineAvailable()) {
-                    void this.resource
-                        .loadPostsFromCache<NavigationPost['data']>('navigation')
-                        .then(cached => this.setNav(cached));
-                }
-            });
-
-        this.destroyRef.onDestroy(() => {
-            clearTimeout(this.subnavTimer);
-            this.doc.body.classList.remove('aside-nav-open');
-        });
-    }
-
-    private setNav(posts: NavigationPost[]): void {
-        this.nav.set(posts[0]?.data?.nav ?? []);
+        this.destroyRef.onDestroy(() => this.doc.body.classList.remove('menu-open'));
     }
 
     private pathOf(url: string): string {
         const path = url.split('?')[0].split('#')[0];
+        let decoded = path;
         try {
-            return decodeURIComponent(path);
+            decoded = decodeURIComponent(path);
         } catch {
-            return path;
+            // malformed %-sequence – compare as is
         }
+        return decoded.length > 1 ? decoded.replace(/\/+$/, '') : decoded;
     }
 
-    /**
-     * An item is active for its own address and everything below it, so that a gallery
-     * subpage highlights the "Galerie" item. For items without an address the submenu decides.
-     */
-    isActive(link?: string, group?: NavItem['subnav']): boolean {
+    openMenu(): void {
+        // The section of the current page starts expanded, as in the mockup.
         const path = this.currentPath();
-        if (link) {
-            const target = internalLink(link);
-            return target === path || path.startsWith(`${target}/`);
-        }
-        return !!group?.some(item => !!item.link && internalLink(item.link) === path);
+        this.openSection.set(
+            this.navigation.items().findIndex(item => this.navigation.isSectionActive(item, path))
+        );
+        this.menuOpen.set(true);
+        this.doc.body.classList.add('menu-open');
     }
 
-    toggleAsideNav(to?: boolean): void {
-        const state = to === undefined ? !this.asideOpen() : to;
-        this.doc.body.classList.toggle('aside-nav-open', state);
-        this.asideOpen.set(state);
-        if (!state) {
-            // The submenu is hidden only after the panel has slid out – otherwise it would
-            // jump back to the first level in front of the user.
-            clearTimeout(this.subnavTimer);
-            this.subnavTimer = setTimeout(
-                () => this.showSubNav.set(false),
-                SUBNAV_RESET_MS
-            );
+    closeMenu(): void {
+        if (!this.menuOpen()) return;
+        this.menuOpen.set(false);
+        this.doc.body.classList.remove('menu-open');
+    }
+
+    /** Opens the map filtered by the typed name (the map reads `?nazwa=`). */
+    searchMap(event: Event, query: string): void {
+        event.preventDefault();
+        const name = query.trim();
+        if (!name) return;
+        this.closeMenu();
+        void this.router.navigate([this.navigation.cta().link], { queryParams: { nazwa: name } });
+    }
+
+    /** Subpages that have an address and a name. */
+    subLinks(item: NavItem): NavSubItem[] {
+        return (item.subnav ?? []).filter(sub => sub.link && sub.subtitle);
+    }
+
+    toggleNav(index: number): void {
+        this.openNav.update(open => (open === index ? -1 : index));
+    }
+
+    /** The list opened from the button closes once the focus leaves its section. */
+    onNavFocusOut(index: number, event: FocusEvent): void {
+        const item = event.currentTarget as HTMLElement;
+        if (this.openNav() === index && !item.contains(event.relatedTarget as Node | null)) {
+            this.openNav.set(-1);
         }
     }
 
-    openSubnav(item: NavItem): void {
-        this.subnav.set(item.subnav ?? []);
-        this.showSubNav.set(true);
+    onEscape(): void {
+        const open = this.openNav();
+        if (open >= 0) {
+            this.openNav.set(-1);
+            this.doc.getElementById(`site-subnav-toggle-${open}`)?.focus();
+        }
+        this.closeMenu();
+    }
+
+    toggleSection(index: number): void {
+        this.openSection.update(open => (open === index ? -1 : index));
     }
 }

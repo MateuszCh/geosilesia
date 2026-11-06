@@ -1,93 +1,227 @@
-<div class="header"
-     id="header">
-    <div class="hamburger"
-         (click)="toggleAsideNav()"
-         [class.hamburger--open]="asideOpen()">
-        <span class="hamburger__menu"></span>
-        <span class="hamburger__menu"></span>
-        <span class="hamburger__menu"></span>
-        <span class="hamburger__menu"></span>
+<header class="site-header">
+    <div class="site-header__bar container">
+        <a class="logo"
+           routerLink="/"
+           aria-label="GeoSilesia — strona główna">
+            <span class="trail-mark trail-mark--logo"
+                  aria-hidden="true"></span>
+            <span class="logo__text">GeoSilesia</span>
+        </a>
+        @if (navigation.items().length) {
+            <!-- Sections with subpages open a list on hover; the arrow button opens it from
+                 the keyboard and on touch screens. -->
+            <nav class="site-nav"
+                 aria-label="Główna nawigacja"
+                 [class.site-nav--hover-off]="hoverOff()"
+                 (mouseleave)="hoverOff.set(false)">
+                @for (item of navigation.items(); track $index; let i = $index) {
+                    @if (navigation.sectionLink(item); as link) {
+                        @let subs = subLinks(item);
+                        <div class="site-nav__item"
+                             [class.site-nav__item--open]="openNav() === i"
+                             (focusout)="onNavFocusOut(i, $event)">
+                            <a class="site-nav__link"
+                               [class.site-nav__link--has-menu]="subs.length"
+                               [routerLink]="link"
+                               (click)="hoverOff.set(true)"
+                               [class.site-nav__link--active]="navigation.isSectionActive(item, currentPath())"
+                               [attr.aria-current]="navigation.isSectionActive(item, currentPath()) ? 'true' : null">{{ item.title }}</a>
+                            @if (subs.length) {
+                                <button class="site-nav__toggle"
+                                        type="button"
+                                        [id]="'site-subnav-toggle-' + i"
+                                        [attr.aria-expanded]="openNav() === i"
+                                        [attr.aria-controls]="'site-subnav-' + i"
+                                        (click)="toggleNav(i)">
+                                    <span class="visually-hidden">Podstrony: {{ item.title }}</span>
+                                    <svg width="12"
+                                         height="12"
+                                         viewBox="0 0 24 24"
+                                         aria-hidden="true">
+                                        <path d="M6 9l6 6 6-6"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              stroke-width="2.6"
+                                              stroke-linecap="round"
+                                              stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+                                <ul class="site-nav__menu"
+                                    [id]="'site-subnav-' + i">
+                                    @for (sub of subs; track $index) {
+                                        <li>
+                                            <a class="site-nav__menu-link"
+                                               [routerLink]="internalLink(sub.link)"
+                                               (click)="hoverOff.set(true)"
+                                               [class.site-nav__menu-link--current]="navigation.isCurrent(sub.link, currentPath())"
+                                               [attr.aria-current]="navigation.isCurrent(sub.link, currentPath()) ? 'page' : null">
+                                                <span class="trail-mark trail-mark--xs"
+                                                      aria-hidden="true"
+                                                      [style.--mark]="markColors[$index % markColors.length]"></span>
+                                                {{ sub.subtitle }}
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    }
+                }
+            </nav>
+        }
+        <a class="btn btn--primary site-header__cta"
+           [routerLink]="navigation.cta().link">
+            <svg width="18"
+                 height="18"
+                 viewBox="0 0 24 24"
+                 aria-hidden="true">
+                <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2" />
+                <circle cx="12"
+                        cy="10"
+                        r="2.5"
+                        fill="currentColor" />
+            </svg>
+            <span class="site-header__cta-long">{{ navigation.cta().label }}</span>
+            <span class="site-header__cta-short"
+                  aria-hidden="true">Mapa</span>
+        </a>
+        <button class="site-header__burger"
+                type="button"
+                aria-label="Otwórz menu"
+                aria-controls="mobile-menu"
+                [attr.aria-expanded]="menuOpen()"
+                (click)="openMenu()">
+            <svg width="20"
+                 height="20"
+                 viewBox="0 0 24 24"
+                 aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round" />
+            </svg>
+        </button>
     </div>
-    <a class="header__logo"
-       routerLink="/"
-       aria-label="GeoSilesia — strona główna">
-        <h1 class="header__logo__heading">GeoSilesia</h1>
-    </a>
-    @if (nav().length) {
-        <nav>
-            <ul class="nav">
-                @for (item of nav(); track $index) {
-                    <li class="nav__item"
-                        (mouseenter)="hoverNavItem.set($index)"
-                        (mouseleave)="hoverNavItem.set(false)"
-                        [class.nav__item--active]="item.link ? isActive(item.link) : isActive(undefined, item.subnav)">
-                        @if (item.link) {
-                            <a class="nav__item__link"
-                               [routerLink]="internalLink(item.link)">{{ item.title }}</a>
-                        }
+</header>
+
+@if (menuOpen()) {
+    <div id="mobile-menu"
+         class="mobile-menu"
+         role="dialog"
+         aria-modal="true"
+         aria-label="Menu">
+        <div class="mobile-menu__bar">
+            <span class="logo logo--on-forest">
+                <span class="trail-mark trail-mark--logo trail-mark--on-forest"
+                      aria-hidden="true"></span>
+                <span class="logo__text">GeoSilesia</span>
+            </span>
+            <button class="mobile-menu__close"
+                    type="button"
+                    aria-label="Zamknij menu"
+                    (click)="closeMenu()">
+                <svg width="14"
+                     height="14"
+                     viewBox="0 0 18 18"
+                     aria-hidden="true">
+                    <path d="M3 3l12 12M15 3L3 15"
+                          stroke="currentColor"
+                          stroke-width="2.4"
+                          stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <!-- The site has no full-text search: the field looks for places on the map by name. -->
+        <form class="mobile-menu__search"
+              role="search"
+              aria-label="Szukaj miejsca na mapie"
+              (submit)="searchMap($event, query.value)">
+            <label class="mobile-menu__field">
+                <svg width="18"
+                     height="18"
+                     viewBox="0 0 24 24"
+                     aria-hidden="true">
+                    <circle cx="10.5"
+                            cy="10.5"
+                            r="6.5"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2" />
+                    <path d="M15.5 15.5L21 21"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round" />
+                </svg>
+                <span class="visually-hidden">Szukaj miejsca na mapie po nazwie</span>
+                <input #query
+                       class="mobile-menu__input"
+                       type="search"
+                       placeholder="Szukaj miejsca na mapie"
+                       enterkeyhint="search"
+                       autocomplete="off">
+            </label>
+        </form>
+        <nav class="mobile-menu__nav"
+             aria-label="Główna nawigacja">
+            <ul class="mobile-menu__list">
+                @for (item of navigation.items(); track $index) {
+                    <li class="mobile-menu__item">
                         @if (item.subnav?.length) {
-                            <span class="nav__item__link">{{ item.title }}</span>
-                        }
-                        @if (item.subnav) {
-                            <ul class="subnav"
-                                [class.subnav--active]="hoverNavItem() === $index">
-                                @for (sub of item.subnav; track $index) {
-                                    <li class="subnav__item"
-                                        [class.subnav__item--active]="!!sub.link && isActive(sub.link)">
-                                        <a class="subnav__item__link"
-                                           [routerLink]="internalLink(sub.link)"
-                                           (click)="hoverNavItem.set(false)">{{ sub.subtitle }}</a>
-                                    </li>
-                                }
-                            </ul>
+                            <button class="mobile-menu__section"
+                                    type="button"
+                                    [attr.aria-expanded]="openSection() === $index"
+                                    (click)="toggleSection($index)">
+                                {{ item.title }}
+                                <span aria-hidden="true">{{ openSection() === $index ? '−' : '+' }}</span>
+                            </button>
+                            @if (openSection() === $index) {
+                                <ul class="mobile-menu__sub">
+                                    @for (sub of item.subnav; track $index) {
+                                        @if (sub.link) {
+                                            <li>
+                                                <a class="mobile-menu__sub-link"
+                                                   [routerLink]="internalLink(sub.link)"
+                                                   [class.mobile-menu__sub-link--current]="navigation.isCurrent(sub.link, currentPath())"
+                                                   [attr.aria-current]="navigation.isCurrent(sub.link, currentPath()) ? 'page' : null">
+                                                    <span class="trail-mark trail-mark--xs"
+                                                          aria-hidden="true"
+                                                          [style.--mark]="markColors[$index % markColors.length]"></span>
+                                                    {{ sub.subtitle }}
+                                                </a>
+                                            </li>
+                                        }
+                                    }
+                                </ul>
+                            }
+                        } @else if (item.link) {
+                            <a class="mobile-menu__section"
+                               [routerLink]="internalLink(item.link)">{{ item.title }}</a>
                         }
                     </li>
                 }
             </ul>
         </nav>
-    }
-</div>
-
-<div class="aside-menu">
-    <nav>
-        <ul class="aside-menu__list"
-            [class.aside-menu__list--hide]="showSubNav()">
-            @for (item of nav(); track $index) {
-                <li class="aside-menu__list__item">
-                    @if (item.link) {
-                        <a class="aside-menu__list__item__text"
-                           [routerLink]="internalLink(item.link)">{{ item.title }}</a>
-                    } @else {
-                        <span class="aside-menu__list__item__text"
-                              (click)="openSubnav(item)">{{ item.title }}</span>
-                    }
-                    @if (item.subnav?.length) {
-                        <span class="aside-menu__list__item__arrow"
-                              (click)="openSubnav(item)"></span>
-                    }
-                </li>
-            }
-        </ul>
-        <ul class="aside-menu__sub-list"
-            [class.aside-menu__sub-list--show]="showSubNav()">
-            <li class="aside-menu__sub-list__item"
-                (click)="showSubNav.set(false)">
-                <span class="aside-menu__sub-list__item__arrow"></span>
-                <span class="aside-menu__sub-list__item__text"
-                      style="padding-left: 1.5em">Wróć</span>
-            </li>
-            @for (subitem of subnav() ?? []; track $index) {
-                <li class="aside-menu__sub-list__item">
-                    @if (subitem.link) {
-                        <a class="aside-menu__sub-list__item__text"
-                           [routerLink]="internalLink(subitem.link)">{{ subitem.subtitle }}</a>
-                    } @else {
-                        <span class="aside-menu__sub-list__item__text">{{ subitem.subtitle }}</span>
-                    }
-                </li>
-            }
-        </ul>
-    </nav>
-</div>
-<div class="aside-menu-overlay"
-     (click)="toggleAsideNav()"></div>
+        <div class="mobile-menu__footer">
+            <a class="btn btn--on-forest btn--large mobile-menu__cta"
+               [routerLink]="navigation.cta().link">
+                <svg width="18"
+                     height="18"
+                     viewBox="0 0 24 24"
+                     aria-hidden="true">
+                    <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2" />
+                    <circle cx="12"
+                            cy="10"
+                            r="2.5"
+                            fill="currentColor" />
+                </svg>
+                {{ navigation.cta().label }}
+            </a>
+        </div>
+    </div>
+}
