@@ -190,11 +190,15 @@ async function insertPosts(db, type, posts) {
     return docs;
 }
 
-/** Inserts a page the way frodo's page controller does (id from the counter, ms timestamps). */
+/**
+ * Inserts a page the way frodo's page controller does (id from the counter, ms timestamps).
+ * `type` and `typeData` are the page type and its fields (step 18), for pages that have one.
+ */
 async function insertPage(db, page) {
     const [id] = await reserveIds(db, 1, true);
     const now = Date.now();
     const doc = { _id: new ObjectId(), rows: page.rows, title: page.title, pageUrl: page.pageUrl, seoTitle: page.seoTitle || "", seoDescription: page.seoDescription || "", created: now, id, updated: now, __v: 0 };
+    if (page.type) Object.assign(doc, { type: page.type, typeData: page.typeData || {} });
     await db.collection("pages").insertOne(doc);
     return doc;
 }
