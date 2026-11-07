@@ -16,8 +16,18 @@ export class ApiService {
      * `transfer: false` keeps a response made during the server render out of the HTTP
      * transfer cache, i.e. out of the HTML – for data the page only derives something
      * small from (ContentService.summary).
+     *
+     * `headers` are extra request headers, e.g. `X-Page-View` for the server's visit
+     * statistics (ResourceService.loadPageFromNetwork).
      */
-    get<T>(url: string, { transfer = true }: { transfer?: boolean } = {}): Observable<T> {
-        return this.http.get<T>(url, { withCredentials: true, ...(transfer ? {} : { transferCache: false }) });
+    get<T>(
+        url: string,
+        { transfer = true, headers }: { transfer?: boolean; headers?: Record<string, string> } = {}
+    ): Observable<T> {
+        return this.http.get<T>(url, {
+            withCredentials: true,
+            ...(headers ? { headers } : {}),
+            ...(transfer ? {} : { transferCache: false })
+        });
     }
 }

@@ -129,7 +129,7 @@ export class PageView implements RowContext {
             return;
         }
         this.pending = this.resource
-            .loadPageFromNetwork(pageKeyFromUrl(this.router.url))
+            .loadPageFromNetwork(pageKeyFromUrl(this.router.url), { pageView: true })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(fresh => this.onLoad(fresh ?? resolved));
     }

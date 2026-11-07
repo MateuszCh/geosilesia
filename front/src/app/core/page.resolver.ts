@@ -29,15 +29,15 @@ export const pageResolver: ResolveFn<Page | undefined> = (
         transferState.hasKey(RENDERED_ON_SERVER)
     ) {
         transferState.remove(RENDERED_ON_SERVER);
-        return resource.loadPageFromNetwork(key);
+        return resource.loadPageFromNetwork(key, { pageView: true });
     }
 
     if (!resource.isOfflineAvailable()) {
-        return resource.loadPageFromNetwork(key);
+        return resource.loadPageFromNetwork(key, { pageView: true });
     }
     return from(resource.loadPageFromCache(key)).pipe(
         switchMap(cached =>
-            cached ? of(cached) : resource.loadPageFromNetwork(key)
+            cached ? of(cached) : resource.loadPageFromNetwork(key, { pageView: true })
         )
     );
 };

@@ -34,9 +34,16 @@ export class ResourceService {
         return pageKey.replace(/\//g, '%2F');
     }
 
-    loadPageFromNetwork(pageKey: string): Observable<Page | undefined> {
+    /**
+     * `pageView` marks the request as the user opening the page – the router resolver and
+     * the page component's refresh – so the server counts it as an in-app navigation in its
+     * visit statistics. Other reads of a page (the home page banner) leave it off.
+     */
+    loadPageFromNetwork(pageKey: string, { pageView = false }: { pageView?: boolean } = {}): Observable<Page | undefined> {
         return this.api
-            .get<PagesResponse>(`/api/page/${this.pageUrlSegment(pageKey)}`)
+            .get<PagesResponse>(`/api/page/${this.pageUrlSegment(pageKey)}`, {
+                headers: pageView ? { 'X-Page-View': '1' } : undefined
+            })
             .pipe(
                 tap(response => {
                     if (response?.pages?.length) {

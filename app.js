@@ -7,7 +7,8 @@ const express = require("express"),
     config = require("./config"),
     seoMeta = require("./shared/seo-meta"),
     { REDIRECTS } = require("./shared/redirects"),
-    { createRenderer } = require("./ssr");
+    { createRenderer } = require("./ssr"),
+    { createVisitTracker } = require("./visits");
 
 const app = express();
 app.set("port", process.env.PORT || 3000);
@@ -42,6 +43,9 @@ if (!allowIndexing) {
 let db;
 const collections = {};
 let databaseError = false;
+// Replaced by the real tracker once the database is connected; until then visits are not
+// recorded (visits.js).
+let trackVisit = () => {};
 
 const client = new MongoClient(config.mongoUrl);
 
@@ -52,6 +56,7 @@ client.connect()
         collections.pages = db.collection("pages");
         collections.files = db.collection("files");
         collections.meta = db.collection("meta");
+        trackVisit = createVisitTracker(db, { siteUrl: config.siteUrl });
         app.listen(app.get("port"), () => console.log("Running on port 3000"));
     })
     .catch(err => {
@@ -239,11 +244,23 @@ app.get("/api/posts/:type", (req, res, next) => {
         .catch(next);
 });
 
+// Only requests the front marks as page views count as in-app navigation: the router
+// resolver and the page component's refresh send `X-Page-View: 1`, while other reads of a
+// page (the home page banner, for one) do not.
+function trackNavigation(req, pageUrl, found) {
+    if (found && req.get("x-page-view") === "1") {
+        trackVisit(req, { path: seoMeta.normalizePath(pageUrl), source: "nav" });
+    }
+}
+
 app.get("/api/page/", (req, res, next) => {
     collections.pages
         .find({ pageUrl: "/" })
         .toArray()
-        .then(page => res.send(page))
+        .then(page => {
+            trackNavigation(req, "/", page.length > 0);
+            res.send(page);
+        })
         .catch(next);
 });
 
@@ -258,7 +275,10 @@ app.get("/api/appData/", (req, res, next) => {
 
 app.get("/api/page/:pageUrl", (req, res, next) => {
     pageData(req.params.pageUrl)
-        .then(data => res.send(data))
+        .then(data => {
+            trackNavigation(req, req.params.pageUrl, data.pages.length > 0);
+            res.send(data);
+        })
         .catch(next);
 });
 
@@ -650,6 +670,12 @@ app.get(["*"], (req, res, next) => {
                     : Promise.resolve(null);
                 return rendered.then(result =>
                     (result ? Promise.resolve(result.html) : getIndexHtml()).then(html => {
+                        if (page) {
+                            trackVisit(req, {
+                                path: seoMeta.normalizePath(page.pageUrl),
+                                source: "ssr"
+                            });
+                        }
                         res.status(page ? 200 : 404)
                             .set("X-Render", renderLabel(result))
                             .type("html")

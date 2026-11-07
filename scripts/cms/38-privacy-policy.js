@@ -5,7 +5,8 @@
 //
 // - a "Strona treści" page `polityka-prywatnosci`, one "Tytuł i tekst" row per section,
 //   holding only what art. 13 GDPR requires for what the site processes: the server log on the
-//   hosting, e-mail sent to the contact address (a Gmail mailbox, so Google is a recipient),
+//   hosting, the server-side visit statistics (visits.js: no cookies, a daily rotating
+//   identifier, no IP stored), e-mail sent to the contact address (a Gmail mailbox, so Google is a recipient),
 //   Google Maps, which loads by itself on the map pages (recipient, transfer to the USA), and
 //   the absence of automated decisions. What the browser keeps (sessionStorage, IndexedDB, the
 //   service worker's cache) is strictly necessary and holds no personal data, and the
@@ -51,6 +52,14 @@ function sections({ name, email }) {
             text: [
                 p(
                     "Przy każdym odwiedzeniu strony serwer zapisuje w dzienniku adres IP urządzenia, datę i godzinę zapytania, adres otwieranej strony, adres strony, z której nastąpiło przejście, oraz informacje o przeglądarce i systemie (tzw. user agent). Dane te są przetwarzane w celu zapewnienia działania i bezpieczeństwa serwisu, co jest prawnie uzasadnionym interesem administratora (art. 6 ust. 1 lit. f RODO). Odbiorcą danych jest dostawca hostingu MyDevil. Dziennik jest przechowywany przez okres do 3 miesięcy, po czym jest automatycznie usuwany."
+                )
+            ]
+        },
+        {
+            title: "Statystyki odwiedzin",
+            text: [
+                p(
+                    "Serwis liczy odwiedziny wyłącznie po stronie serwera, bez plików cookies i bez zewnętrznych narzędzi analitycznych. Przy wejściu na stronę i przechodzeniu między podstronami zapisywane są: adres otwieranej podstrony, data i godzina, domena strony, z której nastąpiło przejście, ogólny typ urządzenia (telefon, tablet lub komputer) oraz identyfikator wyliczany z adresu IP, informacji o przeglądarce i preferowanego języka. Identyfikator zmienia się codziennie, a dane potrzebne do jego wyliczenia są usuwane po zakończeniu dnia, dlatego nie pozwala on ustalić tożsamości osoby ani powiązać jej wizyt z różnych dni. Adres IP i pełne informacje o przeglądarce nie są zapisywane. Celem jest poznanie liczby odwiedzających i najczęściej czytanych treści, co jest prawnie uzasadnionym interesem administratora (art. 6 ust. 1 lit. f RODO). Statystyki nie są nikomu przekazywane i są przechowywane bez ograniczenia czasu, ponieważ po zakończeniu dnia nie pozwalają nikogo zidentyfikować."
                 )
             ]
         },
