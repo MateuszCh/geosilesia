@@ -435,6 +435,25 @@
     z-index: 1;
 }
 
+// Google's close button is transparent with a grey cross, which vanishes on a photo. Give it
+// the same white round chip as the phone sheet. Google sets its size inline, hence !important.
+.gm-style .gm-style-iw-chr .gm-ui-hover-effect {
+    width: 34px !important;
+    height: 34px !important;
+    margin: 8px !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    box-shadow: 0 2px 8px #18201b40 !important;
+    opacity: 1 !important;
+
+    > span {
+        width: 18px !important;
+        height: 18px !important;
+        margin: 8px !important;
+        background-color: var(--ink) !important;
+    }
+}
+
 .object-card {
     width: 300px;
     max-width: 100%;
@@ -463,6 +482,11 @@
         font-size: 13px;
         font-weight: 600;
         line-height: 18px;
+    }
+
+    // Without a photo the close chip sits over the tag line.
+    &:not(:has(.object-card__image)) .object-card__tag {
+        padding-right: 36px;
     }
 
     &__title {
@@ -895,10 +919,28 @@
             color: var(--ink);
         }
 
+        // Over a photo the flat grey square looks pasted on: a white round chip set in from
+        // the photo's corner reads as a control. Its shadow stays inside the card, so no clipping.
+        &__close--on-image {
+            top: 8px;
+            right: 8px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 2px 8px #18201b40;
+        }
+
         // The title and the tag must not run under the close button.
         &__tag,
         &__title {
             padding-right: 44px;
+        }
+
+        // ...unless the button sits on the photo above them.
+        &__card:has(.map-sheet__close--on-image) .map-sheet__tag,
+        &__card:has(.map-sheet__close--on-image) .map-sheet__title {
+            padding-right: 0;
         }
 
         &__image {

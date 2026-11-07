@@ -218,6 +218,7 @@
                     }
                     <button class="map-sheet__close"
                             type="button"
+                            [class.map-sheet__close--on-image]="place.image"
                             aria-label="Zamknij informacje o miejscu"
                             (click)="currentResult.set(undefined)">
                         <svg width="14"
