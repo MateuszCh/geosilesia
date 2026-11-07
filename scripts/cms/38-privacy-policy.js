@@ -59,7 +59,7 @@ function sections({ name, email }) {
             title: "Statystyki odwiedzin",
             text: [
                 p(
-                    "Serwis liczy odwiedziny wyłącznie po stronie serwera, bez plików cookies i bez zewnętrznych narzędzi analitycznych. Przy wejściu na stronę i przechodzeniu między podstronami zapisywane są: adres otwieranej podstrony, data i godzina, domena strony, z której nastąpiło przejście, ogólny typ urządzenia (telefon, tablet lub komputer) oraz identyfikator wyliczany z adresu IP, informacji o przeglądarce i preferowanego języka. Identyfikator zmienia się codziennie, a dane potrzebne do jego wyliczenia są usuwane po zakończeniu dnia, dlatego nie pozwala on ustalić tożsamości osoby ani powiązać jej wizyt z różnych dni. Adres IP i pełne informacje o przeglądarce nie są zapisywane. Celem jest poznanie liczby odwiedzających i najczęściej czytanych treści, co jest prawnie uzasadnionym interesem administratora (art. 6 ust. 1 lit. f RODO). Statystyki nie są nikomu przekazywane i są przechowywane bez ograniczenia czasu, ponieważ po zakończeniu dnia nie pozwalają nikogo zidentyfikować."
+                    "Serwis liczy odwiedziny po stronie serwera, bez plików cookies i zewnętrznych narzędzi analitycznych. Do odróżnienia odwiedzających używany jest identyfikator zmieniany codziennie. Adres IP nie jest zapisywany, a zebrane statystyki nie pozwalają nikogo zidentyfikować. Celem jest poznanie liczby odwiedzających i najczęściej czytanych treści, co jest prawnie uzasadnionym interesem administratora (art. 6 ust. 1 lit. f RODO). Statystyki nie są nikomu przekazywane."
                 )
             ]
         },
