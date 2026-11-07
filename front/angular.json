@@ -49,6 +49,16 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "barlow-latin*.woff2",
+                "input": "node_modules/@fontsource/barlow/files",
+                "output": "fonts"
+              },
+              {
+                "glob": "barlow-condensed-latin*.woff2",
+                "input": "node_modules/@fontsource/barlow-condensed/files",
+                "output": "fonts"
               }
             ],
             "styles": [
