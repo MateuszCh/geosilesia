@@ -618,6 +618,10 @@ app.get(Object.keys(REDIRECTS), (req, res) => {
 });
 
 app.use("/uploads", express.static(`${__dirname}/uploads`));
+// Self-hosted fonts (copied from @fontsource at build time): their names carry no hash, but the
+// files only change with a font package upgrade, so a month in the browser cache is safe and
+// saves a revalidation round trip on every reload.
+app.use("/fonts", express.static(`${FRONT_DIR}/fonts`, { maxAge: "30d" }));
 // index: false – otherwise serve-static would answer "/" with index.html by itself
 // and the home page would be the only one without server-side meta.
 app.use("/", express.static(FRONT_DIR, { index: false }));
