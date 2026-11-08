@@ -21,7 +21,14 @@ if [ -z "$domain" ]; then
 fi
 
 # Server dependencies too: without a newly added one the restarted app would not start.
-npm install --omit=dev
+# npm ci installs exactly what package-lock.json pins, the versions tested locally; npm
+# install kept an Express 4.16 the server once got, which has no express.text.
+if git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
+    npm ci --omit=dev
+else
+    echo 'deploy: package-lock.json is not in the repository, npm install may keep other versions' >&2
+    npm install --omit=dev
+fi
 # Exactly what front/package-lock.json pins (see "Build and deployment" in README.md).
 (cd front && npm ci)
 

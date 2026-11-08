@@ -56,12 +56,14 @@ sites or to documents (`outbound`, `download`). Bots and prefetches are skipped.
 First setup:
 
 ```bash
-npm install                   # server dependencies (root)
-cd front && npm ci            # front-end dependencies, exactly as pinned in the lockfile
+npm ci                        # server dependencies (root), exactly as pinned in package-lock.json
+cd front && npm ci            # front-end dependencies, exactly as pinned in front/package-lock.json
 ```
 
-Run `cd front && npm ci` again whenever `front/package-lock.json` changes (e.g. after
-pulling someone else's dependency update).
+Run `npm ci` again (in the root or in `front/`) whenever its `package-lock.json` changes
+(e.g. after pulling someone else's dependency update). Add or update a dependency with
+`npm install <pkg>` and commit the updated lockfile. `engines` in `package.json` gives the
+Node versions the Angular CLI accepts.
 
 ### Everyday front-end work
 
@@ -125,7 +127,7 @@ the front end bundles `shared/seo-meta.js`.
 On the server:
 
 ```bash
-npm run deploy   # git pull --ff-only; root: npm install --omit=dev; front: npm ci + ng build into tmp/; swap; devil www restart <deployDomain>
+npm run deploy   # git pull --ff-only; root: npm ci --omit=dev; front: npm ci + ng build into tmp/; swap; devil www restart <deployDomain>
 ```
 
 The script pulls the code itself (`--ff-only`: a server clone with commits of its own
@@ -138,15 +140,16 @@ Every deployment restarts the Node process, always after the build — the new s
 expects the new build. The restart is also what clears all in-memory caches (rendered
 HTML, page list, CSR shell). The domain is taken from `deployDomain` in `config.json`;
 without it the script stops before installing anything. The server dependencies are
-installed by the script as well (`npm install --omit=dev` in the root), so a change to the
-root `package.json` needs no manual step.
+installed by the script as well (`npm ci --omit=dev` in the root, exactly as pinned in
+`package-lock.json`), so a change to the root dependencies needs no manual step.
 
 - `front/dist/` is in `.gitignore`, so every deployment has to build.
 - `npm ci` deletes `node_modules` and installs exactly the versions pinned in
-  `package-lock.json`, never modifying it. Never use plain `npm install` in `front/` on
-  the server: it may pick newer versions within the ranges — `@angular/build` 22.2 pulls
-  `sass-embedded`, which hangs the build on the server's platform. That is also why
-  `front/package-lock.json` must stay in the repository.
+  `package-lock.json`, never modifying it. Never use plain `npm install` on the server: it
+  may keep or pick other versions within the ranges — `@angular/build` 22.2 pulls
+  `sass-embedded`, which hangs the build on the server's platform, and the root once kept an
+  Express 4.16 without `express.text`, which stopped the app. That is also why both lockfiles
+  must stay in the repository.
 - A front-end-only change needs the restart too: `ssr.js` imports the server bundle once
   per process (Node never unloads ES modules), so without a restart the old bundle keeps
   rendering pages.

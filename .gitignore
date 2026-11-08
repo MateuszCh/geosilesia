@@ -5,10 +5,10 @@ front/dist/
 # The Angular CLI's cache, wherever it was started (front/ or the repository root)
 .angular/
 node_modules/
-package-lock.json
-# The front-end lockfile must be in the repo: without it the server picks the newest
-# versions (e.g. @angular/build 22.2 with sass-embedded), which hang the build there.
-!front/package-lock.json
+# Both lockfiles (root and front/) are in the repo: deploy.sh installs exactly them with
+# npm ci. Without them the server kept or picked other versions than the tested ones
+# (Express 4.16 without express.text; @angular/build 22.2 with sass-embedded, which hangs
+# the build there).
 config.json
 tmp/
 uploads/
