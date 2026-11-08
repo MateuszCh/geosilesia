@@ -6,7 +6,7 @@
 // - a "Strona treści" page `polityka-prywatnosci`, one "Tytuł i tekst" row per section,
 //   holding only what art. 13 GDPR requires for what the site processes: the server log on the
 //   hosting, the server-side visit statistics (visits.js: no cookies, a daily rotating
-//   identifier, no IP stored), e-mail sent to the contact address (a Gmail mailbox, so Google is a recipient),
+//   identifier, no IP stored; what a hit and the events keep, in one sentence), e-mail sent to the contact address (a Gmail mailbox, so Google is a recipient),
 //   Google Maps, which loads by itself on the map pages (recipient, transfer to the USA), and
 //   the absence of automated decisions. What the browser keeps (sessionStorage, IndexedDB, the
 //   service worker's cache) is strictly necessary and holds no personal data, and the
@@ -59,7 +59,7 @@ function sections({ name, email }) {
             title: "Statystyki odwiedzin",
             text: [
                 p(
-                    "Serwis liczy odwiedziny po stronie serwera, bez plików cookies i zewnętrznych narzędzi analitycznych. Do odróżnienia odwiedzających używany jest identyfikator zmieniany codziennie. Adres IP nie jest zapisywany, a zebrane statystyki nie pozwalają nikogo zidentyfikować. Celem jest poznanie liczby odwiedzających i najczęściej czytanych treści, co jest prawnie uzasadnionym interesem administratora (art. 6 ust. 1 lit. f RODO). Statystyki nie są nikomu przekazywane."
+                    "Serwis liczy odwiedziny po stronie serwera, bez plików cookies i zewnętrznych narzędzi analitycznych. Do odróżnienia odwiedzających używany jest identyfikator zmieniany codziennie. Zapisywane są otwierane podstrony, serwis, z którego nastąpiło przejście, ogólny typ urządzenia, rodzaj przeglądarki i systemu (bez numerów wersji) oraz język przeglądarki, a także czas, przez jaki podstrona była widoczna, kliknięcia w linki do innych serwisów i w pliki do pobrania oraz próby otwarcia nieistniejących adresów. Adres IP nie jest zapisywany, a zebrane statystyki nie pozwalają nikogo zidentyfikować. Celem jest poznanie liczby odwiedzających, najczęściej czytanych treści i niedziałających linków, co jest prawnie uzasadnionym interesem administratora (art. 6 ust. 1 lit. f RODO). Statystyki nie są nikomu przekazywane."
                 )
             ]
         },
