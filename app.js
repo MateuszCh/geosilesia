@@ -275,10 +275,11 @@ function trackNotFound(req, rawPath) {
 
 // What the front sends when a page is hidden or left (engagement) or a link to another
 // site or to a document is clicked (navigator.sendBeacon, as text/plain). Always 204:
-// a beacon never reads the answer.
+// a beacon never reads the answer. body-parser's text parser, not express.text: that one
+// exists only since Express 4.17, and servers may still run an older 4.x.
 app.post(
     "/api/visit-event",
-    express.text({ type: "*/*", limit: "2kb" }),
+    bodyParser.text({ type: "*/*", limit: "2kb" }),
     (req, res) => {
         try {
             // text/plain from sendBeacon; application/json is already parsed above
