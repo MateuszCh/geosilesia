@@ -8,6 +8,7 @@ const express = require("express"),
     seoMeta = require("./shared/seo-meta"),
     { REDIRECTS } = require("./shared/redirects"),
     { createRenderer } = require("./ssr"),
+    { publishedPages } = require("./pages"),
     { createVisitTracker } = require("./visits");
 
 const app = express();
@@ -54,7 +55,9 @@ client.connect()
     .then(client => {
         db = client.db(config.dbName);
         collections.posts = db.collection("posts");
-        collections.pages = db.collection("pages");
+        // Published pages only: every read adds `draft: { $ne: true }` (pages.js), so a
+        // page the CMS marks as a draft answers 404 everywhere, like a missing one.
+        collections.pages = publishedPages(db.collection("pages"));
         collections.files = db.collection("files");
         collections.meta = db.collection("meta");
         const tracker = createVisitTracker(db, { siteUrl: config.siteUrl });
@@ -157,12 +160,13 @@ function pageData(pageUrl) {
         .then(pages => ({ pages }));
 }
 
-// Albums for the gallery list and the "Inne albumy" section: every page with a "gallery"
-// row. Variant C keeps the category, cover and "hidden" flag on the album itself – in the
-// values of an "album" page, before scripts/cms/18 in its gallery row (the front merges
-// them the same way, page-layout.ts); albums with neither take the category and cover from
-// the manual gallery_list. An album
-// whose "hidden" flag was never set is hidden only while the list is kept by hand ("ręcznie")
+// Albums for the gallery list and the "Inne albumy" section: every published page with a
+// "gallery" row (a draft album is left out, and a gallery_list row on a draft page does not
+// count either – collections.pages reads published pages only). Variant C keeps the
+// category, cover and "hidden" flag on the album itself – in the values of an "album" page,
+// before scripts/cms/18 in its gallery row (the front merges them the same way,
+// page-layout.ts); albums with neither take the category and cover from the manual
+// gallery_list. An album whose "hidden" flag was never set is hidden only while the list is kept by hand ("ręcznie")
 // and the album is not on it – as on the old site. In the "automatycznie" mode it is shown,
 // otherwise a new album would stay invisible until someone also added it to the manual list.
 function galleriesList() {
@@ -403,7 +407,8 @@ function syncContentVersion() {
     return contentVersionCheck;
 }
 
-// In-memory list of pages – used by both the sitemap and the meta injection.
+// In-memory list of published pages – used by the sitemap, the meta injection, SSR (a page
+// that is not on it, a draft included, gets the shell with a 404) and the view events.
 // Pages are edited by an external application writing straight to Mongo; changes show up
 // within CONTENT_VERSION_INTERVAL, without a restart or a front-end rebuild.
 function getPages() {

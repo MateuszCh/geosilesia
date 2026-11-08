@@ -131,11 +131,16 @@ export class PageView implements RowContext {
         this.pending = this.resource
             .loadPageFromNetwork(pageKeyFromUrl(this.router.url), { pageView: true })
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(fresh => this.onLoad(fresh ?? resolved));
+            // No answer (offline, an error) keeps the copy from IndexedDB; an answer without
+            // the page (deleted, or now a draft in the CMS) replaces it with the 404.
+            .subscribe(fresh => this.onLoad(fresh === undefined ? resolved : fresh));
     }
 
-    private onLoad(page: Page | undefined): void {
-        if (page?.pageUrl) {
+    /** `null`: the server says the page does not exist, so nothing cached may stay shown. */
+    private onLoad(page: Page | null | undefined): void {
+        if (page === null) {
+            this.displayed.set(undefined);
+        } else if (page?.pageUrl) {
             this.displayed.set(page);
         }
         this.loaded.set(true);

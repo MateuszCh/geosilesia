@@ -74,6 +74,15 @@ export class IdbService {
         await tx.done;
     }
 
+    /** Removes the pages stored under these keys; keys that are not there are ignored. */
+    async deletePages(pageUrls: string[]): Promise<void> {
+        if (!this.isAvailable()) return;
+        const db = await this.open();
+        const tx = db.transaction('pages', 'readwrite');
+        await Promise.all(pageUrls.map(pageUrl => tx.store.delete(pageUrl)));
+        await tx.done;
+    }
+
     async putPosts(posts: Post[]): Promise<void> {
         if (!this.isAvailable()) return;
         const db = await this.open();

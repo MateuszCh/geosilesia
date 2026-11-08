@@ -3,6 +3,7 @@ import { Observable, of, tap } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { IdbService } from './idb.service';
+import { pageKeySpellings } from './page-key';
 import { Page, PagesResponse } from '../models/page.model';
 import { AlbumSummary, AppData, Post } from '../models/post.model';
 
@@ -38,19 +39,31 @@ export class ResourceService {
      * `pageView` marks the request as the user opening the page – the router resolver and
      * the page component's refresh – so the server counts it as an in-app navigation in its
      * visit statistics. Other reads of a page (the home page banner) leave it off.
+     *
+     * `null` means the server answered that the page does not exist – deleted, or marked
+     * as a draft in the CMS – and `undefined` that there was no answer (offline, an error).
+     * Only the latter may fall back to the copy in IndexedDB; on `null` that copy is
+     * removed, so a page that became a draft is not shown from the offline database.
      */
-    loadPageFromNetwork(pageKey: string, { pageView = false }: { pageView?: boolean } = {}): Observable<Page | undefined> {
+    loadPageFromNetwork(
+        pageKey: string,
+        { pageView = false }: { pageView?: boolean } = {}
+    ): Observable<Page | null | undefined> {
         return this.api
             .get<PagesResponse>(`/api/page/${this.pageUrlSegment(pageKey)}`, {
                 headers: pageView ? { 'X-Page-View': '1' } : undefined
             })
             .pipe(
-                tap(response => {
-                    if (response?.pages?.length) {
-                        void this.idb.putPages(response.pages);
+                map(response => {
+                    const pages = response?.pages;
+                    if (!Array.isArray(pages)) return undefined;
+                    if (pages.length) {
+                        void this.idb.putPages(pages);
+                        return pages[0];
                     }
+                    void this.idb.deletePages(pageKeySpellings(pageKey));
+                    return null;
                 }),
-                map(response => response?.pages?.[0]),
                 catchError(() => of(undefined))
             );
     }

@@ -13,6 +13,7 @@ site visitors.
 | Path | What it is |
 |---|---|
 | `app.js` | HTTP server (Express + MongoDB): API, static files, SEO meta injection, sitemap, robots, SSR orchestration |
+| `pages.js` | The `pages` collection as the public site reads it: published pages only (drafts left out) |
 | `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 1 hour |
 | `shared/seo-meta.js` | SEO rules (title, description, paths) shared by the server and the browser |
 | `visits.js` | Visit statistics without cookies: page views and events in MongoDB, read by the CMS (see below) |
@@ -22,6 +23,19 @@ site visitors.
 
 The front end has no routes of its own — every address is a page from the `pages`
 collection, and the API decides whether it exists.
+
+**Drafts.** The CMS can mark a page as a draft (`draft: true` on its document); it only
+stores the flag. For the public site a draft does not exist: its address answers 404 like
+a missing page (on a full load and inside the app), and it is left out of the sitemap, the
+SEO meta, server-side rendering, the gallery list and "Inne albumy" (a `gallery_list` row
+on a draft page does not count either), `/api/appData` and the view statistics. Pages
+without the field or with `draft: false` are published, so old documents need no
+migration. Every read goes through `publishedPages` (`pages.js`), which adds
+`draft: { $ne: true }` to each `find` — `collections.pages` in `app.js` is that wrapper, not
+the raw collection, so a new query cannot forget the filter. The scripts in `scripts/cms/`
+edit the CMS data and read the raw collection, drafts included. Switching a page to or
+from draft is a page save, so the CMS bumps the content version and the caches below are
+cleared.
 
 ## Configuration
 
@@ -161,7 +175,8 @@ installed by the script as well (`npm ci --omit=dev` in the root, exactly as pin
 `app.js` remains the HTTP server; Angular only provides the `render()` function
 (`front/src/server.ts`), which `ssr.js` calls.
 
-- **Only existing pages are rendered**, under their normalized `pageUrl`. The result
+- **Only existing pages are rendered** (published ones — a draft gets the 404 shell),
+  under their normalized `pageUrl`. The result
   lives in memory for 1 hour (the same as the page list used for meta and the
   sitemap). After every saved page, post, post type or file the CMS (frodo) increments
   `version` in the `meta` collection (`{ _id: "content" }`, same database). Each Node
@@ -206,5 +221,8 @@ installed by the script as well (`npm ci --omit=dev` in the root, exactly as pin
   while parsing. A new component of this kind needs the same. `ngSkipHydration` costs LCP
   too: the component's server DOM is thrown away and painted again.
 - **The IndexedDB schema in `front/src/app/core/idb.service.ts`** — database `geosilesia`
-  v1, store `pages` (key `pageUrl`) and `posts` (key `id`, index `type`). Users have these
+  v1, store `pages` (key `pageUrl`) and `posts` (key `id`, index `type`). A page the
+  server answers as missing (`{ pages: [] }`: deleted, or now a draft) is removed from the
+  store and shown as a 404 (`ResourceService.loadPageFromNetwork` returns `null`); only no
+  answer at all (offline, an error) falls back to the stored copy. Users have these
   databases on disk; changing the version wipes their offline data.
