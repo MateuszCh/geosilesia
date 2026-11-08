@@ -7,13 +7,16 @@ const DOWNLOAD = /\.(pdf|docx?|xlsx?|pptx?|odt|ods|odp|rtf|csv|txt|zip|rar|7z|ep
 const ENDPOINT = '/api/visit-event';
 
 type VisitEvent =
+    | { type: 'view'; path: string }
     | { type: 'engagement'; path: string; ms: number }
     | { type: 'outbound' | 'download'; path: string; target: string };
 
 /**
  * What a page view alone does not tell the visit statistics (visits.js on the server):
  * how long each page was really visible, and clicks on links to other sites or to
- * documents. Sent with navigator.sendBeacon when a page is hidden or left, or a link is
+ * documents. Also the view of a page Chrome prerendered or prefetched (while its address
+ * was typed, say): the server does not count that speculative request, and the page is
+ * shown later without another one, so its view is sent once the visitor sees it. Sent with navigator.sendBeacon when a page is hidden or left, or a link is
  * clicked. Nothing is stored in the browser and no id is sent – the server recognises the
  * visitor of the day the same way as for page views – so no consent is needed.
  */
@@ -37,6 +40,7 @@ export class VisitEventsService {
         this.started = true;
         this.path = view.location.pathname;
         if (this.doc.visibilityState === 'visible') this.visibleSince = view.performance.now();
+        this.countSpeculativeLoad(view);
 
         const subscription = this.router.events
             .pipe(filter((event) => event instanceof NavigationEnd))
@@ -62,6 +66,25 @@ export class VisitEventsService {
             this.doc.removeEventListener('click', onClick, true);
             this.doc.removeEventListener('auxclick', onClick, true);
         });
+    }
+
+    /**
+     * Sends the view of a prerendered page when it is shown (`prerenderingchange`), or at
+     * once when it already has been or came from a prefetch.
+     */
+    private countSpeculativeLoad(view: Window): void {
+        const doc = this.doc as Document & { prerendering?: boolean };
+        const sendView = () => this.send({ type: 'view', path: view.location.pathname });
+        if (doc.prerendering) {
+            doc.addEventListener('prerenderingchange', sendView, { once: true });
+            return;
+        }
+        const entry = view.performance.getEntriesByType?.('navigation')[0] as
+            | (PerformanceNavigationTiming & { activationStart?: number; deliveryType?: string })
+            | undefined;
+        if ((entry?.activationStart ?? 0) > 0 || entry?.deliveryType === 'navigational-prefetch') {
+            sendView();
+        }
     }
 
     /** A new page: the time of the previous one is sent, the new one starts counting. */

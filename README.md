@@ -45,7 +45,9 @@ browser and system family and browser language.
 `visit_events` holds what a view does not say: addresses that do not exist (`notFound`),
 how long a page was visible (`engagement`, sent by the front with `navigator.sendBeacon`
 to `POST /api/visit-event` when a page is hidden or left) and clicks on links to other
-sites or to documents (`outbound`, `download`). Bots and prefetches are skipped.
+sites or to documents (`outbound`, `download`). Bots and prefetches are skipped; a page
+Chrome prerendered or prefetched (e.g. while its address was typed) is counted when it is
+shown, by a `view` beacon from the front, since no request reaches the server then.
 
 ## Requirements
 

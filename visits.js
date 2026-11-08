@@ -2,7 +2,11 @@
 //
 // Each document is one page view (a hit), from one of two sources:
 // - "ssr": a document request (full load, reload, new tab) answered by the SSR catch-all;
-//   only these carry the external referrer.
+//   only these carry the external referrer. A speculative request (a prefetch or a
+//   prerender: Chrome prerenders a page while its address is typed) is not counted: the
+//   page may never be shown, and once it is, no request reaches the server. The front then
+//   sends a "view" beacon instead (POST /api/visit-event), counted as "ssr" by
+//   `track(req, { path, source: "ssr", activated: true })`, without a referrer.
 // - "nav": a GET /api/page call the front marks with `X-Page-View: 1` (the router resolver
 //   and the page component's refresh): a page opened inside the app.
 // Hits are stored raw. The readers (Frodo's Analytics tab, scripts/stats.js) count them the
@@ -303,9 +307,10 @@ function createVisitTracker(db, { siteUrl } = {}) {
         });
     }
 
-    function track(req, { path, source }) {
+    /** `activated`: the beacon of a prerendered or prefetched page shown (a POST). */
+    function track(req, { path, source, activated = false }) {
         try {
-            if (req.method !== "GET" || !isPerson(req)) return;
+            if ((req.method !== "GET" && !activated) || !isPerson(req)) return;
             record(req, path, source, new Date()).catch(err =>
                 console.log(new Date(), "[visits]", err)
             );

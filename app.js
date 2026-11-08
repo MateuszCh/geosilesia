@@ -273,9 +273,11 @@ function trackNotFound(req, rawPath) {
     trackEvent(req, { type: "notFound", path });
 }
 
-// What the front sends when a page is hidden or left (engagement) or a link to another
-// site or to a document is clicked (navigator.sendBeacon, as text/plain). Always 204:
-// a beacon never reads the answer. body-parser's text parser, not express.text: that one
+// What the front sends when a page is hidden or left (engagement), a link to another
+// site or to a document is clicked, or a prerendered or prefetched page is shown (view: the
+// speculative request was not counted, see visits.js), by navigator.sendBeacon as
+// text/plain. A view counts only for a page that exists. Always 204: a beacon never reads
+// the answer. body-parser's text parser, not express.text: that one
 // exists only since Express 4.17, and servers may still run an older 4.x.
 app.post(
     "/api/visit-event",
@@ -284,7 +286,20 @@ app.post(
         try {
             // text/plain from sendBeacon; application/json is already parsed above
             const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-            if (body && ["engagement", "outbound", "download"].includes(body.type)) {
+            if (body && body.type === "view") {
+                getPages()
+                    .then(pages => {
+                        const page = findPage(pages, String(body.path || ""));
+                        if (page) {
+                            trackVisit(req, {
+                                path: seoMeta.normalizePath(page.pageUrl),
+                                source: "ssr",
+                                activated: true
+                            });
+                        }
+                    })
+                    .catch(() => undefined);
+            } else if (body && ["engagement", "outbound", "download"].includes(body.type)) {
                 let path = null;
                 try {
                     path = seoMeta.normalizePath(decodeURIComponent(String(body.path || "")));
