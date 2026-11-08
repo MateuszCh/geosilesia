@@ -10,7 +10,8 @@
 // The visitor id is sha256(daily salt + network + user agent + Accept-Language), cut to 16
 // hex characters. The salt is random, rotates every day (Europe/Warsaw) and the previous one
 // is overwritten, so ids cannot be linked across days and cannot be traced back to an IP.
-// Neither the IP, the user agent nor the language is stored.
+// Neither the IP nor the user agent is stored; of Accept-Language only the primary language
+// code of the browser ("pl", "de") is kept, which says nothing about one person.
 //
 // Known accuracy limits of the unique count:
 // - one person on several devices or browsers counts several times;
@@ -76,6 +77,16 @@ function networkOf(ip) {
         .slice(0, 4)
         .map(group => (parseInt(group, 16) || 0).toString(16))
         .join(":");
+}
+
+/**
+ * The browser's first language as a bare code ("pl", "de", "en"), without the region and
+ * the weights; null when the header is missing or malformed.
+ */
+function languageOf(acceptLanguage) {
+    const first = String(acceptLanguage || "").split(",")[0].split(";")[0].trim();
+    const code = first.split("-")[0].toLowerCase();
+    return /^[a-z]{2,3}$/.test(code) ? code : null;
 }
 
 function deviceOf(userAgent) {
@@ -203,6 +214,7 @@ function createVisitTracker(db, { siteUrl } = {}) {
                 source,
                 referrer: source === "ssr" ? externalReferrer(req, ownHosts) : null,
                 device: deviceOf(userAgent),
+                lang: languageOf(req.get("accept-language")),
                 entry
             });
         });
@@ -223,4 +235,4 @@ function createVisitTracker(db, { siteUrl } = {}) {
     };
 }
 
-module.exports = { createVisitTracker, networkOf, deviceOf, dayOf };
+module.exports = { createVisitTracker, networkOf, deviceOf, languageOf, dayOf };

@@ -5,7 +5,7 @@
 // Reads the database from config.json. Prints:
 // - per day: entries (visits that started with a full page load), unique visitors and
 //   in-app transitions (pages opened inside the app, without reloading);
-// - landing pages, top external referrers and the device split of entries;
+// - landing pages, top external referrers, the device split and browser languages of entries;
 // - the pages most often opened inside the app.
 //
 // Accuracy limits (see visits.js): one person on several devices counts several times, an
@@ -104,6 +104,7 @@ withDb(async db => {
     table("Landing pages", await top(visits, entryMatch, "path", limit), columns("page"));
     table("External referrers of entries", await top(visits, entryMatch, "referrer", limit), columns("referrer"));
     table("Devices of entries", await top(visits, entryMatch, "device", limit), columns("device"));
+    table("Browser languages of entries", await top(visits, entryMatch, "lang", limit), columns("language"));
     table(
         "Pages opened inside the app",
         await top(visits, { ...inRange, source: "nav" }, "path", limit),
