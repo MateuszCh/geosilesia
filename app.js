@@ -43,9 +43,10 @@ if (!allowIndexing) {
 let db;
 const collections = {};
 let databaseError = false;
-// Replaced by the real tracker once the database is connected; until then visits are not
-// recorded (visits.js).
+// Replaced by the real tracker once the database is connected; until then visits and
+// events are not recorded (visits.js).
 let trackVisit = () => {};
+let trackEvent = () => false;
 
 const client = new MongoClient(config.mongoUrl);
 
@@ -56,7 +57,9 @@ client.connect()
         collections.pages = db.collection("pages");
         collections.files = db.collection("files");
         collections.meta = db.collection("meta");
-        trackVisit = createVisitTracker(db, { siteUrl: config.siteUrl });
+        const tracker = createVisitTracker(db, { siteUrl: config.siteUrl });
+        trackVisit = tracker.track;
+        trackEvent = tracker.event;
         app.listen(app.get("port"), () => console.log("Running on port 3000"));
     })
     .catch(err => {
@@ -247,11 +250,54 @@ app.get("/api/posts/:type", (req, res, next) => {
 // Only requests the front marks as page views count as in-app navigation: the router
 // resolver and the page component's refresh send `X-Page-View: 1`, while other reads of a
 // page (the home page banner, for one) do not.
+// A link inside the site to a page that does not exist is recorded too: a broken link.
 function trackNavigation(req, pageUrl, found) {
-    if (found && req.get("x-page-view") === "1") {
+    if (req.get("x-page-view") !== "1") return;
+    if (found) {
         trackVisit(req, { path: seoMeta.normalizePath(pageUrl), source: "nav" });
+    } else {
+        trackNotFound(req, `/${pageUrl}`);
     }
 }
+
+// An address that is not a page: only ones that could be one (no file extension), so the
+// scans for /wp-login.php or /.env do not bury the broken links.
+function trackNotFound(req, rawPath) {
+    let path;
+    try {
+        path = seoMeta.normalizePath(decodeURIComponent(rawPath));
+    } catch (err) {
+        return;
+    }
+    if (/\.[a-z0-9]{1,5}$/i.test(path)) return;
+    trackEvent(req, { type: "notFound", path });
+}
+
+// What the front sends when a page is hidden or left (engagement) or a link to another
+// site or to a document is clicked (navigator.sendBeacon, as text/plain). Always 204:
+// a beacon never reads the answer.
+app.post(
+    "/api/visit-event",
+    express.text({ type: "*/*", limit: "2kb" }),
+    (req, res) => {
+        try {
+            // text/plain from sendBeacon; application/json is already parsed above
+            const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+            if (body && ["engagement", "outbound", "download"].includes(body.type)) {
+                let path = null;
+                try {
+                    path = seoMeta.normalizePath(decodeURIComponent(String(body.path || "")));
+                } catch (err) {
+                    path = null;
+                }
+                trackEvent(req, { type: body.type, path, ms: body.ms, target: body.target });
+            }
+        } catch (err) {
+            // not JSON: nothing to record
+        }
+        res.status(204).end();
+    }
+);
 
 app.get("/api/page/", (req, res, next) => {
     collections.pages
@@ -675,6 +721,8 @@ app.get(["*"], (req, res, next) => {
                                 path: seoMeta.normalizePath(page.pageUrl),
                                 source: "ssr"
                             });
+                        } else {
+                            trackNotFound(req, req.path);
                         }
                         res.status(page ? 200 : 404)
                             .set("X-Render", renderLabel(result))

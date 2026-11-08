@@ -14,6 +14,7 @@ import { Footer } from './components/footer/footer';
 import { Header } from './components/header/header';
 import { ResourceService } from './core/resource.service';
 import { ScrollService } from './core/scroll.service';
+import { VisitEventsService } from './core/visit-events.service';
 
 /** Delay of the /api/appData prefetch – the heaviest request of the site must not
     compete for bandwidth with the content the user has just opened. */
@@ -33,6 +34,7 @@ export class App {
     private readonly doc = inject(DOCUMENT);
     private readonly scroll = inject(ScrollService);
     private readonly resource = inject(ResourceService);
+    private readonly visitEvents = inject(VisitEventsService);
     private readonly destroyRef = inject(DestroyRef);
 
     constructor() {
@@ -65,6 +67,8 @@ export class App {
             this.destroyRef.onDestroy(() => clearTimeout(timer));
 
             this.cleanLegacyCaches();
+            // visible time and link clicks for the visit statistics (no cookies)
+            this.visitEvents.start();
         });
     }
 

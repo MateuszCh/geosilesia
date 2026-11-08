@@ -2,16 +2,19 @@
 //
 //   node scripts/stats.js [--days=30] [--top=10]
 //
-// Reads the database from config.json. Prints:
-// - per day: entries (visits that started with a full page load), unique visitors and
-//   in-app transitions (pages opened inside the app, without reloading);
-// - landing pages, top external referrers, the device split and browser languages of entries;
-// - the pages most often opened inside the app.
+// Reads the database from config.json. Counts as Frodo's Analytics tab and GA4/Plausible do:
+// - visitors: different visitors of a day (any hit), summed over the days;
+// - visits: one visitor's hits with no gap of 30 minutes or more (split here, from the
+//   timestamps; the old `entry` flag is ignored);
+// - views: all hits (full loads and pages opened inside the app).
+// Prints these per day, the average visit and the single-page visits, then the landing
+// pages, external referrers, devices and browser languages of the visits (each from the
+// visit's first hit) and the most viewed pages.
 //
 // Accuracy limits (see visits.js): one person on several devices counts several times, an
 // IPv4 change during the day counts twice, identical devices behind one shared IP may merge
-// into one. Unique visitors exist per day only: the salt rotates daily, so the "total" row
-// is the sum of daily uniques, not the number of different people in the period.
+// into one. Visitors exist per day only: the salt rotates daily, so the "total" row is the
+// sum of daily visitors, not the number of different people in the period.
 
 const { withDb } = require("./cms/lib");
 const { dayOf } = require("../visits");
@@ -36,16 +39,60 @@ function table(title, rows, columns) {
     rows.forEach(row => console.log(line(columns.map(([, key]) => String(row[key] ?? "")))));
 }
 
-function top(visits, match, field, limit) {
-    return visits
-        .aggregate([
-            { $match: match },
-            { $group: { _id: `$${field}`, count: { $sum: 1 } } },
-            { $sort: { count: -1, _id: 1 } },
-            { $limit: limit }
-        ])
-        .toArray()
-        .then(rows => rows.map(row => ({ key: row._id ?? "(direct)", count: row.count })));
+// A visit ends after 30 minutes without any hit – the GA/Plausible definition.
+const VISIT_GAP_MS = 30 * 60 * 1000;
+
+function count(map, key) {
+    map.set(key, (map.get(key) || 0) + 1);
+}
+
+function topOf(map, limit, unknown = "(unknown)") {
+    return [...map]
+        .map(([key, value]) => ({ key: key ?? unknown, count: value }))
+        .sort((a, b) => b.count - a.count || String(a.key).localeCompare(String(b.key)))
+        .slice(0, limit);
+}
+
+/** Splits hits sorted by visitor, then time, into visits (as Frodo's summarizeVisits). */
+function splitVisits(hits) {
+    const result = {
+        perDay: new Map(),
+        visits: 0,
+        single: 0,
+        durationMs: 0,
+        landing: new Map(),
+        referrers: new Map(),
+        devices: new Map(),
+        languages: new Map()
+    };
+    let visit = null;
+    let previous = null;
+    const close = () => {
+        if (!visit) return;
+        result.visits += 1;
+        if (visit.pages.size === 1) result.single += 1;
+        result.durationMs += visit.end - visit.start;
+        count(result.perDay, visit.day);
+        count(result.landing, visit.landing);
+        visit = null;
+    };
+    for (const hit of hits) {
+        const ts = new Date(hit.ts).getTime();
+        const starts = !previous || hit.visitor !== previous.visitor || ts - previous.ts >= VISIT_GAP_MS;
+        previous = { visitor: hit.visitor, ts };
+        if (starts) {
+            close();
+            visit = { day: hit.day, landing: hit.path, pages: new Set([hit.path]), start: ts, end: ts };
+            count(result.referrers, hit.source === "ssr" ? hit.referrer ?? null : null);
+            count(result.devices, hit.device ?? null);
+            count(result.languages, hit.lang ?? null);
+            continue;
+        }
+        visit.pages.add(hit.path);
+        visit.end = ts;
+    }
+    close();
+    return result;
 }
 
 withDb(async db => {
@@ -58,57 +105,78 @@ withDb(async db => {
     const perDay = await visits
         .aggregate([
             { $match: inRange },
-            {
-                $group: {
-                    _id: "$day",
-                    entries: { $sum: { $cond: [{ $and: [{ $eq: ["$source", "ssr"] }, "$entry"] }, 1, 0] } },
-                    loads: { $sum: { $cond: [{ $eq: ["$source", "ssr"] }, 1, 0] } },
-                    nav: { $sum: { $cond: [{ $eq: ["$source", "nav"] }, 1, 0] } },
-                    visitors: { $addToSet: { $cond: [{ $eq: ["$source", "ssr"] }, "$visitor", null] } }
-                }
-            },
-            { $project: { entries: 1, loads: 1, nav: 1, unique: { $size: { $setDifference: ["$visitors", [null]] } } } },
+            { $group: { _id: "$day", visitors: { $addToSet: "$visitor" }, views: { $sum: 1 } } },
+            { $project: { visitors: { $size: "$visitors" }, views: 1 } },
             { $sort: { _id: 1 } }
         ])
         .toArray();
+    const hits = await visits
+        .aggregate(
+            [
+                { $match: inRange },
+                { $project: { _id: 0, day: 1, visitor: 1, ts: 1, path: 1, source: 1, referrer: 1, device: 1, lang: 1 } },
+                { $sort: { visitor: 1, ts: 1 } }
+            ],
+            { allowDiskUse: true }
+        )
+        .toArray();
+    const split = splitVisits(hits);
 
-    const totals = perDay.reduce(
+    const rows = perDay.map(row => ({
+        day: row._id,
+        visitors: row.visitors,
+        visits: split.perDay.get(row._id) || 0,
+        views: row.views
+    }));
+    const totals = rows.reduce(
         (sum, row) => ({
-            entries: sum.entries + row.entries,
-            unique: sum.unique + row.unique,
-            loads: sum.loads + row.loads,
-            nav: sum.nav + row.nav
+            visitors: sum.visitors + row.visitors,
+            visits: sum.visits + row.visits,
+            views: sum.views + row.views
         }),
-        { entries: 0, unique: 0, loads: 0, nav: 0 }
+        { visitors: 0, visits: 0, views: 0 }
     );
 
     console.log(`Visits since ${since} (${days} days)`);
     table(
-        "Per day (entries and unique visitors from full page loads; transitions inside the app)",
-        [...perDay.map(row => ({ day: row._id, ...row })), { day: "total*", ...totals }],
+        "Per day",
+        [...rows, { day: "total*", ...totals }],
         [
             ["day", "day"],
-            ["entries", "entries"],
-            ["unique", "unique"],
-            ["full loads", "loads"],
-            ["in-app", "nav"]
+            ["visitors", "visitors"],
+            ["visits", "visits"],
+            ["views", "views"]
         ]
     );
-    console.log("  * unique in the total row is the sum of daily uniques, not different people");
+    console.log("  * visitors in the total row is the sum of daily visitors, not different people");
+    const average = split.visits ? Math.round(split.durationMs / split.visits / 1000) : 0;
+    const singleShare = split.visits ? Math.round((split.single / split.visits) * 100) : 0;
+    console.log(`\nAverage visit: ${average} s; single-page visits: ${split.single} of ${split.visits} (${singleShare}%)`);
 
-    const entryMatch = { ...inRange, source: "ssr", entry: true };
     const columns = label => [
         [label, "key"],
-        ["count", "count"]
+        ["visits", "count"]
     ];
-    table("Landing pages", await top(visits, entryMatch, "path", limit), columns("page"));
-    table("External referrers of entries", await top(visits, entryMatch, "referrer", limit), columns("referrer"));
-    table("Devices of entries", await top(visits, entryMatch, "device", limit), columns("device"));
-    table("Browser languages of entries", await top(visits, entryMatch, "lang", limit), columns("language"));
+    table("Landing pages", topOf(split.landing, limit), columns("page"));
+    table("External referrers of visits", topOf(split.referrers, limit, "(direct or unknown)"), columns("referrer"));
+    table("Devices of visits", topOf(split.devices, limit), columns("device"));
+    table("Browser languages of visits", topOf(split.languages, limit), columns("language"));
+
+    const pages = await visits
+        .aggregate([
+            { $match: inRange },
+            { $group: { _id: "$path", count: { $sum: 1 } } },
+            { $sort: { count: -1, _id: 1 } },
+            { $limit: limit }
+        ])
+        .toArray();
     table(
-        "Pages opened inside the app",
-        await top(visits, { ...inRange, source: "nav" }, "path", limit),
-        columns("page")
+        "Most viewed pages",
+        pages.map(row => ({ key: row._id, count: row.count })),
+        [
+            ["page", "key"],
+            ["views", "count"]
+        ]
     );
 }).catch(err => {
     console.error(err);

@@ -1,11 +1,28 @@
 // Server-side visit tracking: no cookies, no client-side tracker, no consent banner.
 //
-// Two sources with separate roles:
-// - "ssr": a document request (full load, reload, new tab) answered by the SSR catch-all.
-//   The only basis for entries (visits), unique visitors per day and landing pages.
+// Each document is one page view (a hit), from one of two sources:
+// - "ssr": a document request (full load, reload, new tab) answered by the SSR catch-all;
+//   only these carry the external referrer.
 // - "nav": a GET /api/page call the front marks with `X-Page-View: 1` (the router resolver
-//   and the page component's refresh). Records transitions inside the app only; it never
-//   counts toward unique visitors or entries.
+//   and the page component's refresh): a page opened inside the app.
+// Hits are stored raw. The readers (Frodo's Analytics tab, scripts/stats.js) count them the
+// way GA4 and Plausible do: visitors (anyone with a hit that day), views (all hits) and
+// visits, split by timestamps – one visitor's hits with no gap of 30 minutes or more, the
+// first hit of a day or after such a gap starting a visit, a full load or a nav alike.
+// Nothing here keeps visits in memory, so several processes and restarts count the same.
+// (Older documents also carry an `entry` flag; the readers ignore it.)
+//
+// Each hit also keeps coarse facts about the browser: the device kind, the browser and the
+// system family ("chrome", "ios"); the address and the full user agent are never stored.
+//
+// Events (`visit_events`, written by `event()`): what a page view alone does not say –
+// - "notFound": an address that does not exist, opened directly ("ssr") or by a link
+//   inside the site ("nav"), with the page or site the visitor came from;
+// - "engagement": how long a page was really visible, sent by the front when the page is
+//   hidden or left (navigator.sendBeacon, nothing stored in the browser);
+// - "outbound" / "download": a click on a link to another site or to a document.
+// None of it needs consent: nothing is stored on or read from the visitor's device beyond
+// what every request carries, and no id outlives the day.
 //
 // The visitor id is sha256(daily salt + network + user agent + Accept-Language), cut to 16
 // hex characters. The salt is random, rotates every day (Europe/Warsaw) and the previous one
@@ -23,9 +40,12 @@
 const crypto = require("crypto");
 
 const COLLECTION = "visits";
+const EVENTS = "visit_events";
+const EVENT_TYPES = new Set(["notFound", "engagement", "outbound", "download"]);
+// an engagement beacon longer than this is a tab left open: it is cut, not dropped
+const MAX_ENGAGEMENT_MS = 30 * 60 * 1000;
+const MAX_TEXT = 300;
 const SALT_ID = "visit-salt";
-// A visit ends after 30 minutes without any hit – the GA/Plausible definition.
-const VISIT_GAP_MS = 30 * 60 * 1000;
 // A nav hit for the same visitor and page this soon after any hit is a duplicate: the
 // page component refetching what the SSR load or the resolver has just shown.
 const DEDUP_MS = 30 * 1000;
@@ -95,6 +115,35 @@ function deviceOf(userAgent) {
     return "desktop";
 }
 
+/** The browser family, coarse: never the version or the full user agent. */
+function browserOf(userAgent) {
+    if (/edg(e|a|ios)?\//i.test(userAgent)) return "edge";
+    if (/opr\/|opera/i.test(userAgent)) return "opera";
+    if (/samsungbrowser/i.test(userAgent)) return "samsung";
+    if (/firefox|fxios/i.test(userAgent)) return "firefox";
+    if (/chrome|crios|chromium/i.test(userAgent)) return "chrome";
+    if (/safari/i.test(userAgent)) return "safari";
+    return null;
+}
+
+/** The system family, coarse: never the version. */
+function osOf(userAgent) {
+    if (/iphone|ipad|ipod/i.test(userAgent)) return "ios";
+    if (/android/i.test(userAgent)) return "android";
+    if (/windows/i.test(userAgent)) return "windows";
+    if (/mac os x|macintosh/i.test(userAgent)) return "macos";
+    if (/cros/i.test(userAgent)) return "chromeos";
+    if (/linux/i.test(userAgent)) return "linux";
+    return null;
+}
+
+/** A short text from the outside, or null: trimmed and cut so it cannot fill the database. */
+function shortText(value) {
+    if (typeof value !== "string") return null;
+    const text = value.trim();
+    return text ? text.slice(0, MAX_TEXT) : null;
+}
+
 function hostOf(url) {
     try {
         return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
@@ -132,25 +181,48 @@ function prune(map, olderThan) {
 }
 
 /**
- * Returns `track(req, { path, source })`. It never throws and never delays the response:
- * the write happens in the background and errors only end up in the log.
+ * Where a visitor came from to an address: a path of the site when a link inside it led
+ * there, otherwise the other site's host; null when the browser did not say.
+ */
+function sourceOf(req, ownHosts) {
+    const referer = req.get("referer") || "";
+    const host = hostOf(referer);
+    if (!host) return null;
+    const requestHost = (req.hostname || "").replace(/^www\./, "").toLowerCase();
+    if (host === requestHost || ownHosts.has(host)) {
+        try {
+            return shortText(decodeURIComponent(new URL(referer).pathname));
+        } catch (err) {
+            return null;
+        }
+    }
+    return host;
+}
+
+/**
+ * Returns `{ track, event }`:
+ * - `track(req, { path, source })` records a page view;
+ * - `event(req, { type, path, ms, target })` records an event (see the top of the file).
+ * Neither throws nor delays the response: the write happens in the background and errors
+ * only end up in the log.
  */
 function createVisitTracker(db, { siteUrl } = {}) {
     const visits = db.collection(COLLECTION);
+    const events = db.collection(EVENTS);
     const meta = db.collection("meta");
     const ownHosts = new Set([hostOf(siteUrl || "")].filter(Boolean));
-    const lastSeen = new Map(); // visitor -> ts of the last hit of any source
     const recent = new Map(); // `${visitor}|${path}` -> ts of the last hit
     let salt = { day: null, value: null, pending: null };
 
     Promise.all([
         visits.createIndex({ day: 1, visitor: 1 }),
-        visits.createIndex({ day: 1, path: 1 })
+        visits.createIndex({ day: 1, path: 1 }),
+        visits.createIndex({ ts: 1 }),
+        events.createIndex({ day: 1, type: 1 })
     ]).catch(err => console.log(new Date(), "[visits] index", err));
 
     const cleanup = setInterval(() => {
         const now = Date.now();
-        prune(lastSeen, now - VISIT_GAP_MS);
         prune(recent, now - DEDUP_MS);
     }, CLEANUP_INTERVAL_MS);
     cleanup.unref();
@@ -184,26 +256,36 @@ function createVisitTracker(db, { siteUrl } = {}) {
         return pending;
     }
 
-    function record(req, path, source, now) {
+    /** The visitor id of a request on a day: the same for a page view and its events. */
+    function visitorOf(req, day) {
         const userAgent = req.get("user-agent") || "";
-        const day = dayOf(now);
-        return saltFor(day).then(dailySalt => {
-            const visitor = crypto
+        return saltFor(day).then(dailySalt =>
+            crypto
                 .createHash("sha256")
                 .update(
                     [dailySalt, networkOf(req.ip), userAgent, req.get("accept-language") || ""].join("\n")
                 )
                 .digest("hex")
-                .slice(0, 16);
+                .slice(0, 16)
+        );
+    }
+
+    /** A request a person made: not a bot, a prefetch or a request without a browser. */
+    function isPerson(req) {
+        const userAgent = req.get("user-agent") || "";
+        return Boolean(userAgent) && !BOT_UA.test(userAgent) && !isPrefetch(req);
+    }
+
+    function record(req, path, source, now) {
+        const userAgent = req.get("user-agent") || "";
+        const day = dayOf(now);
+        return visitorOf(req, day).then(visitor => {
             const ts = now.getTime();
             const pairKey = `${visitor}|${path}`;
 
             if (source === "nav" && ts - (recent.get(pairKey) || 0) < DEDUP_MS) {
-                touch(lastSeen, visitor, ts);
                 return null;
             }
-            const entry = source === "ssr" ? ts - (lastSeen.get(visitor) || 0) >= VISIT_GAP_MS : false;
-            touch(lastSeen, visitor, ts);
             touch(recent, pairKey, ts);
 
             return visits.insertOne({
@@ -214,25 +296,61 @@ function createVisitTracker(db, { siteUrl } = {}) {
                 source,
                 referrer: source === "ssr" ? externalReferrer(req, ownHosts) : null,
                 device: deviceOf(userAgent),
-                lang: languageOf(req.get("accept-language")),
-                entry
+                browser: browserOf(userAgent),
+                os: osOf(userAgent),
+                lang: languageOf(req.get("accept-language"))
             });
         });
     }
 
-    return function track(req, { path, source }) {
+    function track(req, { path, source }) {
         try {
-            const userAgent = req.get("user-agent") || "";
-            if (req.method !== "GET" || !userAgent || BOT_UA.test(userAgent) || isPrefetch(req)) {
-                return;
-            }
+            if (req.method !== "GET" || !isPerson(req)) return;
             record(req, path, source, new Date()).catch(err =>
                 console.log(new Date(), "[visits]", err)
             );
         } catch (err) {
             console.log(new Date(), "[visits]", err);
         }
-    };
+    }
+
+    function event(req, { type, path, ms, target }) {
+        try {
+            if (!EVENT_TYPES.has(type) || !isPerson(req)) return false;
+            const page = shortText(path);
+            if (!page) return false;
+            const doc = { type, path: page };
+            if (type === "engagement") {
+                const time = Math.round(Number(ms));
+                if (!Number.isFinite(time) || time <= 0) return false;
+                doc.ms = Math.min(time, MAX_ENGAGEMENT_MS);
+            } else if (type === "notFound") {
+                doc.from = sourceOf(req, ownHosts);
+            } else {
+                doc.target = shortText(target);
+                if (!doc.target) return false;
+            }
+            const now = new Date();
+            const day = dayOf(now);
+            visitorOf(req, day)
+                .then(visitor => events.insertOne({ ts: now, day, visitor, ...doc }))
+                .catch(err => console.log(new Date(), "[visits] event", err));
+            return true;
+        } catch (err) {
+            console.log(new Date(), "[visits] event", err);
+            return false;
+        }
+    }
+
+    return { track, event };
 }
 
-module.exports = { createVisitTracker, networkOf, deviceOf, languageOf, dayOf };
+module.exports = {
+    createVisitTracker,
+    networkOf,
+    deviceOf,
+    browserOf,
+    osOf,
+    languageOf,
+    dayOf
+};

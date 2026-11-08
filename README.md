@@ -15,6 +15,7 @@ site visitors.
 | `app.js` | HTTP server (Express + MongoDB): API, static files, SEO meta injection, sitemap, robots, SSR orchestration |
 | `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 1 hour |
 | `shared/seo-meta.js` | SEO rules (title, description, paths) shared by the server and the browser |
+| `visits.js` | Visit statistics without cookies: page views and events in MongoDB, read by the CMS (see below) |
 | `front/` | Angular 22 application with server-side rendering and hydration |
 | `config.json` | Local configuration, not in git — copy `config.example.json` |
 | `uploads/` | Files uploaded through the CMS, not in git |
@@ -32,6 +33,19 @@ collection, and the API decides whether it exists.
 | `siteUrl` | Public base URL used for canonical, Open Graph and sitemap URLs. **Mandatory in production** — without it URLs are built from request headers, which a client can forge |
 | `deployDomain` | Domain of the app on MyDevil, as shown by `devil www list`. Used only by `npm run deploy` for `devil www restart`; it may differ from the host in `siteUrl` (e.g. without `www`) |
 | `allowIndexing` | Must be exactly `true` for search engines to index the site. Missing or anything else means `noindex` everywhere (meta, `X-Robots-Tag`), `Disallow: /` in robots.txt and a 404 for the sitemap — so a fresh clone or staging never ends up in Google |
+
+## Visit statistics
+
+Counted on the server, without cookies, consent banner or anything stored in the browser
+(`visits.js`); the CMS shows them in its Analytics tab, `node scripts/stats.js` in the
+terminal. Every page view is one document in `visits` with the path, a visitor id that
+changes daily (a hash of a daily random salt, the network, the user agent and the language;
+neither the IP nor the user agent is stored), the referring site, and the device kind,
+browser and system family and browser language.
+`visit_events` holds what a view does not say: addresses that do not exist (`notFound`),
+how long a page was visible (`engagement`, sent by the front with `navigator.sendBeacon`
+to `POST /api/visit-event` when a page is hidden or left) and clicks on links to other
+sites or to documents (`outbound`, `download`). Bots and prefetches are skipped.
 
 ## Requirements
 
