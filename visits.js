@@ -1,14 +1,21 @@
-// Server-side visit tracking: no cookies, no client-side tracker, no consent banner.
+// Visit tracking: no cookies, no third-party tracker, no consent banner.
+//
+// Only what the site's own script reports is counted: a document request alone is not a
+// view. Scrapers and vulnerability scanners fetch pages with a browser's user agent but do
+// not run JavaScript, so counting the request itself filled the statistics with them (on
+// the first days most "en" and every "zh" visitor, and every 404, were such bots). The
+// user agent check below still drops the bots that name themselves.
 //
 // Each document is one page view (a hit), from one of two sources:
-// - "ssr": a document request (full load, reload, new tab) answered by the SSR catch-all;
-//   only these carry the external referrer. A speculative request (a prefetch or a
-//   prerender: Chrome prerenders a page while its address is typed) is not counted: the
-//   page may never be shown, and once it is, no request reaches the server. The front then
-//   sends a "view" beacon instead (POST /api/visit-event), counted as "ssr" by
-//   `track(req, { path, source: "ssr", activated: true })`, without a referrer.
+// - "ssr": a full load (a reload, a new tab, a page opened from another site), reported by
+//   the front once the page is shown with a "view" beacon (POST /api/visit-event) that
+//   carries `document.referrer`; only these keep the external referrer. A page Chrome
+//   prerendered or prefetched is reported when it is shown, so it counts only if it is.
 // - "nav": a GET /api/page call the front marks with `X-Page-View: 1` (the router resolver
-//   and the page component's refresh): a page opened inside the app.
+//   and the page component's refresh): a page opened inside the app. The front leaves the
+//   mark off while the document is loading, so the "view" beacon counts that page alone.
+// Every hit and event carries `confirmed: true`: the readers (Frodo) tell them from the hits
+// stored before, which the server wrote on the document request, bots included.
 // Hits are stored raw. The readers (Frodo's Analytics tab, scripts/stats.js) count them the
 // way GA4 and Plausible do: visitors (anyone with a hit that day), views (all hits) and
 // visits, split by timestamps – one visitor's hits with no gap of 30 minutes or more, the
@@ -20,8 +27,10 @@
 // system family ("chrome", "ios"); the address and the full user agent are never stored.
 //
 // Events (`visit_events`, written by `event()`): what a page view alone does not say –
-// - "notFound": an address that does not exist, opened directly ("ssr") or by a link
-//   inside the site ("nav"), with the page or site the visitor came from;
+// - "notFound": an address that does not exist, opened directly (its "view" beacon) or by
+//   a link inside the site ("nav"), with the page or site the visitor came from; the same
+//   address of the same visitor again within DEDUP_MS is one 404 (the resolver and the
+//   page component's refresh both ask for it);
 // - "engagement": how long a page was really visible, sent by the front when the page is
 //   hidden or left (navigator.sendBeacon, nothing stored in the browser);
 // - "outbound" / "download": a click on a link to another site or to a document.
@@ -51,7 +60,8 @@ const MAX_ENGAGEMENT_MS = 30 * 60 * 1000;
 const MAX_TEXT = 300;
 const SALT_ID = "visit-salt";
 // A nav hit for the same visitor and page this soon after any hit is a duplicate: the
-// page component refetching what the SSR load or the resolver has just shown.
+// page component refetching what the resolver has just shown. So is a second 404 of the
+// same address.
 const DEDUP_MS = 30 * 1000;
 const MAX_ENTRIES = 50000;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
@@ -156,16 +166,23 @@ function hostOf(url) {
     }
 }
 
-/** The referring host, only when it is another site; links within the site give null. */
-function externalReferrer(req, ownHosts) {
-    const host = hostOf(req.get("referer") || "");
-    if (!host) return null;
+function isOwnHost(host, req, ownHosts) {
     const requestHost = (req.hostname || "").replace(/^www\./, "").toLowerCase();
-    return host === requestHost || ownHosts.has(host) ? null : host;
+    return host === requestHost || ownHosts.has(host);
 }
 
-function isPrefetch(req) {
-    return /prefetch|prerender/i.test(`${req.get("sec-purpose") || ""} ${req.get("purpose") || ""}`);
+/**
+ * The referrer a hit or event is about: the one the front reports (`document.referrer` in
+ * a beacon, "" when there was none), or else the request's own Referer header.
+ */
+function referrerOf(req, reported) {
+    return typeof reported === "string" ? reported : req.get("referer") || "";
+}
+
+/** The referring host, only when it is another site; links within the site give null. */
+function externalReferrer(referrer, req, ownHosts) {
+    const host = hostOf(referrer);
+    return !host || isOwnHost(host, req, ownHosts) ? null : host;
 }
 
 /** Keeps a Map in insertion order of the last update, so the oldest entries come first. */
@@ -188,14 +205,12 @@ function prune(map, olderThan) {
  * Where a visitor came from to an address: a path of the site when a link inside it led
  * there, otherwise the other site's host; null when the browser did not say.
  */
-function sourceOf(req, ownHosts) {
-    const referer = req.get("referer") || "";
-    const host = hostOf(referer);
+function sourceOf(referrer, req, ownHosts) {
+    const host = hostOf(referrer);
     if (!host) return null;
-    const requestHost = (req.hostname || "").replace(/^www\./, "").toLowerCase();
-    if (host === requestHost || ownHosts.has(host)) {
+    if (isOwnHost(host, req, ownHosts)) {
         try {
-            return shortText(decodeURIComponent(new URL(referer).pathname));
+            return shortText(decodeURIComponent(new URL(referrer).pathname));
         } catch (err) {
             return null;
         }
@@ -205,8 +220,8 @@ function sourceOf(req, ownHosts) {
 
 /**
  * Returns `{ track, event }`:
- * - `track(req, { path, source })` records a page view;
- * - `event(req, { type, path, ms, target })` records an event (see the top of the file).
+ * - `track(req, { path, source, referrer })` records a page view;
+ * - `event(req, { type, path, ms, target, referrer })` records an event (see the top of the file).
  * Neither throws nor delays the response: the write happens in the background and errors
  * only end up in the log.
  */
@@ -215,7 +230,8 @@ function createVisitTracker(db, { siteUrl } = {}) {
     const events = db.collection(EVENTS);
     const meta = db.collection("meta");
     const ownHosts = new Set([hostOf(siteUrl || "")].filter(Boolean));
-    const recent = new Map(); // `${visitor}|${path}` -> ts of the last hit
+    // `${visitor}|${path}` -> ts of the last hit, `404|${visitor}|${path}` of the last 404
+    const recent = new Map();
     let salt = { day: null, value: null, pending: null };
 
     Promise.all([
@@ -274,23 +290,26 @@ function createVisitTracker(db, { siteUrl } = {}) {
         );
     }
 
-    /** A request a person made: not a bot, a prefetch or a request without a browser. */
+    /** A request from a browser: not a bot that names itself, nor one without a user agent. */
     function isPerson(req) {
         const userAgent = req.get("user-agent") || "";
-        return Boolean(userAgent) && !BOT_UA.test(userAgent) && !isPrefetch(req);
+        return Boolean(userAgent) && !BOT_UA.test(userAgent);
     }
 
-    function record(req, path, source, now) {
+    /** Whether `key` was seen within DEDUP_MS; marks it seen now either way. */
+    function seenRecently(key, ts) {
+        const seen = ts - (recent.get(key) || 0) < DEDUP_MS;
+        touch(recent, key, ts);
+        return seen;
+    }
+
+    function record(req, { path, source, referrer }, now) {
         const userAgent = req.get("user-agent") || "";
         const day = dayOf(now);
         return visitorOf(req, day).then(visitor => {
-            const ts = now.getTime();
-            const pairKey = `${visitor}|${path}`;
-
-            if (source === "nav" && ts - (recent.get(pairKey) || 0) < DEDUP_MS) {
+            if (seenRecently(`${visitor}|${path}`, now.getTime()) && source === "nav") {
                 return null;
             }
-            touch(recent, pairKey, ts);
 
             return visits.insertOne({
                 ts: now,
@@ -298,20 +317,27 @@ function createVisitTracker(db, { siteUrl } = {}) {
                 path,
                 visitor,
                 source,
-                referrer: source === "ssr" ? externalReferrer(req, ownHosts) : null,
+                referrer:
+                    source === "ssr"
+                        ? externalReferrer(referrerOf(req, referrer), req, ownHosts)
+                        : null,
                 device: deviceOf(userAgent),
                 browser: browserOf(userAgent),
                 os: osOf(userAgent),
-                lang: languageOf(req.get("accept-language"))
+                lang: languageOf(req.get("accept-language")),
+                confirmed: true
             });
         });
     }
 
-    /** `activated`: the beacon of a prerendered or prefetched page shown (a POST). */
-    function track(req, { path, source, activated = false }) {
+    /**
+     * `referrer`: what the front reports for a full load ("ssr"), `document.referrer` of
+     * its "view" beacon; a "nav" hit has none.
+     */
+    function track(req, { path, source, referrer }) {
         try {
-            if ((req.method !== "GET" && !activated) || !isPerson(req)) return;
-            record(req, path, source, new Date()).catch(err =>
+            if (!isPerson(req)) return;
+            record(req, { path, source, referrer }, new Date()).catch(err =>
                 console.log(new Date(), "[visits]", err)
             );
         } catch (err) {
@@ -319,7 +345,11 @@ function createVisitTracker(db, { siteUrl } = {}) {
         }
     }
 
-    function event(req, { type, path, ms, target }) {
+    /**
+     * `referrer` (notFound only): `document.referrer` of the "view" beacon of a 404 opened
+     * directly; without it, the Referer header of the request (the page a link was on).
+     */
+    function event(req, { type, path, ms, target, referrer }) {
         try {
             if (!EVENT_TYPES.has(type) || !isPerson(req)) return false;
             const page = shortText(path);
@@ -330,7 +360,7 @@ function createVisitTracker(db, { siteUrl } = {}) {
                 if (!Number.isFinite(time) || time <= 0) return false;
                 doc.ms = Math.min(time, MAX_ENGAGEMENT_MS);
             } else if (type === "notFound") {
-                doc.from = sourceOf(req, ownHosts);
+                doc.from = sourceOf(referrerOf(req, referrer), req, ownHosts);
             } else {
                 doc.target = shortText(target);
                 if (!doc.target) return false;
@@ -338,7 +368,12 @@ function createVisitTracker(db, { siteUrl } = {}) {
             const now = new Date();
             const day = dayOf(now);
             visitorOf(req, day)
-                .then(visitor => events.insertOne({ ts: now, day, visitor, ...doc }))
+                .then(visitor => {
+                    if (type === "notFound" && seenRecently(`404|${visitor}|${doc.path}`, now.getTime())) {
+                        return null;
+                    }
+                    return events.insertOne({ ts: now, day, visitor, ...doc, confirmed: true });
+                })
                 .catch(err => console.log(new Date(), "[visits] event", err));
             return true;
         } catch (err) {

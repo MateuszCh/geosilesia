@@ -59,9 +59,16 @@ browser and system family and browser language.
 `visit_events` holds what a view does not say: addresses that do not exist (`notFound`),
 how long a page was visible (`engagement`, sent by the front with `navigator.sendBeacon`
 to `POST /api/visit-event` when a page is hidden or left) and clicks on links to other
-sites or to documents (`outbound`, `download`). Bots and prefetches are skipped; a page
-Chrome prerendered or prefetched (e.g. while its address was typed) is counted when it is
-shown, by a `view` beacon from the front, since no request reaches the server then.
+sites or to documents (`outbound`, `download`).
+
+Only what the site's own script reports counts: a full load is recorded when the front
+sends its `view` beacon (with `document.referrer`; a 404 when the address is no page), and
+a page opened inside the app by its `X-Page-View` API request, so scrapers and scanners
+that fetch pages without running JavaScript leave no trace. The server never counts the
+document request itself; a prerendered page counts only once it is shown. Bots that name
+themselves in the user agent are skipped as well. Everything written this way carries
+`confirmed: true`; the readers (Frodo, `scripts/stats.js`) count older documents only for
+visitors who ran the page's script that day.
 
 ## Requirements
 
