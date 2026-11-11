@@ -265,8 +265,9 @@ function trackNavigation(req, pageUrl, found) {
 }
 
 // An address that is not a page: only ones that could be one (no file extension), so the
-// scans for /wp-login.php or /.env do not bury the broken links.
-function trackNotFound(req, rawPath) {
+// scans for /wp-login.php or /.env do not bury the broken links. `referrer`: what the
+// "view" beacon of a 404 opened directly reports (visits.js).
+function trackNotFound(req, rawPath, referrer) {
     let path;
     try {
         path = seoMeta.normalizePath(decodeURIComponent(rawPath));
@@ -274,14 +275,15 @@ function trackNotFound(req, rawPath) {
         return;
     }
     if (/\.[a-z0-9]{1,5}$/i.test(path)) return;
-    trackEvent(req, { type: "notFound", path });
+    trackEvent(req, { type: "notFound", path, referrer });
 }
 
-// What the front sends when a page is hidden or left (engagement), a link to another
-// site or to a document is clicked, or a prerendered or prefetched page is shown (view: the
-// speculative request was not counted, see visits.js), by navigator.sendBeacon as
-// text/plain. A view counts only for a page that exists. Always 204: a beacon never reads
-// the answer. body-parser's text parser, not express.text: that one
+// What the front sends by navigator.sendBeacon as text/plain: the view of a full load once
+// the page is shown (view, with document.referrer: the server no longer counts the
+// document request, which scrapers make too, see visits.js), the time a page was visible
+// when it is hidden or left (engagement), and a click on a link to another site or to a
+// document. A view of an address that is no page is its 404. Always 204: a beacon never
+// reads the answer. body-parser's text parser, not express.text: that one
 // exists only since Express 4.17, and servers may still run an older 4.x.
 app.post(
     "/api/visit-event",
@@ -290,16 +292,20 @@ app.post(
         try {
             // text/plain from sendBeacon; application/json is already parsed above
             const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-            if (body && body.type === "view") {
+            if (body && body.type === "view" && typeof body.path === "string" && body.path.startsWith("/")) {
+                // "" when the browser had no referrer: then none, not the beacon's own Referer
+                const referrer = typeof body.referrer === "string" ? body.referrer : "";
                 getPages()
                     .then(pages => {
-                        const page = findPage(pages, String(body.path || ""));
+                        const page = findPage(pages, body.path);
                         if (page) {
                             trackVisit(req, {
                                 path: seoMeta.normalizePath(page.pageUrl),
                                 source: "ssr",
-                                activated: true
+                                referrer
                             });
+                        } else {
+                            trackNotFound(req, body.path, referrer);
                         }
                     })
                     .catch(() => undefined);
@@ -736,15 +742,9 @@ app.get(["*"], (req, res, next) => {
                     ? renderer.render(seoMeta.normalizePath(page.pageUrl))
                     : Promise.resolve(null);
                 return rendered.then(result =>
+                    // Not counted here: the front reports the view (or the 404) once the
+                    // page is shown, which scrapers without JavaScript never do (visits.js).
                     (result ? Promise.resolve(result.html) : getIndexHtml()).then(html => {
-                        if (page) {
-                            trackVisit(req, {
-                                path: seoMeta.normalizePath(page.pageUrl),
-                                source: "ssr"
-                            });
-                        } else {
-                            trackNotFound(req, req.path);
-                        }
                         res.status(page ? 200 : 404)
                             .set("X-Render", renderLabel(result))
                             .type("html")

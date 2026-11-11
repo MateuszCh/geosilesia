@@ -4,6 +4,7 @@ import { catchError, map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { IdbService } from './idb.service';
 import { pageKeySpellings } from './page-key';
+import { VisitEventsService } from './visit-events.service';
 import { Page, PagesResponse } from '../models/page.model';
 import { AlbumSummary, AppData, Post } from '../models/post.model';
 
@@ -21,6 +22,7 @@ import { AlbumSummary, AppData, Post } from '../models/post.model';
 export class ResourceService {
     private readonly api = inject(ApiService);
     private readonly idb = inject(IdbService);
+    private readonly visitEvents = inject(VisitEventsService);
 
     isOfflineAvailable(): boolean {
         return this.idb.isAvailable();
@@ -38,7 +40,9 @@ export class ResourceService {
     /**
      * `pageView` marks the request as the user opening the page – the router resolver and
      * the page component's refresh – so the server counts it as an in-app navigation in its
-     * visit statistics. Other reads of a page (the home page banner) leave it off.
+     * visit statistics. Other reads of a page (the home page banner) leave it off, and so do
+     * the reads of the page the document was loaded with: the front reports that view
+     * itself (VisitEventsService), with its referrer.
      *
      * `null` means the server answered that the page does not exist – deleted, or marked
      * as a draft in the CMS – and `undefined` that there was no answer (offline, an error).
@@ -51,7 +55,8 @@ export class ResourceService {
     ): Observable<Page | null | undefined> {
         return this.api
             .get<PagesResponse>(`/api/page/${this.pageUrlSegment(pageKey)}`, {
-                headers: pageView ? { 'X-Page-View': '1' } : undefined
+                headers:
+                    pageView && !this.visitEvents.isDocumentLoad() ? { 'X-Page-View': '1' } : undefined
             })
             .pipe(
                 map(response => {

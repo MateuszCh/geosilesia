@@ -1,5 +1,5 @@
 import { DOCUMENT, DestroyRef, Injectable, inject } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
 /** Links to documents count as downloads; images open in the viewer and do not. */
@@ -7,17 +7,20 @@ const DOWNLOAD = /\.(pdf|docx?|xlsx?|pptx?|odt|ods|odp|rtf|csv|txt|zip|rar|7z|ep
 const ENDPOINT = '/api/visit-event';
 
 type VisitEvent =
-    | { type: 'view'; path: string }
+    | { type: 'view'; path: string; referrer: string }
     | { type: 'engagement'; path: string; ms: number }
     | { type: 'outbound' | 'download'; path: string; target: string };
 
 /**
- * What a page view alone does not tell the visit statistics (visits.js on the server):
- * how long each page was really visible, and clicks on links to other sites or to
- * documents. Also the view of a page Chrome prerendered or prefetched (while its address
- * was typed, say): the server does not count that speculative request, and the page is
- * shown later without another one, so its view is sent once the visitor sees it. Sent with navigator.sendBeacon when a page is hidden or left, or a link is
- * clicked. Nothing is stored in the browser and no id is sent – the server recognises the
+ * The visit statistics of the browser side (visits.js on the server): the view of the page
+ * the document was loaded with, how long each page was really visible, and clicks on links
+ * to other sites or to documents. The server does not count a document request – scrapers
+ * without JavaScript make those too – so the loaded page is reported here once it is shown,
+ * with the referrer, or its 404 when it is no page; a page Chrome prerendered or prefetched
+ * only when the visitor sees it. Pages opened inside the app count by their API request
+ * (`X-Page-View`), which ResourceService leaves off while the document loads
+ * (`isDocumentLoad`), so that page counts once. Sent with navigator.sendBeacon (the view at
+ * once, the visible time when a page is hidden or left, a click when it happens). Nothing is stored in the browser and no id is sent – the server recognises the
  * visitor of the day the same way as for page views – so no consent is needed.
  */
 @Injectable({ providedIn: 'root' })
@@ -32,6 +35,26 @@ export class VisitEventsService {
     /** visible time of the current page not sent yet */
     private pending = 0;
     private started = false;
+    /** true until the first navigation inside the app starts (the initial one has id 1) */
+    private documentLoad = true;
+
+    constructor() {
+        const subscription = this.router.events
+            .pipe(filter((event) => event instanceof NavigationStart && event.id > 1))
+            .subscribe(() => {
+                this.documentLoad = false;
+                subscription.unsubscribe();
+            });
+        this.destroyRef.onDestroy(() => subscription.unsubscribe());
+    }
+
+    /**
+     * Whether the page being opened is the one the document was loaded with: its view is
+     * the "view" beacon, so the API requests for it must not count it again.
+     */
+    isDocumentLoad(): boolean {
+        return this.documentLoad;
+    }
 
     /** Starts listening; in the browser only (called after the first render). */
     start(): void {
@@ -40,7 +63,7 @@ export class VisitEventsService {
         this.started = true;
         this.path = view.location.pathname;
         if (this.doc.visibilityState === 'visible') this.visibleSince = view.performance.now();
-        this.countSpeculativeLoad(view);
+        this.countLoad(view);
 
         const subscription = this.router.events
             .pipe(filter((event) => event instanceof NavigationEnd))
@@ -69,22 +92,19 @@ export class VisitEventsService {
     }
 
     /**
-     * Sends the view of a prerendered page when it is shown (`prerenderingchange`), or at
-     * once when it already has been or came from a prefetch.
+     * Sends the view of the page the document was loaded with: at once, or for a page
+     * Chrome is prerendering when it is shown (`prerenderingchange`). The server counts it
+     * as a full load, or as a 404 when the address is no page.
      */
-    private countSpeculativeLoad(view: Window): void {
+    private countLoad(view: Window): void {
         const doc = this.doc as Document & { prerendering?: boolean };
-        const sendView = () => this.send({ type: 'view', path: view.location.pathname });
+        const sendView = () =>
+            this.send({ type: 'view', path: view.location.pathname, referrer: doc.referrer });
         if (doc.prerendering) {
             doc.addEventListener('prerenderingchange', sendView, { once: true });
             return;
         }
-        const entry = view.performance.getEntriesByType?.('navigation')[0] as
-            | (PerformanceNavigationTiming & { activationStart?: number; deliveryType?: string })
-            | undefined;
-        if ((entry?.activationStart ?? 0) > 0 || entry?.deliveryType === 'navigational-prefetch') {
-            sendView();
-        }
+        sendView();
     }
 
     /** A new page: the time of the previous one is sent, the new one starts counting. */

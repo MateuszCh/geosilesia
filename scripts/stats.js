@@ -11,6 +11,11 @@
 // pages, external referrers, devices and browser languages of the visits (each from the
 // visit's first hit) and the most viewed pages.
 //
+// Only people are counted, as in Frodo: hits and events the site's own script reported
+// (`confirmed`, everything visits.js writes now) and, of the older ones the server wrote on
+// the document request, only those of visitors who ran the page's script that day (a page
+// opened inside the app, or a visible-time or link-click event). The rest were scrapers.
+//
 // Accuracy limits (see visits.js): one person on several devices counts several times, an
 // IPv4 change during the day counts twice, identical devices behind one shared IP may merge
 // into one. Visitors exist per day only: the salt rotates daily, so the "total" row is the
@@ -95,12 +100,28 @@ function splitVisits(hits) {
     return result;
 }
 
+/** Events only a page's own script sends: proof the visitor of that day was a browser. */
+const SCRIPT_EVENTS = ["engagement", "outbound", "download"];
+
+/**
+ * The match of the people's hits since `since`: confirmed ones, and older ones of visitors
+ * who ran the page's script that day (visitor ids are per day, so the ids alone suffice).
+ */
+async function peopleSince(db, since) {
+    const legacy = { day: { $gte: since }, confirmed: { $exists: false } };
+    const [navigated, scripted] = await Promise.all([
+        db.collection("visits").distinct("visitor", { ...legacy, source: "nav" }),
+        db.collection("visit_events").distinct("visitor", { ...legacy, type: { $in: SCRIPT_EVENTS } })
+    ]);
+    return { $or: [{ confirmed: true }, { visitor: { $in: [...new Set([...navigated, ...scripted])] } }] };
+}
+
 withDb(async db => {
     const days = numberArg("days", 30);
     const limit = numberArg("top", 10);
     const since = dayOf(new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000));
     const visits = db.collection("visits");
-    const inRange = { day: { $gte: since } };
+    const inRange = { day: { $gte: since }, ...(await peopleSince(db, since)) };
 
     const perDay = await visits
         .aggregate([
