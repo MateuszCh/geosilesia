@@ -12,8 +12,14 @@ import {
 import { HomepageBannerData, Slide } from '../../models/row.model';
 import { SwipeDirective } from '../../shared/swipe.directive';
 import { photoCredit } from '../../shared/photo-credit';
+import { SrcsetPipe } from '../../shared/srcset';
 
 const pad = (value: number) => String(value).padStart(2, '0');
+
+/** How long after the load event the neighbouring slides may download: the lazy images
+    below the fold start right at load, and the neighbours are not needed until the first
+    autoplay step. */
+const NEIGHBOURS_DELAY_MS = 3000;
 
 type TitleSize = 'large' | 'medium' | 'small';
 
@@ -34,7 +40,7 @@ function isShouting(text: string): boolean {
 @Component({
     selector: 'app-homepage-banner',
     templateUrl: './homepage-banner.html',
-    imports: [SwipeDirective],
+    imports: [SwipeDirective, SrcsetPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomepageBanner {
@@ -46,7 +52,7 @@ export class HomepageBanner {
      * Slides whose photo may download. At first only the first one: it is the largest
      * element of the page (LCP), and the other six – stacked inside the viewport, so
      * loading="lazy" does not hold them back – would all download with it and take its
-     * bandwidth. Once the page has loaded, the neighbours of the current slide join, and
+     * bandwidth. A few seconds after the page has loaded, the neighbours of the current slide join, and
      * so on as the carousel moves; a slide the user opens earlier loads on the spot.
      */
     private readonly loading = signal<ReadonlySet<number>>(new Set([0]));
@@ -77,6 +83,8 @@ export class HomepageBanner {
     private paused = false;
     private reducedMotion = false;
     private pageLoaded = false;
+    /** Neighbouring slides may download (set NEIGHBOURS_DELAY_MS after load). */
+    private preloadNeighbours = false;
 
     constructor() {
         const destroyRef = inject(DestroyRef);
@@ -87,10 +95,15 @@ export class HomepageBanner {
         // the page to load, so that the next photo does not compete with the first one.
         afterNextRender(() => {
             this.reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+            let neighboursTimer: ReturnType<typeof setTimeout> | undefined;
+            destroyRef.onDestroy(() => clearTimeout(neighboursTimer));
             const onLoad = () => {
                 this.pageLoaded = true;
-                this.load(this.current());
                 this.start();
+                neighboursTimer = setTimeout(() => {
+                    this.preloadNeighbours = true;
+                    this.load(this.current());
+                }, NEIGHBOURS_DELAY_MS);
             };
             if (doc.readyState === 'complete') {
                 onLoad();
@@ -147,11 +160,11 @@ export class HomepageBanner {
         this.load(index);
     }
 
-    /** Lets the photo of slide `index` download – with its neighbours once the page has loaded. */
+    /** Lets the photo of slide `index` download – with its neighbours a while after load. */
     private load(index: number): void {
         const count = this.slides().length;
         if (!count) return;
-        const wanted = this.pageLoaded ? [index, (index + 1) % count, (index - 1 + count) % count] : [index];
+        const wanted = this.preloadNeighbours ? [index, (index + 1) % count, (index - 1 + count) % count] : [index];
         if (wanted.every(slide => this.loading().has(slide))) return;
         this.loading.update(loading => new Set([...loading, ...wanted]));
     }
