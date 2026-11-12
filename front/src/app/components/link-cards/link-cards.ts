@@ -9,6 +9,7 @@ import { LinkCardsData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
 import { HtmlDirective } from '../../shared/html.directive';
+import { SrcsetPipe } from '../../shared/srcset';
 
 /**
  * How a side list is drawn, as in the mockups: several places with photos in a box ("Zobacz w
@@ -21,7 +22,7 @@ export type SideForm = 'list' | 'figure' | 'card';
 @Component({
     selector: 'app-link-cards',
     templateUrl: './link-cards.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective],
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective, SrcsetPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LinkCards implements OnInit {

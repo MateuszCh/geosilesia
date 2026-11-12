@@ -40,7 +40,9 @@
                 <img class="route__image"
                      loading="lazy"
                      alt=""
-                     [src]="stop.image">
+                     [src]="stop.image"
+                     [attr.srcset]="stop.image | srcset"
+                     sizes="300px">
             }
         </div>
     </li>
@@ -62,6 +64,8 @@
                     <img class="top50-preview__image"
                          loading="lazy"
                          [src]="stop.image"
+                         [attr.srcset]="stop.image | srcset"
+                         sizes="(min-width: 600px) 900px, 100vw"
                          [alt]="stop.title">
                 } @else {
                     <span class="top50-preview__no-photo"

@@ -9,7 +9,8 @@ const express = require("express"),
     { REDIRECTS } = require("./shared/redirects"),
     { createRenderer } = require("./ssr"),
     { publishedPages } = require("./pages"),
-    { createVisitTracker } = require("./visits");
+    { createVisitTracker } = require("./visits"),
+    { createImageResizer } = require("./images");
 
 const app = express();
 app.set("port", process.env.PORT || 3000);
@@ -710,14 +711,36 @@ app.get(Object.keys(REDIRECTS), (req, res) => {
     res.redirect(301, REDIRECTS[seoMeta.normalizePath(req.path)] + query);
 });
 
-app.use("/uploads", express.static(`${__dirname}/uploads`));
+// CMS uploads: a day in the browser cache, then a cheap revalidation (ETag) – a file
+// replaced under the same name shows up by the next day at the latest.
+app.use("/uploads", express.static(`${__dirname}/uploads`, { maxAge: "1d" }));
+// Resized WebP copies of CMS photos for srcset (images.js); cached in tmp/img-cache.
+const images = createImageResizer({
+    uploadsDir: `${__dirname}/uploads`,
+    cacheDir: path.join(__dirname, "tmp", "img-cache")
+});
+app.get("/img/:width/*", images.handler);
 // Self-hosted fonts (copied from @fontsource at build time): their names carry no hash, but the
 // files only change with a font package upgrade, so a month in the browser cache is safe and
 // saves a revalidation round trip on every reload.
 app.use("/fonts", express.static(`${FRONT_DIR}/fonts`, { maxAge: "30d" }));
 // index: false – otherwise serve-static would answer "/" with index.html by itself
 // and the home page would be the only one without server-side meta.
-app.use("/", express.static(FRONT_DIR, { index: false }));
+// Bundles named with a content hash (main-RPLSOTQI.js, chunk-….js, styles-….css, media/…)
+// never change under the same name, so they may stay in the browser cache for a year;
+// everything else (ngsw.json, ngsw-worker.js, manifest, icons) keeps revalidating.
+const HASHED_ASSET = /-[A-Z0-9]{8}\.(?:js|css|woff2?|png|jpe?g|svg|webp)$/;
+app.use(
+    "/",
+    express.static(FRONT_DIR, {
+        index: false,
+        setHeaders: (res, filePath) => {
+            if (HASHED_ASSET.test(filePath)) {
+                res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+            }
+        }
+    })
+);
 
 app.get(["*"], (req, res, next) => {
     const base = siteUrl(req);

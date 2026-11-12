@@ -23,6 +23,7 @@ import { Row, Top50Data } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { HtmlDirective } from '../../shared/html.directive';
 import { RowView } from '../row/row';
+import { SrcsetPipe } from '../../shared/srcset';
 
 const PREVIEW_LIMIT = 7;
 /** The full list opens with this many places; "Dalej: miejsca 16–50" shows the rest at once. */
@@ -61,7 +62,7 @@ function chips(links: Top50PostData['links']): Stop['links'] {
     selector: 'app-top50',
     templateUrl: './top50.html',
     // RowView draws the component under the route and itself imports this one: forwardRef breaks the cycle.
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective, forwardRef(() => RowView)],
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective, forwardRef(() => RowView), SrcsetPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Top50 implements OnInit {

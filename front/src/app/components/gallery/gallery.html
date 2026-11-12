@@ -75,7 +75,9 @@
                             <img class="photo-card__image"
                                  loading="lazy"
                                  alt=""
-                                 [src]="image.src">
+                                 [src]="image.src"
+                                 [attr.srcset]="image.src | srcset"
+                                 sizes="(min-width: 600px) 340px, 100vw">
                             <span class="photo-card__caption">
                                 <span class="photo-card__number">{{ index + 1 }}</span>
                                 <span class="photo-card__text">
@@ -122,6 +124,8 @@
                                 <img class="album-card__image"
                                      loading="lazy"
                                      [src]="album.cover"
+                                     [attr.srcset]="album.cover | srcset"
+                                     sizes="(min-width: 600px) 340px, 100vw"
                                      [alt]="'przejdź do galerii ' + album.title">
                             }
                             <span class="album-card__title">{{ album.title }}</span>

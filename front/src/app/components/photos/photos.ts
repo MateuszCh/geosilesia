@@ -11,6 +11,7 @@ import { plural } from '../../shared/plural';
 import { photoCredit } from '../../shared/photo-credit';
 import { PhotoViewer, ViewerPhoto } from '../photo-viewer/photo-viewer';
 import { HtmlDirective } from '../../shared/html.directive';
+import { SrcsetPipe } from '../../shared/srcset';
 
 interface PhotoView {
     src: string;
@@ -61,7 +62,7 @@ function fromFile(file: GalleryImage): PhotoView {
 @Component({
     selector: 'app-photos',
     templateUrl: './photos.html',
-    imports: [RouterLink, TrustedPipe, PhotoViewer, HtmlDirective],
+    imports: [RouterLink, TrustedPipe, PhotoViewer, HtmlDirective, SrcsetPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Photos implements OnInit {

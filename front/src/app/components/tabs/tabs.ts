@@ -13,6 +13,7 @@ import { ChartBar, TabsData } from '../../models/row.model';
 import { colorByName, periodColor } from '../../core/categories';
 import { ScrollService } from '../../core/scroll.service';
 import { plural } from '../../shared/plural';
+import { SrcsetPipe } from '../../shared/srcset';
 
 interface TocEntry {
     id: string;
@@ -27,6 +28,7 @@ interface TocEntry {
 @Component({
     selector: 'app-tabs',
     templateUrl: './tabs.html',
+    imports: [SrcsetPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Tabs {

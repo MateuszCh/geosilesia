@@ -205,7 +205,9 @@
                     @if (place.image) {
                         <img class="map-sheet__image"
                              alt=""
-                             [src]="place.image">
+                             [src]="place.image"
+                             [attr.srcset]="place.image | srcset"
+                             sizes="(min-width: 600px) 400px, 100vw">
                     }
                     @if (place.tag) {
                         <span class="map-sheet__tag"

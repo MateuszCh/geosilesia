@@ -3,12 +3,13 @@ import { NumberedListData } from '../../models/row.model';
 import { TrustedPipe } from '../../shared/trusted.pipe';
 import { photoCredit } from '../../shared/photo-credit';
 import { HtmlDirective } from '../../shared/html.directive';
+import { SrcsetPipe } from '../../shared/srcset';
 
 /** "Skarby natury": numbered places that open in place, with an "A ponadto" side list. */
 @Component({
     selector: 'app-numbered-list',
     templateUrl: './numbered-list.html',
-    imports: [TrustedPipe, HtmlDirective],
+    imports: [TrustedPipe, HtmlDirective, SrcsetPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NumberedList {

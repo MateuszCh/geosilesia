@@ -26,6 +26,7 @@ import { ScrollService } from '../../core/scroll.service';
 import { GeoMap } from '../geo-map/geo-map';
 import { foldText } from '../../shared/fold-text';
 import { plural } from '../../shared/plural';
+import { SrcsetPipe } from '../../shared/srcset';
 
 /** Below this width the panel sits above the map and the page has to scroll to it. */
 const NARROW_BREAKPOINT = 900;
@@ -69,7 +70,7 @@ export function placesLabel(count: number): string {
 @Component({
     selector: 'app-search-map',
     templateUrl: './search-map.html',
-    imports: [GeoMap, RouterLink],
+    imports: [GeoMap, RouterLink, SrcsetPipe],
     host: { '(document:keydown.escape)': 'closeFilters()' },
     changeDetection: ChangeDetectionStrategy.OnPush
 })

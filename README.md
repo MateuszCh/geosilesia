@@ -16,6 +16,7 @@ site visitors.
 | `pages.js` | The `pages` collection as the public site reads it: published pages only (drafts left out) |
 | `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 1 hour |
 | `shared/seo-meta.js` | SEO rules (title, description, paths) shared by the server and the browser |
+| `images.js` | Resized WebP copies of CMS photos for `srcset` (`/img/<width>/…`, see below) |
 | `visits.js` | Visit statistics without cookies: page views and events in MongoDB, read by the CMS (see below) |
 | `front/` | Angular 22 application with server-side rendering and hydration |
 | `config.json` | Local configuration, not in git — copy `config.example.json` |
@@ -176,6 +177,26 @@ installed by the script as well (`npm ci --omit=dev` in the root, exactly as pin
 - A front-end-only change needs the restart too: `ssr.js` imports the server bundle once
   per process (Node never unloads ES modules), so without a restart the old bundle keeps
   rendering pages.
+
+## Images
+
+CMS photos stay in `uploads/` as uploaded. `GET /img/<width>/<path under uploads/>`
+(`images.js`) answers with a WebP copy at most that wide (400, 800, 1200 or 1600 px, never
+upscaled), made once and kept in `tmp/img-cache/`; it is made again when the original is
+newer. Any conversion error falls back to the original file. The front lists the copies in
+`srcset` through the `srcset` pipe (`front/src/app/shared/srcset.ts`, its `WIDTHS` must match
+`images.js`) and `appHtml` adds them to photos in CMS HTML; each `<img>` carries a `sizes`
+measured on the layout (wider than the box for `object-fit: cover` heroes).
+
+Conversion uses `wasm-vips` (libvips in WebAssembly) because `sharp` has no binaries for the
+server's FreeBSD. Conversions run one at a time. After the first deployment, and whenever
+many photos were uploaded at once, warm the cache so visitors do not wait:
+
+```bash
+node scripts/warm-images.js   # every photo × every width; skips copies already up to date
+```
+
+`tmp/img-cache/` can be deleted at any time; copies are made again on demand.
 
 ## SSR
 

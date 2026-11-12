@@ -77,7 +77,9 @@
     <img class="side-figure__image"
          loading="lazy"
          alt=""
-         [src]="card.image">
+         [src]="card.image"
+         [attr.srcset]="card.image | srcset"
+         sizes="(min-width: 600px) 340px, 100vw">
     <span class="side-figure__text">
         <b>{{ card.title }}</b>
         @if (card.description) {
@@ -99,7 +101,9 @@
             <img class="link-card__image"
                  loading="lazy"
                  alt=""
-                 [src]="card.image">
+                 [src]="card.image"
+                 [attr.srcset]="card.image | srcset"
+                 sizes="(min-width: 600px) 340px, 100vw">
         } @else {
             <span class="link-card__image link-card__image--empty"></span>
         }
@@ -122,7 +126,9 @@
         <img class="side-card__image"
              loading="lazy"
              alt=""
-             [src]="card.image">
+             [src]="card.image"
+             [attr.srcset]="card.image | srcset"
+             sizes="96px">
     }
     <span class="side-card__text">
         <span class="side-card__title">{{ card.title }}</span>

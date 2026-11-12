@@ -10,6 +10,7 @@ import { SectionBar } from '../section-bar/section-bar';
 import { DictionarySearch } from '../dictionary/dictionary-search';
 import { RowView } from '../row/row';
 import { HtmlDirective } from '../../shared/html.directive';
+import { SrcsetPipe } from '../../shared/srcset';
 
 /** "Ryszard Chybiorz · 03.06.2026 · ostatnia aktualizacja 05.10.2026" */
 export function bylineText(byline: Byline | undefined): string {
@@ -29,7 +30,7 @@ export function bylineText(byline: Byline | undefined): string {
 @Component({
     selector: 'app-page-hero',
     templateUrl: './page-hero.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, SectionBar, DictionarySearch, RowView, HtmlDirective],
+    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, SectionBar, DictionarySearch, RowView, HtmlDirective, SrcsetPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PageHero {

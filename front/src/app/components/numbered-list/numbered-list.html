@@ -61,6 +61,8 @@
                                     <figure class="numbered__figure">
                                         <img loading="lazy"
                                              [src]="item.image"
+                                             [attr.srcset]="item.image | srcset"
+                                             sizes="300px"
                                              [alt]="item.title ?? ''">
                                         @if (item.image_author) {
                                             <figcaption>{{ photoCredit(item.image_author) }}</figcaption>

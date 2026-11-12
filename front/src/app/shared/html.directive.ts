@@ -1,5 +1,6 @@
 import { Directive, ElementRef, OnChanges, Renderer2, SecurityContext, inject, input } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { withSrcset } from './srcset';
 
 /**
  * [innerHTML] for CMS HTML that keeps the server-rendered nodes during hydration.
@@ -14,6 +15,9 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
  * Sanitizes exactly like [innerHTML]: a plain string is cleaned, a value from the
  * `trusted` pipe passes untouched.
  *
+ * Photos from /uploads get a srcset of resized copies (see srcset.ts); `appHtmlSizes` is
+ * the width they take, by default the text column.
+ *
  * The element must accept any HTML (a div). In a <p> or <li> the browser rearranges block
  * content while parsing the page and hydration breaks – such a component still needs
  * ngSkipHydration (see TitleAndText).
@@ -22,6 +26,8 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 export class HtmlDirective implements OnChanges {
     /** Whatever [innerHTML] takes – a string, or SafeHtml from the `trusted` pipe. */
     readonly appHtml = input<unknown>();
+    /** `sizes` of the photos inside – the width of the text column by default. */
+    readonly appHtmlSizes = input('(min-width: 1100px) 760px, 100vw');
 
     private readonly element = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     private readonly renderer = inject(Renderer2);
@@ -33,7 +39,8 @@ export class HtmlDirective implements OnChanges {
         this.first = false;
         if (fromServer) return;
         const value = (this.appHtml() ?? '') as SafeHtml | string;
-        const html = this.sanitizer.sanitize(SecurityContext.HTML, value) ?? '';
+        // srcset is added after sanitizing: only our own attributes, on already clean tags.
+        const html = withSrcset(this.sanitizer.sanitize(SecurityContext.HTML, value) ?? '', this.appHtmlSizes());
         this.renderer.setProperty(this.element, 'innerHTML', html);
     }
 }
