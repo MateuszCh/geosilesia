@@ -204,6 +204,16 @@ is `hero-phone` (430 × 520, the home hero on phones up to 430 px): a `<picture>
 phones download for the LCP. `FRAMES` in `images.js` and `srcset.ts` must match. Framed
 copies are made on the first request, not by the warm script.
 
+Below a photo hero (the home banner or a page's photo band, the page's LCP) the photos wait
+for the window's load event: `loading="lazy"` alone still fetched ~600 kB of them on phones
+together with the hero. `front/src/app/shared/photo-hold.ts`: the heroes call
+`PhotoHold.holdUntilLoad()`, and photos marked `<img loading="lazy" [appPhoto]="url">` (and
+photos in CMS HTML through `appHtml`) are then rendered with `data-held-src` /
+`data-held-srcset` instead of `src` / `srcset`, also by the server. On load every held photo
+in the document gets its address back, including the ones in rows that are not hydrated
+yet. A new below-the-fold photo should use `appPhoto`; a photo that may be the largest
+element of a page without a hero should not. Without JavaScript held photos stay empty.
+
 Conversion uses `wasm-vips` (libvips in WebAssembly) because `sharp` has no binaries for the
 server's FreeBSD. Conversions run one at a time. After the first deployment, and whenever
 many photos were uploaded at once, warm the cache so visitors do not wait:

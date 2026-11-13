@@ -60,8 +60,7 @@
                                 @if (item.image) {
                                     <figure class="numbered__figure">
                                         <img loading="lazy"
-                                             [src]="item.image"
-                                             [attr.srcset]="item.image | srcset"
+                                             [appPhoto]="item.image"
                                              sizes="300px"
                                              [alt]="item.title ?? ''">
                                         @if (item.image_author) {

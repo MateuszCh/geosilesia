@@ -27,8 +27,7 @@
                         @if (album.cover) {
                             <img class="album-card__image"
                                  loading="lazy"
-                                 [src]="album.cover"
-                                 [attr.srcset]="album.cover | srcset"
+                                 [appPhoto]="album.cover"
                                  sizes="(min-width: 600px) 340px, 100vw"
                                  [alt]="'przejdź do galerii ' + album.title">
                         } @else {
@@ -73,8 +72,7 @@
                 <li class="photos__strip-item">
                     <img class="photos__strip-image"
                          loading="lazy"
-                         [src]="photo.src"
-                         [attr.srcset]="photo.src | srcset"
+                         [appPhoto]="photo.src"
                          sizes="(min-width: 600px) 340px, 100vw"
                          [alt]="photo.title">
                     <span class="photos__strip-title">{{ photo.title }}</span>

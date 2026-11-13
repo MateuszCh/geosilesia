@@ -13,6 +13,7 @@ import { HomepageBannerData, Slide } from '../../models/row.model';
 import { SwipeDirective } from '../../shared/swipe.directive';
 import { photoCredit } from '../../shared/photo-credit';
 import { SrcsetPipe, framedSrcsetOf } from '../../shared/srcset';
+import { PhotoHold } from '../../shared/photo-hold';
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -87,6 +88,8 @@ export class HomepageBanner {
     private preloadNeighbours = false;
 
     constructor() {
+        // The first slide is the page's LCP: the photos below wait until it has loaded.
+        inject(PhotoHold).holdUntilLoad();
         const destroyRef = inject(DestroyRef);
         const doc = inject(DOCUMENT);
         destroyRef.onDestroy(() => this.stop());

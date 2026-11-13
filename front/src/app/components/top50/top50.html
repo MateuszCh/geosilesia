@@ -40,8 +40,7 @@
                 <img class="route__image"
                      loading="lazy"
                      alt=""
-                     [src]="stop.image"
-                     [attr.srcset]="stop.image | srcset"
+                     [appPhoto]="stop.image"
                      sizes="300px">
             }
         </div>
@@ -63,8 +62,7 @@
                 @if (stop.image) {
                     <img class="top50-preview__image"
                          loading="lazy"
-                         [src]="stop.image"
-                         [attr.srcset]="stop.image | srcset"
+                         [appPhoto]="stop.image"
                          sizes="(min-width: 600px) 900px, 100vw"
                          [alt]="stop.title">
                 } @else {

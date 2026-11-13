@@ -66,9 +66,10 @@ export function framedSrcsetOf(
 
 /**
  * Adds srcset/sizes to the photos of CMS HTML (prose, tables). Images that already carry
- * a srcset are left alone. `sizes` is the width of the text column.
+ * a srcset are left alone. `sizes` is the width of the text column. `held` writes the
+ * addresses to data-held-src / data-held-srcset instead (PhotoHold, photo-hold.ts).
  */
-export function withSrcset(html: string, sizes: string): string {
+export function withSrcset(html: string, sizes: string, held = false): string {
     if (!html.includes('<img')) return html;
     return html.replace(/<img\b([^>]*)>/gi, (tag, attrs: string) => {
         if (/\ssrcset\s*=/i.test(attrs)) return tag;
@@ -76,7 +77,12 @@ export function withSrcset(html: string, sizes: string): string {
         const srcset = srcsetOf(src?.[1] ?? src?.[2]);
         if (!srcset) return tag;
         const lazy = /\sloading\s*=/i.test(attrs) ? '' : ' loading="lazy"';
-        return `<img${attrs.replace(/\s*\/$/, '')} srcset="${srcset}" sizes="${sizes}"${lazy}>`;
+        const rest = attrs.replace(/\s*\/$/, '');
+        if (held) {
+            const heldRest = rest.replace(/\ssrc\s*=/i, ' data-held-src=');
+            return `<img${heldRest} data-held-srcset="${srcset}" sizes="${sizes}"${lazy}>`;
+        }
+        return `<img${rest} srcset="${srcset}" sizes="${sizes}"${lazy}>`;
     });
 }
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, model } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Crumb, SectionLinks } from '../../core/navigation.service';
@@ -11,6 +11,7 @@ import { DictionarySearch } from '../dictionary/dictionary-search';
 import { RowView } from '../row/row';
 import { HtmlDirective } from '../../shared/html.directive';
 import { SrcsetPipe } from '../../shared/srcset';
+import { PhotoHold } from '../../shared/photo-hold';
 
 /** "Ryszard Chybiorz · 03.06.2026 · ostatnia aktualizacja 05.10.2026" */
 export function bylineText(byline: Byline | undefined): string {
@@ -33,7 +34,7 @@ export function bylineText(byline: Byline | undefined): string {
     imports: [NgTemplateOutlet, RouterLink, TrustedPipe, SectionBar, DictionarySearch, RowView, HtmlDirective, SrcsetPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PageHero {
+export class PageHero implements OnInit {
     readonly header = input.required<PageHeader>();
     readonly crumbs = input<Crumb[]>([]);
     /** The author and dates, when the page puts them in the header. */
@@ -58,6 +59,13 @@ export class PageHero {
     });
 
     readonly bylineText = computed(() => bylineText(this.byline()));
+
+    private readonly photoHold = inject(PhotoHold);
+
+    ngOnInit(): void {
+        // A photo band is the page's LCP: the photos below wait until it has loaded.
+        if (this.header().style === 'photo' && this.hero().image) this.photoHold.holdUntilLoad();
+    }
 
     /** The action link may carry a query ("/mapa-atrakcji?top50=1"); the router needs it apart. */
     readonly action = computed(() => {

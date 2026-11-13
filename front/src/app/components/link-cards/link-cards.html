@@ -77,8 +77,7 @@
     <img class="side-figure__image"
          loading="lazy"
          alt=""
-         [src]="card.image"
-         [attr.srcset]="card.image | srcset"
+         [appPhoto]="card.image"
          sizes="(min-width: 600px) 340px, 100vw">
     <span class="side-figure__text">
         <b>{{ card.title }}</b>
@@ -101,8 +100,7 @@
             <img class="link-card__image"
                  loading="lazy"
                  alt=""
-                 [src]="card.image"
-                 [attr.srcset]="card.image | srcset"
+                 [appPhoto]="card.image"
                  sizes="(min-width: 600px) 340px, 100vw">
         } @else {
             <span class="link-card__image link-card__image--empty"></span>
@@ -126,8 +124,7 @@
         <img class="side-card__image"
              loading="lazy"
              alt=""
-             [src]="card.image"
-             [attr.srcset]="card.image | srcset"
+             [appPhoto]="card.image"
              sizes="96px">
     }
     <span class="side-card__text">
