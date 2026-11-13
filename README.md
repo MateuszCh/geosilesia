@@ -174,6 +174,13 @@ installed by the script as well (`npm ci --omit=dev` in the root, exactly as pin
   `sass-embedded`, which hangs the build on the server's platform, and the root once kept an
   Express 4.16 without `express.text`, which stopped the app. That is also why both lockfiles
   must stay in the repository.
+- The build scripts in `front/package.json` set two switches for the server's FreeBSD:
+  `NG_BUILD_SASS_EMBEDDED=0` (sass-embedded hangs there) and `NG_BUILD_CHUNKS_ROLLDOWN=0`.
+  With lazy chunks (the deferred rows) the build merges chunks in an extra pass, by default
+  with rolldown, which has no FreeBSD binary ("Chunk optimization failed: Cannot find
+  native binding"); the switch makes it use `rollup` (a devDependency, with an official
+  `@rollup/rollup-freebsd-x64` binary). Should rollup fail there too,
+  `NG_BUILD_OPTIMIZE_CHUNKS=0` skips the pass (more, smaller initial chunks).
 - A front-end-only change needs the restart too: `ssr.js` imports the server bundle once
   per process (Node never unloads ES modules), so without a restart the old bundle keeps
   rendering pages.

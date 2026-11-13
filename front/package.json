@@ -4,8 +4,8 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "NG_BUILD_SASS_EMBEDDED=0 ng build",
-    "build:deploy": "npm ci && NG_BUILD_SASS_EMBEDDED=0 ng build",
+    "build": "NG_BUILD_SASS_EMBEDDED=0 NG_BUILD_CHUNKS_ROLLDOWN=0 ng build",
+    "build:deploy": "npm ci && NG_BUILD_SASS_EMBEDDED=0 NG_BUILD_CHUNKS_ROLLDOWN=0 ng build",
     "watch": "NG_BUILD_SASS_EMBEDDED=0 ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -34,6 +34,7 @@
     "@angular/compiler-cli": "^22.2.5",
     "@types/google.maps": "^3.66.1",
     "prettier": "^3.8.1",
+    "rollup": "4.68.2",
     "typescript": "~6.0.2"
   }
 }
