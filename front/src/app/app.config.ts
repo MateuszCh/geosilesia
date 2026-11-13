@@ -17,7 +17,8 @@ import { provideHttpClient, withFetch } from '@angular/common/http';
 import {
     provideClientHydration,
     withEventReplay,
-    withHttpTransferCacheOptions
+    withIncrementalHydration,
+    withNoHttpTransferCache
 } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
 import { routes } from './app.routes';
@@ -63,14 +64,17 @@ export const appConfig: ApplicationConfig = {
         // Plain links to the site's pages (CMS text) open in the app too.
         provideInternalLinks(),
         provideHttpClient(withFetch()),
-        // Hydration takes over the server-rendered DOM. The HTTP transfer cache replays the
-        // API responses from the render at startup, so the client's first view matches the
-        // HTML. By default it skips requests with withCredentials, which ApiService always
-        // sets – the API data is public, so they are enabled explicitly. withEventReplay
-        // replays clicks made before the JS loaded.
+        // Hydration takes over the server-rendered DOM. The API responses of the render
+        // reach the browser through ApiService's own TransferState entries, which last the
+        // whole visit – Angular's HTTP transfer cache stops at the first stable moment,
+        // before the deferred rows hydrate, so it is off. withEventReplay replays clicks
+        // made before the JS loaded. withIncrementalHydration lets the rows' @defer blocks
+        // (row.html) be rendered by the server and hydrated – with their code loaded – only
+        // when they scroll into view.
         provideClientHydration(
-            withHttpTransferCacheOptions({ includeRequestsWithCredentials: true }),
-            withEventReplay()
+            withNoHttpTransferCache(),
+            withEventReplay(),
+            withIncrementalHydration()
         ),
         provideServiceWorker('ngsw-worker.js', {
             enabled: !isDevMode(),

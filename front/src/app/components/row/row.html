@@ -1,85 +1,140 @@
 @let row = this.row();
+<!--
+    Every row except the home hero is a deferred block with incremental hydration: the
+    server renders it in full, but its component's code is a separate chunk that the
+    browser loads when the row scrolls into view (hydrate on viewport). Rows that appear
+    later inside the app (another page opened) load at once (on immediate); the service
+    worker has the chunks cached by then. This keeps main.js to what every page needs.
+-->
 @switch (row.type) {
     @case ('homepage_banner') {
         <app-homepage-banner [component]="row.data" />
     }
     @case ('map') {
-        <app-search-map [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-search-map [component]="row.data" />
+        }
     }
     @case ('title_and_text') {
-        <app-title-and-text [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-title-and-text [component]="row.data" />
+        }
     }
     @case ('marker_category_list') {
-        <app-marker-category-list [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-marker-category-list [component]="row.data" />
+        }
     }
     @case ('literature') {
-        <app-literature [component]="row.data"
-                        [byline]="context.literatureByline()" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-literature [component]="row.data"
+                            [byline]="context.literatureByline()" />
+        }
     }
     @case ('news') {
-        <app-news [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-news [component]="row.data" />
+        }
     }
     @case ('dictionary') {
-        <app-dictionary [component]="row.data"
-                        [(query)]="context.dictionaryQuery"
-                        [headerSearch]="context.searchInHeader()" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-dictionary [component]="row.data"
+                            [(query)]="context.dictionaryQuery"
+                            [headerSearch]="context.searchInHeader()" />
+        }
     }
     @case ('footnotes') {
-        <app-footnotes [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-footnotes [component]="row.data" />
+        }
     }
     @case ('heading') {
-        <app-heading [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-heading [component]="row.data" />
+        }
     }
     @case ('geosites_logos') {
-        <app-geosites-logos [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-geosites-logos [component]="row.data" />
+        }
     }
     @case ('tabs') {
-        <app-tabs [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-tabs [component]="row.data" />
+        }
     }
     @case ('gallery_list') {
-        <app-gallery-list [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-gallery-list [component]="row.data" />
+        }
     }
     @case ('notice') {
-        <app-notice [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-notice [component]="row.data" />
+        }
     }
     @case ('page_hero') {
         <!-- Drawn above the content by the page header; a second one is ignored. -->
     }
     @case ('map_search') {
-        <app-map-search [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-map-search [component]="row.data" />
+        }
     }
     @case ('facts') {
-        <app-facts [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-facts [component]="row.data" />
+        }
     }
     @case ('category_grid') {
-        <app-category-grid [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-category-grid [component]="row.data" />
+        }
     }
     @case ('top50') {
-        <app-top50 [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-top50 [component]="row.data" />
+        }
     }
     @case ('link_cards') {
-        <app-link-cards [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-link-cards [component]="row.data" />
+        }
     }
     @case ('photos') {
-        <app-photos [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-photos [component]="row.data" />
+        }
     }
     @case ('timeline') {
-        <app-timeline [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-timeline [component]="row.data" />
+        }
     }
     @case ('numbered_list') {
-        <app-numbered-list [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-numbered-list [component]="row.data" />
+        }
     }
     @case ('knowledge_base') {
-        <app-knowledge-base [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-knowledge-base [component]="row.data" />
+        }
     }
     @case ('contact') {
-        <app-contact [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-contact [component]="row.data" />
+        }
     }
     @case ('gallery') {
-        <app-gallery [component]="row.data"
-                     [pageUrl]="context.path()" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-gallery [component]="row.data"
+                         [pageUrl]="context.path()" />
+        }
     }
     @case ('columns') {
-        <app-columns [component]="row.data" />
+        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
+            <app-columns [component]="row.data" />
+        }
     }
 }
