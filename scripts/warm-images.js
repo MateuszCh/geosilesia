@@ -7,7 +7,7 @@
 
 const path = require("path");
 const fs = require("fs");
-const { createImageResizer, WIDTHS } = require("../images");
+const { createImageResizer, describe, WIDTHS } = require("../images");
 
 const root = path.join(__dirname, "..");
 const uploadsDir = path.join(root, "uploads");
@@ -37,7 +37,7 @@ function* photos(dir) {
                 await images.copyOf(file, width);
             } catch (error) {
                 failed++;
-                console.error(`${path.relative(uploadsDir, file)} @${width}: ${error.message}`);
+                console.error(`${path.relative(uploadsDir, file)} @${width}: ${describe(error)}`);
             }
         }
         if ((index + 1) % 100 === 0) console.log(`${index + 1}/${files.length}`);

@@ -18,6 +18,17 @@ const WIDTHS = [400, 800, 1200, 1600];
 const SOURCE_TYPES = /\.(jpe?g|png)$/i;
 const QUALITY = 75;
 
+/**
+ * One line for the log. libvips never clears its error buffer, so a message repeats every
+ * earlier warning ("premature end of JPEG image" from cut-off uploads) – only the first
+ * line and the last complaint are kept.
+ */
+function describe(error) {
+    const text = Array.isArray(error?.message) ? error.message.join(": ") : String(error?.message ?? error);
+    const lines = text.split("\n").map(line => line.trim()).filter(Boolean);
+    return lines.length > 2 ? `${lines[0]} … ${lines[lines.length - 1]}` : lines.join(" ");
+}
+
 function createImageResizer({ uploadsDir, cacheDir }) {
     const uploadsRoot = path.resolve(uploadsDir) + path.sep;
     let vipsPromise = null;
@@ -28,7 +39,14 @@ function createImageResizer({ uploadsDir, cacheDir }) {
 
     function vips() {
         if (!vipsPromise) {
-            vipsPromise = require("wasm-vips")({ dynamicLibraries: [] }).then(instance => {
+            vipsPromise = require("wasm-vips")({
+                dynamicLibraries: [],
+                // No warnings on stderr: a cut-off JPEG (11 in uploads/ as of 2026-11) still
+                // converts, with its missing rows grey, but libvips never clears its warning
+                // buffer, so every later conversion printed all earlier warnings again.
+                // Errors still reach the handler below.
+                preRun: [module => (module.ENV.VIPS_WARNING = "0")]
+            }).then(instance => {
                 // Nothing kept between requests – every copy is converted once and then
                 // read from disk.
                 instance.Cache.max(0);
@@ -98,7 +116,7 @@ function createImageResizer({ uploadsDir, cacheDir }) {
                                 headers: { "Content-Type": "image/webp" }
                             }),
                         error => {
-                            console.error(`[img] ${req.params[0]} @${width}:`, error.message);
+                            console.error(`[img] ${req.params[0]} @${width}: ${describe(error)}`);
                             res.sendFile(source, { maxAge: "1h" });
                         }
                     ),
@@ -110,4 +128,4 @@ function createImageResizer({ uploadsDir, cacheDir }) {
     return { handler, copyOf, sourcePath, WIDTHS };
 }
 
-module.exports = { createImageResizer, WIDTHS };
+module.exports = { createImageResizer, describe, WIDTHS };
