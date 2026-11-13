@@ -1,6 +1,6 @@
 @let row = this.row();
 <!--
-    Every row except the home hero is a deferred block with incremental hydration: the
+    Every row except the home hero and TOP 50 is a deferred block with incremental hydration: the
     server renders it in full, but its component's code is a separate chunk that the
     browser loads when the row scrolls into view (hydrate on viewport). Rows that appear
     later inside the app (another page opened) load at once (on immediate); the service
@@ -92,9 +92,9 @@
         }
     }
     @case ('top50') {
-        @defer (on immediate; hydrate on interaction; hydrate on viewport) {
-            <app-top50 [component]="row.data" />
-        }
+        <!-- Not deferred: its list reacts to hover, and a hover started hydrating the block
+             while its code was still downloading – a click made then was lost. -->
+        <app-top50 [component]="row.data" />
     }
     @case ('link_cards') {
         @defer (on immediate; hydrate on interaction; hydrate on viewport) {

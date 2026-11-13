@@ -226,13 +226,16 @@ node scripts/warm-images.js   # every photo × every width; skips copies already
   synchronously, for the whole visit. Angular's HTTP transfer cache is off
   (`withNoHttpTransferCache`): it serves only until the app is first stable, and the
   deferred rows below hydrate later.
-- **Rows hydrate when they scroll into view.** Every row except the home hero is a
+- **Rows hydrate when they scroll into view.** Every row except the home hero and TOP 50 is a
   `@defer (on immediate; hydrate on interaction; hydrate on viewport)` block in
   `row.html` (incremental hydration): the server renders it in full, its component's code
   is a separate chunk, and a click on a row that is not hydrated yet is replayed once it
   is. A row component must therefore get its data synchronously while hydrating — through
   `ApiService`/`ContentService`, never a request of its own that bypasses them — or it
-  hydrates empty and the replayed click is lost. `angular.json` sets
+  hydrates empty and the replayed click is lost. Nor may it listen to hover
+  (`mouseenter`, `pointerenter`, `focusin`): a hover starts hydration while the chunk
+  is still downloading, and a click made in that window is dropped – that is why TOP 50
+  is not deferred. `angular.json` sets
   `index.preloadInitial`, since with a service worker Angular leaves out the
   `modulepreload` links of the shared chunks.
 - **Lists a page only derives something from stay out of the HTML.** The home page
