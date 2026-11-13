@@ -730,7 +730,9 @@ app.use("/fonts", express.static(`${FRONT_DIR}/fonts`, { maxAge: "30d" }));
 // Bundles named with a content hash (main-RPLSOTQI.js, chunk-….js, styles-….css, media/…)
 // never change under the same name, so they may stay in the browser cache for a year;
 // everything else (ngsw.json, ngsw-worker.js, manifest, icons) keeps revalidating.
-const HASHED_ASSET = /-[A-Z0-9]{8}\.(?:js|css|woff2?|png|jpe?g|svg|webp)$/;
+// Chunks merged by rollup (front/package.json, NG_BUILD_CHUNKS_ROLLDOWN=0) carry a hash
+// with lower case, "_" and "-" (chunk-pkR5G0Fq.js, chunk-BRp6q9-p.js).
+const HASHED_ASSET = /(?:-[A-Z0-9]{8}|[\\/]chunk-[\w-]{8})\.(?:js|css|woff2?|png|jpe?g|svg|webp)$/;
 app.use(
     "/",
     express.static(FRONT_DIR, {
