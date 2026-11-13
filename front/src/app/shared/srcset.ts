@@ -21,16 +21,47 @@ function encodePath(value: string): string {
     return encodeURI(raw).replace(/,/g, '%2C');
 }
 
-/** "…/img/400/a.jpg 400w, …" for a photo from /uploads, null for anything else. */
-export function srcsetOf(src: string | null | undefined): string | null {
+/** The photo's path under /uploads, encoded – null when it is not one of the site's photos. */
+function uploadPath(src: string | null | undefined): string | null {
     if (!src) return null;
     const at = src.indexOf(UPLOADS);
     // Only the site's own uploads: a relative path or this site's absolute URL.
     if (at < 0 || (at > 0 && !/^https?:\/\/[^/]+$/.test(src.slice(0, at)))) return null;
     const relative = src.slice(at + UPLOADS.length).split(/[?#]/)[0];
-    if (!PHOTO.test(relative)) return null;
-    const encoded = encodePath(relative);
-    return WIDTHS.map(width => `/img/${width}/${encoded} ${width}w`).join(', ');
+    return PHOTO.test(relative) ? encodePath(relative) : null;
+}
+
+/** "…/img/400/a.jpg 400w, …" for a photo from /uploads, null for anything else. */
+export function srcsetOf(src: string | null | undefined): string | null {
+    const encoded = uploadPath(src);
+    return encoded && WIDTHS.map(width => `/img/${width}/${encoded} ${width}w`).join(', ');
+}
+
+/**
+ * Frames the server can cut a photo to (FRAMES in images.js): only the part a box with
+ * `object-fit: cover` shows. The value is the widest box, in CSS px, the frame covers.
+ */
+export const FRAMES = { 'hero-phone': { maxWidth: 430 } } as const;
+
+/** Per cent 0–100 from a CMS position ("40", 40, "" → 50 = centre). */
+function percent(value: number | string | null | undefined): number {
+    const number = Math.round(Number.parseFloat(String(value ?? '')));
+    return Number.isFinite(number) ? Math.min(100, Math.max(0, number)) : 50;
+}
+
+/**
+ * srcset of a photo cut to `frame` around object-position `x`% `y`%: the same pixels the
+ * box would show from the whole photo, without the sides it never shows.
+ */
+export function framedSrcsetOf(
+    src: string | null | undefined,
+    frame: keyof typeof FRAMES,
+    x?: number | string | null,
+    y?: number | string | null
+): string | null {
+    const encoded = uploadPath(src);
+    const position = `${percent(x)}-${percent(y)}`;
+    return encoded && WIDTHS.map(width => `/img/${frame}/${position}/${width}/${encoded} ${width}w`).join(', ');
 }
 
 /**

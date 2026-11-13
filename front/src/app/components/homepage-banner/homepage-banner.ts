@@ -12,7 +12,7 @@ import {
 import { HomepageBannerData, Slide } from '../../models/row.model';
 import { SwipeDirective } from '../../shared/swipe.directive';
 import { photoCredit } from '../../shared/photo-credit';
-import { SrcsetPipe } from '../../shared/srcset';
+import { SrcsetPipe, framedSrcsetOf } from '../../shared/srcset';
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -146,6 +146,11 @@ export class HomepageBanner {
         const x = slide.left_position ? `${slide.left_position}%` : 'center';
         const y = slide.top_position ? `${slide.top_position}%` : 'center';
         return `${x} ${y}`;
+    }
+
+    /** The photo cut to the phone hero's frame around the editor's framing. */
+    framedSrcset(slide: Slide): string | null {
+        return framedSrcsetOf(slide.image, 'hero-phone', slide.left_position, slide.top_position);
     }
 
     private start(): void {

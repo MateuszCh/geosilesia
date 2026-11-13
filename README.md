@@ -195,6 +195,15 @@ newer. Any conversion error falls back to the original file. The front lists the
 `images.js`) and `appHtml` adds them to photos in CMS HTML; each `<img>` carries a `sizes`
 measured on the layout (wider than the box for `object-fit: cover` heroes).
 
+Frames: `GET /img/<frame>/<x>-<y>/<width>/<path>` first cuts the photo to the part a fixed
+`object-fit: cover` box shows, placed by the box's `object-position` (`x`, `y` in whole per
+cent), then resizes it. The cut is placed the way `object-position` places the box, so the
+same `object-position` on the cut shows the same pixels as on the whole photo. The only frame
+is `hero-phone` (430 × 520, the home hero on phones up to 430 px): a `<picture>` source in
+`homepage-banner.html` uses it with the editor's framing from the CMS, which halves the photo
+phones download for the LCP. `FRAMES` in `images.js` and `srcset.ts` must match. Framed
+copies are made on the first request, not by the warm script.
+
 Conversion uses `wasm-vips` (libvips in WebAssembly) because `sharp` has no binaries for the
 server's FreeBSD. Conversions run one at a time. After the first deployment, and whenever
 many photos were uploaded at once, warm the cache so visitors do not wait:

@@ -12,16 +12,23 @@
          (swipeLeft)="next()"
          (swipeRight)="prev()">
         @for (slide of slides(); track $index) {
-            <img class="home-hero__image"
-                 draggable="false"
-                 [class.home-hero__image--current]="current() === $index"
-                 [attr.src]="loads($index) ? slide.image : null"
-                 [attr.srcset]="loads($index) ? (slide.image | srcset) : null"
-                 sizes="(max-width: 899px) 200vw, 100vw"
-                 [alt]="slide.text ?? ''"
-                 [attr.fetchpriority]="$index === 0 ? 'high' : null"
-                 [attr.aria-hidden]="current() === $index ? null : 'true'"
-                 [style.object-position]="objectPosition(slide)">
+            <!-- Phones get the photo cut to the hero's frame (framedSrcset): the same pixels,
+                 without the sides of a landscape photo a 430 × 520 box never shows. -->
+            <picture>
+                <source media="(max-width: 430px)"
+                        sizes="430px"
+                        [attr.srcset]="loads($index) ? framedSrcset(slide) : null">
+                <img class="home-hero__image"
+                     draggable="false"
+                     [class.home-hero__image--current]="current() === $index"
+                     [attr.src]="loads($index) ? slide.image : null"
+                     [attr.srcset]="loads($index) ? (slide.image | srcset) : null"
+                     sizes="(max-width: 899px) 200vw, 100vw"
+                     [alt]="slide.text ?? ''"
+                     [attr.fetchpriority]="$index === 0 ? 'high' : null"
+                     [attr.aria-hidden]="current() === $index ? null : 'true'"
+                     [style.object-position]="objectPosition(slide)">
+            </picture>
         }
     </div>
 

@@ -720,6 +720,7 @@ const images = createImageResizer({
     cacheDir: path.join(__dirname, "tmp", "img-cache")
 });
 app.get("/img/:width/*", images.handler);
+app.get("/img/:frame/:position/:width/*", images.handler);
 // Self-hosted fonts (copied from @fontsource at build time): their names carry no hash, but the
 // files only change with a font package upgrade, so a month in the browser cache is safe and
 // saves a revalidation round trip on every reload.

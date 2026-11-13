@@ -18,6 +18,8 @@
     background: var(--forest);
 
     @include below($bp-phone) {
+        // Phones up to 430px get the photo cut to 430 × 520 – change "hero-phone" in
+        // FRAMES (images.js) with this height.
         height: 520px;
     }
 

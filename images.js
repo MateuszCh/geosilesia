@@ -19,6 +19,20 @@ const SOURCE_TYPES = /\.(jpe?g|png)$/i;
 const QUALITY = 75;
 
 /**
+ * Frames: the part of a photo a fixed box with `object-fit: cover` can show, cut out on the
+ * server, so a phone does not download the sides of a landscape photo it never displays.
+ * GET /img/<frame>/<x>-<y>/<width>/<path> – x and y are the box's object-position in per
+ * cent (the editor's framing from the CMS). The cut keeps the aspect ratio below and is
+ * placed the way object-position places the box, so the same object-position on the cut
+ * shows exactly the same pixels as on the whole photo, in any box no wider than the frame.
+ * Keep in sync with FRAMES in front/src/app/shared/srcset.ts.
+ */
+const FRAMES = {
+    // The home page hero on phones up to 430 px wide: 430 × 520 px (styles/szlak/_home.scss).
+    "hero-phone": 430 / 520
+};
+
+/**
  * One line for the log. libvips never clears its error buffer, so a message repeats every
  * earlier warning ("premature end of JPEG image" from cut-off uploads) – only the first
  * line and the last complaint are kept.
@@ -57,9 +71,33 @@ function createImageResizer({ uploadsDir, cacheDir }) {
         return vipsPromise;
     }
 
-    async function convert(source, target, width) {
+    /** The part of the photo the frame shows; the whole photo when it is narrower. */
+    function frameArea(image, { ratio, x, y }) {
+        const { width, height } = image;
+        if (width / height > ratio) {
+            const cut = Math.round(height * ratio);
+            return [Math.round(((width - cut) * x) / 100), 0, cut, height];
+        }
+        const cut = Math.round(width / ratio);
+        return [0, Math.round(((height - cut) * y) / 100), width, cut];
+    }
+
+    function resized(instance, source, width, frame) {
+        if (!frame) return instance.Image.thumbnail(source, width, { size: "down" });
+        // Upright first, as the browser shows the original (and as thumbnail does).
+        const original = instance.Image.newFromFile(source);
+        const upright = original.autorot();
+        const cut = upright.extractArea(...frameArea(upright, frame));
+        try {
+            return cut.thumbnailImage(width, { size: "down" });
+        } finally {
+            for (const image of [cut, upright, original]) image.delete();
+        }
+    }
+
+    async function convert(source, target, width, frame) {
         const instance = await vips();
-        const image = instance.Image.thumbnail(source, width, { size: "down" });
+        const image = resized(instance, source, width, frame);
         try {
             const buffer = image.writeToBuffer(".webp", { Q: QUALITY, strip: true });
             await fs.promises.mkdir(path.dirname(target), { recursive: true });
@@ -72,10 +110,14 @@ function createImageResizer({ uploadsDir, cacheDir }) {
         }
     }
 
-    /** Path of an up-to-date copy, converting it first when needed. */
-    async function copyOf(source, width) {
+    /**
+     * Path of an up-to-date copy, converting it first when needed. `frame` – from
+     * frameOf() – cuts the photo to a frame before resizing.
+     */
+    async function copyOf(source, width, frame = null) {
         const relative = path.relative(uploadsRoot, source);
-        const target = path.join(cacheDir, String(width), `${relative}.webp`);
+        const variant = frame ? path.join(`${frame.name}-${frame.x}-${frame.y}`, String(width)) : String(width);
+        const target = path.join(cacheDir, variant, `${relative}.webp`);
         const [sourceStat, targetStat] = await Promise.all([
             fs.promises.stat(source),
             fs.promises.stat(target).catch(() => null)
@@ -83,7 +125,7 @@ function createImageResizer({ uploadsDir, cacheDir }) {
         if (targetStat && targetStat.mtimeMs >= sourceStat.mtimeMs) return target;
 
         if (!pending.has(target)) {
-            const job = queue.then(() => convert(source, target, width));
+            const job = queue.then(() => convert(source, target, width, frame));
             queue = job.catch(() => undefined);
             pending.set(target, job);
             job.finally(() => pending.delete(target)).catch(() => undefined);
@@ -99,24 +141,37 @@ function createImageResizer({ uploadsDir, cacheDir }) {
         return source.startsWith(uploadsRoot) ? source : null;
     }
 
-    /** Express handler for /img/:width/* */
+    /**
+     * "hero-phone", "40-50" → the frame, or null for an unknown frame or a position that is
+     * not two whole per cents (anything else would multiply the copies on disk).
+     */
+    function frameOf(name, position) {
+        const match = /^(\d{1,3})-(\d{1,3})$/.exec(position ?? "");
+        if (!Object.hasOwn(FRAMES, name) || !match) return null;
+        const [x, y] = [Number(match[1]), Number(match[2])];
+        return x <= 100 && y <= 100 ? { name, ratio: FRAMES[name], x, y } : null;
+    }
+
+    /** Express handler for /img/:width/* and /img/:frame/:position/:width/* */
     function handler(req, res, next) {
         const width = Number(req.params.width);
         const source = sourcePath(req.params[0]);
-        if (!WIDTHS.includes(width) || !source) return next();
+        const frame = req.params.frame ? frameOf(req.params.frame, req.params.position) : null;
+        if (!WIDTHS.includes(width) || !source || (req.params.frame && !frame)) return next();
 
         fs.promises
             .access(source)
             .then(
                 () =>
-                    copyOf(source, width).then(
+                    copyOf(source, width, frame).then(
                         target =>
                             res.sendFile(target, {
                                 maxAge: "1d",
                                 headers: { "Content-Type": "image/webp" }
                             }),
                         error => {
-                            console.error(`[img] ${req.params[0]} @${width}: ${describe(error)}`);
+                            const variant = frame ? `${frame.name} ${frame.x}-${frame.y} ` : "";
+                            console.error(`[img] ${req.params[0]} ${variant}@${width}: ${describe(error)}`);
                             res.sendFile(source, { maxAge: "1h" });
                         }
                     ),
@@ -125,7 +180,7 @@ function createImageResizer({ uploadsDir, cacheDir }) {
             .catch(next);
     }
 
-    return { handler, copyOf, sourcePath, WIDTHS };
+    return { handler, copyOf, sourcePath, frameOf, WIDTHS };
 }
 
-module.exports = { createImageResizer, describe, WIDTHS };
+module.exports = { createImageResizer, describe, WIDTHS, FRAMES };
