@@ -66,10 +66,11 @@ export function framedSrcsetOf(
 
 /**
  * Adds srcset/sizes to the photos of CMS HTML (prose, tables). Images that already carry
- * a srcset are left alone. `sizes` is the width of the text column. `held` writes the
- * addresses to data-held-src / data-held-srcset instead (PhotoHold, photo-hold.ts).
+ * a srcset are left alone. `sizes` is the width of the text column. `hold` – see
+ * HoldMode in photo-hold.ts: 'mark' adds data-hold, 'held' writes the addresses to
+ * data-held-src / data-held-srcset instead.
  */
-export function withSrcset(html: string, sizes: string, held = false): string {
+export function withSrcset(html: string, sizes: string, hold: 'none' | 'mark' | 'held' = 'none'): string {
     if (!html.includes('<img')) return html;
     return html.replace(/<img\b([^>]*)>/gi, (tag, attrs: string) => {
         if (/\ssrcset\s*=/i.test(attrs)) return tag;
@@ -78,11 +79,12 @@ export function withSrcset(html: string, sizes: string, held = false): string {
         if (!srcset) return tag;
         const lazy = /\sloading\s*=/i.test(attrs) ? '' : ' loading="lazy"';
         const rest = attrs.replace(/\s*\/$/, '');
-        if (held) {
+        if (hold === 'held') {
             const heldRest = rest.replace(/\ssrc\s*=/i, ' data-held-src=');
-            return `<img${heldRest} data-held-srcset="${srcset}" sizes="${sizes}"${lazy}>`;
+            return `<img${heldRest} data-hold data-held-srcset="${srcset}" sizes="${sizes}"${lazy}>`;
         }
-        return `<img${rest} srcset="${srcset}" sizes="${sizes}"${lazy}>`;
+        const mark = hold === 'mark' ? ' data-hold' : '';
+        return `<img${rest} srcset="${srcset}" sizes="${sizes}"${lazy}${mark}>`;
     });
 }
 

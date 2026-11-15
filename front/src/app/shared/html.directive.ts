@@ -43,7 +43,7 @@ export class HtmlDirective implements OnChanges {
         if (fromServer) return;
         const value = (this.appHtml() ?? '') as SafeHtml | string;
         // srcset is added after sanitizing: only our own attributes, on already clean tags.
-        const html = withSrcset(this.sanitizer.sanitize(SecurityContext.HTML, value) ?? '', this.appHtmlSizes(), this.hold.held());
+        const html = withSrcset(this.sanitizer.sanitize(SecurityContext.HTML, value) ?? '', this.appHtmlSizes(), this.hold.mode());
         this.renderer.setProperty(this.element, 'innerHTML', html);
     }
 }

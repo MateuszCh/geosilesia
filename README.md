@@ -205,16 +205,17 @@ phones download for the LCP. `FRAMES` in `images.js` and `srcset.ts` must match.
 copies are made on the first request, not by the warm script.
 
 Below a photo hero (the home banner or a page's photo band, the page's LCP) the photos wait
-for the window's load event and then for the browser's LCP entry of the hero image (at most
-2.5 s more – load can come just before the hero is painted, and photos started then still
-counted against the LCP in Lighthouse): `loading="lazy"` alone still fetched ~600 kB of them on phones
+until the hero is painted: `loading="lazy"` alone still fetched ~600 kB of them on phones
 together with the hero. `front/src/app/shared/photo-hold.ts`: the heroes call
-`PhotoHold.holdUntilLoad()`, and photos marked `<img loading="lazy" [appPhoto]="url">` (and
-photos in CMS HTML through `appHtml`) are then rendered with `data-held-src` /
-`data-held-srcset` instead of `src` / `srcset`, also by the server. Then every held photo
-in the document gets its address back, including the ones in rows that are not hydrated
-yet. A new below-the-fold photo should use `appPhoto`; a photo that may be the largest
-element of a page without a hero should not. Without JavaScript held photos stay empty.
+`PhotoHold.holdUntilLoad()`, and the server renders photos marked
+`<img loading="lazy" [appPhoto]="url">` (and photos in CMS HTML through `appHtml`) as usual,
+with `src` and `srcset` for crawlers and browsers without JavaScript, plus `data-hold`. A
+small script in `index.html` moves their address to `data-held-src` / `data-held-srcset`
+while the page is parsed, before a lazy image is fetched. After the window's load event and
+the next painted frame (load can come just before the hero is painted, and photos started
+then still counted against the LCP in Lighthouse) every held photo gets its address back,
+including the ones in rows that are not hydrated yet. A new below-the-fold photo should use
+`appPhoto`; a photo that may be the largest element of a page without a hero should not.
 
 Conversion uses `wasm-vips` (libvips in WebAssembly) because `sharp` has no binaries for the
 server's FreeBSD. Conversions run one at a time. After the first deployment, and whenever
