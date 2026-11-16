@@ -5,6 +5,21 @@
 const { field } = require("./lib");
 
 const TRAIL_COLORS = "czerwony;zielony;niebieski;czarny;brązowy;turkusowy;fioletowy;żółty;pomarańczowy;różowy";
+/** The trail colours as hex, in the order of TRAIL_COLORS (front/src/app/core/categories.ts). */
+const TRAIL_HEX = {
+    czerwony: "#c8202a",
+    zielony: "#2d8a3e",
+    niebieski: "#1d5fbf",
+    czarny: "#18201b",
+    brązowy: "#7a4a1e",
+    turkusowy: "#1c7c74",
+    fioletowy: "#6b3fa0",
+    żółty: "#f2c200",
+    pomarańczowy: "#d9741a",
+    różowy: "#b0306a"
+};
+/** The swatches of a "color" field offering the trail colours. */
+const TRAIL_PALETTE = Object.values(TRAIL_HEX).join(";");
 const KB_SECTIONS = "Do posłuchania;Do poczytania;Do pobrania;Do pooglądania;Animacje i prezentacje;Mapy online;Wirtualne media";
 const ALBUM_CATEGORIES = "dziedzictwo Ziemi;dziedzictwo geokulturowe;inne";
 
@@ -232,6 +247,9 @@ const newPostTypes = [
     ])
 ];
 
+// The category colour is a colour picker with the trail colours as swatches since step 39.
+const iconPostType = pt("icon", "Ikona", "Ikony", [["color", "Kolor kategorii", "color", TRAIL_PALETTE]]);
+
 const changedPostTypes = [
     pt("marker", "Marker", "Markers", [
         ["image", "Zdjęcie", "file"],
@@ -239,7 +257,7 @@ const changedPostTypes = [
         ["top50", "Numer w TOP 50", "number"]
     ]),
     // The category's line icon is its existing `icon` field (an SVG since step 12).
-    pt("icon", "Ikona", "Ikony", [["color", "Kolor kategorii", "select", TRAIL_COLORS]]),
+    iconPostType,
     pt("wydarzenie", "Wydarzenie", "Wydarzenia", [
         ["place", "Miejsce lub organizator", "text"],
         ["event_date", "Data wydarzenia", "date"]
@@ -447,6 +465,8 @@ const newsYearFilter = [
 const geositesLogosColor = { type: "geosites_logos", title: "Loga geostanowisk", fields: [field(["logos", "Logos", "repeater", [["color", "Kolor znacznika", "select", TRAIL_COLORS]]])] };
 
 module.exports = {
+    TRAIL_HEX,
+    iconPostType,
     newsYearFilter,
     geositesLogosColor,
     top50SettingsPostType,

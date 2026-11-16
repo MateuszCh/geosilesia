@@ -24,6 +24,34 @@ export function colorByName(name: string | undefined): string | undefined {
     return name ? TRAIL_COLORS[name.trim().toLowerCase() as TrailColorName] : undefined;
 }
 
+const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+/**
+ * A colour from the CMS: a hex from a colour picker ("#rrggbb") as it is, else a trail
+ * colour name from a select (older content, or a copy cached offline before step 39).
+ */
+export function parseColor(value: string | undefined): string | undefined {
+    const trimmed = value?.trim();
+    if (!trimmed) return undefined;
+    return HEX_COLOR.test(trimmed) ? trimmed.toLowerCase() : colorByName(trimmed);
+}
+
+/**
+ * The colour as text on a light card, or `dark` when it is too light to read there (a
+ * yellow, say). The colour is picked freely in the CMS, so it is judged by its relative
+ * luminance rather than by name; the threshold keeps orange coloured and yellow dark.
+ */
+export function readableOnLight(color: string, dark: string): string {
+    const hex = color.match(HEX_COLOR) ? color.slice(1) : '';
+    if (!hex) return color;
+    const full = hex.length === 3 ? hex.replace(/./g, c => c + c) : hex;
+    const [r, g, b] = [0, 2, 4].map(i => {
+        const channel = parseInt(full.slice(i, i + 2), 16) / 255;
+        return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? dark : color;
+}
+
 export interface CategoryLook {
     color: string;
     /** The category's icon file from the CMS (`icon` field) – an SVG line icon in variant C. */
@@ -36,7 +64,7 @@ export interface CategoryLook {
  */
 export function categoryLook(icon: IconPostData | undefined): CategoryLook {
     return {
-        color: colorByName(icon?.color) ?? NEUTRAL_COLOR,
+        color: parseColor(icon?.color) ?? NEUTRAL_COLOR,
         iconUrl: icon?.icon || undefined
     };
 }
