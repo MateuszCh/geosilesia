@@ -3,7 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { GOOGLE_MAPS_URL } from './map.config';
 import { MapCategory, MapMarker, MapStyleDefinition } from './map.types';
 import { IconPost, MarkerPost, Top50Post } from '../models/post.model';
-import { NEUTRAL_COLOR, categoryLook } from './categories';
+import { NEUTRAL_COLOR, categoryLook, readableOnLight } from './categories';
 import { postIds } from './post-refs';
 import { Top50Settings } from './top50-settings.service';
 
@@ -259,7 +259,7 @@ export class MapService {
             mark.setAttribute('aria-hidden', 'true');
             mark.style.setProperty('--mark', category?.color ?? NEUTRAL_COLOR);
             tag.append(mark, this.doc.createTextNode(tagLine));
-            tag.style.color = category?.color === '#f2c200' ? '#18201b' : (category?.color ?? '');
+            tag.style.color = category?.color ? readableOnLight(category.color, '#18201b') : '';
             body.appendChild(tag);
         }
         body.appendChild(el('span', 'object-card__title', model.title ?? ''));

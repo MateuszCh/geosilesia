@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContentService } from '../../core/content.service';
-import { colorByName } from '../../core/categories';
+import { parseColor } from '../../core/categories';
 import { pickPosts } from '../../core/post-refs';
 import { IconPost, IconPostData } from '../../models/post.model';
 import { MarkerCategoryListData } from '../../models/row.model';
@@ -33,7 +33,7 @@ export class MarkerCategoryList implements OnInit {
         (this.component().categories ?? []).map(entry => {
             // One category per entry: the field is a post field, so it could hold more.
             const [icon] = pickPosts(entry.category, this.icons());
-            return { text: entry.text ?? '', icon: icon?.data?.icon || undefined, color: colorByName(icon?.data?.color) };
+            return { text: entry.text ?? '', icon: icon?.data?.icon || undefined, color: parseColor(icon?.data?.color) };
         })
     );
 

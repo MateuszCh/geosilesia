@@ -40,7 +40,8 @@ export interface IconPostData {
     /** The category's line icon (SVG from the design system's "Ikony" group). */
     icon?: string;
     position?: number;
-    color?: TrailColorName | string;
+    /** Hex "#rrggbb" from the CMS colour picker (a trail colour name before CMS step 39). */
+    color?: string;
 }
 
 export interface NavSubItem {

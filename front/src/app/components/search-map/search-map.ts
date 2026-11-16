@@ -21,6 +21,7 @@ import { IconPost, MarkerPost, Top50Post } from '../../models/post.model';
 import { MapCategory, MapMarker } from '../../core/map.types';
 import { MapService, directionsUrl, formatKm, markerColor } from '../../core/map.service';
 import { Top50Settings } from '../../core/top50-settings.service';
+import { readableOnLight } from '../../core/categories';
 import { ResourceService } from '../../core/resource.service';
 import { ScrollService } from '../../core/scroll.service';
 import { GeoMap } from '../geo-map/geo-map';
@@ -252,7 +253,7 @@ export class SearchMap implements OnInit {
             ...marker,
             color,
             tag: [category?.name, this.top50Settings.placeLabel(marker.top50)].filter(Boolean).join(' · '),
-            tagColor: color === '#f2c200' ? 'var(--ink)' : color,
+            tagColor: readableOnLight(color, 'var(--ink)'),
             meta: this.joinMeta(
                 marker.rock,
                 marker.place,

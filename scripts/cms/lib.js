@@ -63,7 +63,8 @@ function formatId(str) {
  * Builds a field definition the way frodo stores it: top-level fields are mongoose
  * subdocuments with their own `_id`, nested repeater fields are plain objects, and
  * `repeaterFields` is always present. `spec` is `[id, title, type, extra]`, where `extra`
- * is a `selectOptions` string, an array of nested field specs for a repeater, or the post
+ * is a `selectOptions` string, the `colorOptions` palette of a "color" field (hex colours
+ * separated by semicolons), an array of nested field specs for a repeater, or the post
  * type key of a "post" field (frodo's `postType`).
  */
 function field([id, title, type, extra], nested = false) {
@@ -76,6 +77,7 @@ function field([id, title, type, extra], nested = false) {
     if (!nested) result._id = new ObjectId();
     if (type === "select" && typeof extra === "string") result.selectOptions = extra;
     if (type === "multiselect" && typeof extra === "string") result.multiselectOptions = extra;
+    if (type === "color" && typeof extra === "string") result.colorOptions = extra;
     if (type === "repeater") result.repeaterFields = (extra || []).map(spec => field(spec, true));
     if (type === "post") result.postType = extra;
     return result;
@@ -86,7 +88,7 @@ function describeFields(fields) {
     return (fields || []).map(f => {
         if (f.type === "repeater") return `${f.id}[${describeFields(f.repeaterFields).join(", ")}]`;
         if (f.type === "post") return `${f.id}:post(${f.postType})`;
-        const options = f.selectOptions || f.multiselectOptions;
+        const options = f.selectOptions || f.multiselectOptions || f.colorOptions;
         return options ? `${f.id}:${f.type}(${options})` : `${f.id}:${f.type}`;
     });
 }
@@ -107,11 +109,20 @@ function mergeFields(existing, wanted, { retype = [], prefix = "" } = {}) {
             changes.push(`+ ${fieldPath}:${w.type}`);
             return;
         }
-        if (current.type !== w.type || (w.selectOptions && current.selectOptions !== w.selectOptions)) {
+        const options = w.selectOptions || w.colorOptions;
+        if (
+            current.type !== w.type ||
+            (w.selectOptions && current.selectOptions !== w.selectOptions) ||
+            (w.colorOptions && current.colorOptions !== w.colorOptions)
+        ) {
             if (retype.includes(fieldPath)) {
-                changes.push(`~ ${fieldPath}: ${current.type} -> ${w.type}${w.selectOptions ? `(${w.selectOptions})` : ""}`);
+                changes.push(`~ ${fieldPath}: ${current.type} -> ${w.type}${options ? `(${options})` : ""}`);
                 current.type = w.type;
+                // Options of the old type would linger in the panel's field editor.
+                if (w.type !== "select") delete current.selectOptions;
+                if (w.type !== "color") delete current.colorOptions;
                 if (w.selectOptions) current.selectOptions = w.selectOptions;
+                if (w.colorOptions) current.colorOptions = w.colorOptions;
             } else {
                 changes.push(`! ${fieldPath} is ${current.type}, spec wants ${w.type} — left as is`);
             }

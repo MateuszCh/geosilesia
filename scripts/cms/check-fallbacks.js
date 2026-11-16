@@ -68,6 +68,9 @@ withDb(async db => {
     const icons = await db.collection("posts").find({ type: "icon" }).toArray();
     icons.filter(icon => !(icon.data && icon.data.color)).forEach(icon => issues.push(`icon "${icon.title}": no colour`));
     icons
+        .filter(icon => icon.data && icon.data.color && !/^#[0-9a-f]{6}$/i.test(icon.data.color))
+        .forEach(icon => issues.push(`icon "${icon.title}": colour "${icon.data.color}" is not hex (run step 39)`));
+    icons
         .filter(icon => !/\.svg$/i.test((icon.data && icon.data.icon) || ""))
         .forEach(icon => issues.push(`icon "${icon.title}": no SVG line icon in "icon"`));
 
