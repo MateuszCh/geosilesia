@@ -67,6 +67,8 @@
             <img class="page-hero__image"
                  fetchpriority="high"
                  [src]="hero().image"
+                 [attr.srcset]="hero().image | srcset"
+                 sizes="(max-width: 599px) 150vw, 100vw"
                  [alt]="hero().image_caption ?? ''">
             <div class="page-hero__overlay container">
                 <div class="page-hero__panel">

@@ -16,6 +16,7 @@ site visitors.
 | `pages.js` | The `pages` collection as the public site reads it: published pages only (drafts left out) |
 | `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 1 hour |
 | `shared/seo-meta.js` | SEO rules (title, description, paths) shared by the server and the browser |
+| `images.js` | Resized WebP copies of CMS photos for `srcset` (`/img/<width>/…`, see below) |
 | `visits.js` | Visit statistics without cookies: page views and events in MongoDB, read by the CMS (see below) |
 | `front/` | Angular 22 application with server-side rendering and hydration |
 | `config.json` | Local configuration, not in git — copy `config.example.json` |
@@ -173,9 +174,61 @@ installed by the script as well (`npm ci --omit=dev` in the root, exactly as pin
   `sass-embedded`, which hangs the build on the server's platform, and the root once kept an
   Express 4.16 without `express.text`, which stopped the app. That is also why both lockfiles
   must stay in the repository.
+- The build scripts in `front/package.json` set two switches for the server's FreeBSD:
+  `NG_BUILD_SASS_EMBEDDED=0` (sass-embedded hangs there) and `NG_BUILD_CHUNKS_ROLLDOWN=0`.
+  With lazy chunks (the deferred rows) the build merges chunks in an extra pass, by default
+  with rolldown, which has no FreeBSD binary ("Chunk optimization failed: Cannot find
+  native binding"); the switch makes it use `rollup` (a devDependency, with an official
+  `@rollup/rollup-freebsd-x64` binary). Should rollup fail there too,
+  `NG_BUILD_OPTIMIZE_CHUNKS=0` skips the pass (more, smaller initial chunks).
 - A front-end-only change needs the restart too: `ssr.js` imports the server bundle once
   per process (Node never unloads ES modules), so without a restart the old bundle keeps
   rendering pages.
+
+## Images
+
+CMS photos stay in `uploads/` as uploaded. `GET /img/<width>/<path under uploads/>`
+(`images.js`) answers with a WebP copy at most that wide (400, 800, 1200 or 1600 px, never
+upscaled), made once and kept in `tmp/img-cache/`; it is made again when the original is
+newer. Any conversion error falls back to the original file. The front lists the copies in
+`srcset` through the `srcset` pipe (`front/src/app/shared/srcset.ts`, its `WIDTHS` must match
+`images.js`) and `appHtml` adds them to photos in CMS HTML; each `<img>` carries a `sizes`
+measured on the layout (wider than the box for `object-fit: cover` heroes). The original
+file is the last candidate, marked `2400w`: a box that needs more than the 1600 px copy (the
+home hero on a large or high-density screen, ~1710 px wide at 680 px high) gets the original
+instead of a stretched copy.
+
+Frames: `GET /img/<frame>/<x>-<y>/<width>/<path>` first cuts the photo to the part a fixed
+`object-fit: cover` box shows, placed by the box's `object-position` (`x`, `y` in whole per
+cent), then resizes it. The cut is placed the way `object-position` places the box, so the
+same `object-position` on the cut shows the same pixels as on the whole photo. The only frame
+is `hero-phone` (430 × 520, the home hero on phones up to 430 px): a `<picture>` source in
+`homepage-banner.html` uses it with the editor's framing from the CMS, which halves the photo
+phones download for the LCP. `FRAMES` in `images.js` and `srcset.ts` must match. Framed
+copies are made on the first request, not by the warm script.
+
+Below a photo hero (the home banner or a page's photo band, the page's LCP) the photos wait
+until the hero is painted: `loading="lazy"` alone still fetched ~600 kB of them on phones
+together with the hero. `front/src/app/shared/photo-hold.ts`: the heroes call
+`PhotoHold.holdUntilLoad()`, and the server renders photos marked
+`<img loading="lazy" [appPhoto]="url">` (and photos in CMS HTML through `appHtml`) as usual,
+with `src` and `srcset` for crawlers and browsers without JavaScript, plus `data-hold`. A
+small script in `index.html` moves their address to `data-held-src` / `data-held-srcset`
+while the page is parsed, before a lazy image is fetched. After the window's load event and
+the next painted frame (load can come just before the hero is painted, and photos started
+then still counted against the LCP in Lighthouse) every held photo gets its address back,
+including the ones in rows that are not hydrated yet. A new below-the-fold photo should use
+`appPhoto`; a photo that may be the largest element of a page without a hero should not.
+
+Conversion uses `wasm-vips` (libvips in WebAssembly) because `sharp` has no binaries for the
+server's FreeBSD. Conversions run one at a time. After the first deployment, and whenever
+many photos were uploaded at once, warm the cache so visitors do not wait:
+
+```bash
+node scripts/warm-images.js   # every photo × every width; skips copies already up to date
+```
+
+`tmp/img-cache/` can be deleted at any time; copies are made again on demand.
 
 ## SSR
 
@@ -193,9 +246,23 @@ installed by the script as well (`npm ci --omit=dev` in the root, exactly as pin
   `X-Render: ssr-hit | ssr-miss | csr` header tells which path was taken.
 - **Render data does not go over the network.** `SsrApiBackend`
   (`front/src/app/core/ssr.ts`) serves GETs to `/api/page/…` and `/api/posts/…` with
-  functions from `app.js` passed in `REQUEST_CONTEXT`. It is a backend, not an
-  interceptor: only this way do the responses end up in the HTTP transfer cache, from
-  which the browser takes data during hydration.
+  functions from `app.js` passed in `REQUEST_CONTEXT`. `ApiService` puts each response
+  of the render into TransferState (`api:<url>`), and the browser reads it from there,
+  synchronously, for the whole visit. Angular's HTTP transfer cache is off
+  (`withNoHttpTransferCache`): it serves only until the app is first stable, and the
+  deferred rows below hydrate later.
+- **Rows hydrate when they scroll into view.** Every row except the home hero and TOP 50 is a
+  `@defer (on immediate; hydrate on interaction; hydrate on viewport)` block in
+  `row.html` (incremental hydration): the server renders it in full, its component's code
+  is a separate chunk, and a click on a row that is not hydrated yet is replayed once it
+  is. A row component must therefore get its data synchronously while hydrating — through
+  `ApiService`/`ContentService`, never a request of its own that bypasses them — or it
+  hydrates empty and the replayed click is lost. Nor may it listen to hover
+  (`mouseenter`, `pointerenter`, `focusin`): a hover starts hydration while the chunk
+  is still downloading, and a click made in that window is dropped – that is why TOP 50
+  is not deferred. `angular.json` sets
+  `index.preloadInitial`, since with a service worker Angular leaves out the
+  `modulepreload` links of the shared chunks.
 - **Lists a page only derives something from stay out of the HTML.** The home page
   counts all markers and shows three events; sending the lists would add over 1 MB, and the
   browser hydrates only after the whole HTML has arrived. `ContentService.summary` sends

@@ -30,6 +30,8 @@
              (swipeRight)="prev()">
             <img class="lightbox__image"
                  [src]="photo()?.src"
+                 [attr.srcset]="photo()?.src | srcset"
+                 sizes="100vw"
                  [alt]="'Zdjęcie ' + (index() + 1) + ' z ' + photos().length"
                  aria-describedby="lightbox-description">
             @if (photos().length > 1) {
@@ -80,7 +82,9 @@
                         (click)="index.set($index)">
                     <img loading="lazy"
                          alt=""
-                         [src]="item.src">
+                         [src]="item.src"
+                         [attr.srcset]="item.src | srcset"
+                         sizes="120px">
                 </button>
             }
         </div>

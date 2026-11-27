@@ -89,6 +89,46 @@
 
     <link rel="manifest"
           href="/manifest.json">
+
+    <!--
+        Photos below a photo hero (data-hold, see photo-hold.ts) come with src and srcset, for
+        crawlers and browsers without JavaScript. Here their address moves to data-held-src /
+        data-held-srcset while the page is parsed – the observer runs after each parsed chunk,
+        before a lazy image is fetched – so they do not take the hero's bandwidth. The app
+        gives it back once the hero is painted.
+    -->
+    <script>
+        (function () {
+            if (!window.MutationObserver) return;
+            function hold(img) {
+                if (!img.hasAttribute('data-hold') || img.hasAttribute('data-held-src')) return;
+                var srcset = img.getAttribute('srcset');
+                if (srcset !== null) {
+                    img.setAttribute('data-held-srcset', srcset);
+                    img.removeAttribute('srcset');
+                }
+                var src = img.getAttribute('src');
+                if (src !== null) {
+                    img.setAttribute('data-held-src', src);
+                    img.removeAttribute('src');
+                }
+            }
+            function scan(root) {
+                if (root.nodeName === 'IMG') hold(root);
+                else if (root.querySelectorAll) Array.prototype.forEach.call(root.querySelectorAll('img[data-hold]'), hold);
+            }
+            var observer = new MutationObserver(function (records) {
+                for (var i = 0; i < records.length; i++) {
+                    for (var j = 0; j < records[i].addedNodes.length; j++) scan(records[i].addedNodes[j]);
+                }
+            });
+            observer.observe(document.documentElement, { childList: true, subtree: true });
+            document.addEventListener('DOMContentLoaded', function () {
+                scan(document);
+                observer.disconnect();
+            });
+        })();
+    </script>
 </head>
 
 <body>

@@ -16,6 +16,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SwipeDirective } from '../../shared/swipe.directive';
+import { SrcsetPipe } from '../../shared/srcset';
 
 export interface ViewerPhoto {
     src?: string;
@@ -50,7 +51,7 @@ function glide(element: HTMLElement, left: number, duration = 300): () => void {
 @Component({
     selector: 'app-photo-viewer',
     templateUrl: './photo-viewer.html',
-    imports: [RouterLink, SwipeDirective],
+    imports: [RouterLink, SwipeDirective, SrcsetPipe],
     host: {
         '(document:keydown)': 'onKeyDown($event)',
         '(document:pointerdown)': 'usedKeyboard = false'

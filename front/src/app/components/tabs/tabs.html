@@ -141,7 +141,8 @@
                             <figure class="tab-figure">
                                 <img class="tab-figure__image"
                                      loading="lazy"
-                                     [src]="row.image"
+                                     [appPhoto]="row.image"
+                                     sizes="(min-width: 1100px) 760px, 100vw"
                                      [alt]="row.image_description || row.heading || ''">
                                 @if (row.image_description || row.image_footnotes?.length || row.image_author) {
                                     <figcaption class="tab-figure__caption">

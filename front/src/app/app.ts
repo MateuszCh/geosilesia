@@ -16,9 +16,10 @@ import { ResourceService } from './core/resource.service';
 import { ScrollService } from './core/scroll.service';
 import { VisitEventsService } from './core/visit-events.service';
 
-/** Delay of the /api/appData prefetch – the heaviest request of the site must not
-    compete for bandwidth with the content the user has just opened. */
-const PREFETCH_DELAY_MS = 2000;
+/** Delay of the /api/appData prefetch, counted from the window's load event – the heaviest
+    request of the site (~0.5 MB) must not compete for bandwidth with the content the user
+    has just opened, including the lazy images that start right after load. */
+const PREFETCH_DELAY_MS = 5000;
 
 @Component({
     selector: 'app-root',
@@ -60,11 +61,7 @@ export class App {
                 view.removeEventListener('scroll', onScroll)
             );
 
-            const timer = setTimeout(
-                () => this.resource.prefetchAppData(),
-                PREFETCH_DELAY_MS
-            );
-            this.destroyRef.onDestroy(() => clearTimeout(timer));
+            this.schedulePrefetch(view);
 
             this.cleanLegacyCaches();
             // visible time and link clicks for the visit statistics (no cookies)
@@ -74,6 +71,40 @@ export class App {
 
     scrollToTop(): void {
         this.scroll.scrollToTop();
+    }
+
+    /**
+     * Offline prefetch: after the page has loaded, a quiet moment and an idle main thread.
+     * Skipped when the visitor asked to save data or is on a 2G-class connection.
+     */
+    private schedulePrefetch(view: Window): void {
+        const connection = (view.navigator as Navigator & {
+            connection?: { saveData?: boolean; effectiveType?: string };
+        }).connection;
+        if (connection?.saveData || /2g/.test(connection?.effectiveType ?? '')) return;
+
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        let idle: number | undefined;
+        const prefetch = () => this.resource.prefetchAppData();
+        const onLoad = () => {
+            timer = setTimeout(() => {
+                if (view.requestIdleCallback) {
+                    idle = view.requestIdleCallback(prefetch, { timeout: 5000 });
+                } else {
+                    prefetch();
+                }
+            }, PREFETCH_DELAY_MS);
+        };
+        if (this.doc.readyState === 'complete') {
+            onLoad();
+        } else {
+            view.addEventListener('load', onLoad, { once: true });
+        }
+        this.destroyRef.onDestroy(() => {
+            view.removeEventListener('load', onLoad);
+            clearTimeout(timer);
+            if (idle !== undefined) view.cancelIdleCallback?.(idle);
+        });
     }
 
     private onNavigated(): void {
