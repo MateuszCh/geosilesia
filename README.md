@@ -193,7 +193,10 @@ upscaled), made once and kept in `tmp/img-cache/`; it is made again when the ori
 newer. Any conversion error falls back to the original file. The front lists the copies in
 `srcset` through the `srcset` pipe (`front/src/app/shared/srcset.ts`, its `WIDTHS` must match
 `images.js`) and `appHtml` adds them to photos in CMS HTML; each `<img>` carries a `sizes`
-measured on the layout (wider than the box for `object-fit: cover` heroes).
+measured on the layout (wider than the box for `object-fit: cover` heroes). The original
+file is the last candidate, marked `2400w`: a box that needs more than the 1600 px copy (the
+home hero on a large or high-density screen, ~1710 px wide at 680 px high) gets the original
+instead of a stretched copy.
 
 Frames: `GET /img/<frame>/<x>-<y>/<width>/<path>` first cuts the photo to the part a fixed
 `object-fit: cover` box shows, placed by the box's `object-position` (`x`, `y` in whole per

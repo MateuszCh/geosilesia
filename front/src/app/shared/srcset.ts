@@ -31,10 +31,20 @@ function uploadPath(src: string | null | undefined): string | null {
     return PHOTO.test(relative) ? encodePath(relative) : null;
 }
 
-/** "…/img/400/a.jpg 400w, …" for a photo from /uploads, null for anything else. */
+/**
+ * The original file's place in srcset, after the largest copy. Its real width is not known
+ * here, so it only claims to be wider than any copy: a box that needs more than 1600 px (the
+ * home hero on a large or high-density screen) gets the original instead of a stretched
+ * copy. An original narrower than that is never wider than the 1600 copy anyway.
+ */
+const ORIGINAL_WIDTH = 2400;
+
+/** "…/img/400/a.jpg 400w, …, /uploads/a.jpg 2400w" for a photo from /uploads, null otherwise. */
 export function srcsetOf(src: string | null | undefined): string | null {
     const encoded = uploadPath(src);
-    return encoded && WIDTHS.map(width => `/img/${width}/${encoded} ${width}w`).join(', ');
+    if (!encoded) return null;
+    const copies = WIDTHS.map(width => `/img/${width}/${encoded} ${width}w`);
+    return [...copies, `${UPLOADS}${encoded} ${ORIGINAL_WIDTH}w`].join(', ');
 }
 
 /**
