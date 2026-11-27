@@ -17,6 +17,12 @@ const fs = require("fs");
 const WIDTHS = [400, 800, 1200, 1600];
 const SOURCE_TYPES = /\.(jpe?g|png)$/i;
 const QUALITY = 75;
+/**
+ * Conversions waiting at most. Past it a request for a copy that is not on disk yet gets the
+ * original at once: a flood of requests for new copies must not keep visitors' thumbnails
+ * waiting behind it for minutes (and the queue in memory must not grow without bound).
+ */
+const MAX_QUEUED = 16;
 
 /**
  * Frames: the part of a photo a fixed box with `object-fit: cover` can show, cut out on the
@@ -43,7 +49,21 @@ function describe(error) {
     return lines.length > 2 ? `${lines[0]} … ${lines[lines.length - 1]}` : lines.join(" ");
 }
 
-function createImageResizer({ uploadsDir, cacheDir }) {
+/** Error of copyOf when the queue is full; the handler answers with the original. */
+class QueueFullError extends Error {
+    constructor() {
+        super("conversion queue is full");
+        this.code = "QUEUE_FULL";
+    }
+}
+
+/**
+ * `allowFrame(relative, frame)` – whether this photo may be cut to this frame and position
+ * (a Promise of a boolean). Without it every position is accepted; app.js accepts only the
+ * framings the CMS holds, otherwise 101 × 101 positions × every width × every photo could be
+ * requested, each a conversion and a file on disk.
+ */
+function createImageResizer({ uploadsDir, cacheDir, allowFrame = () => Promise.resolve(true) }) {
     const uploadsRoot = path.resolve(uploadsDir) + path.sep;
     let vipsPromise = null;
     // One conversion at a time: decoding a 2000 px photo takes tens of MB, and the hosting
@@ -112,9 +132,10 @@ function createImageResizer({ uploadsDir, cacheDir }) {
 
     /**
      * Path of an up-to-date copy, converting it first when needed. `frame` – from
-     * frameOf() – cuts the photo to a frame before resizing.
+     * frameOf() – cuts the photo to a frame before resizing. With `queueLimit` a new
+     * conversion is refused (QueueFullError) once that many are waiting.
      */
-    async function copyOf(source, width, frame = null) {
+    async function copyOf(source, width, frame = null, { queueLimit = Infinity } = {}) {
         const relative = path.relative(uploadsRoot, source);
         const variant = frame ? path.join(`${frame.name}-${frame.x}-${frame.y}`, String(width)) : String(width);
         const target = path.join(cacheDir, variant, `${relative}.webp`);
@@ -125,6 +146,7 @@ function createImageResizer({ uploadsDir, cacheDir }) {
         if (targetStat && targetStat.mtimeMs >= sourceStat.mtimeMs) return target;
 
         if (!pending.has(target)) {
+            if (pending.size >= queueLimit) throw new QueueFullError();
             const job = queue.then(() => convert(source, target, width, frame));
             queue = job.catch(() => undefined);
             pending.set(target, job);
@@ -159,28 +181,31 @@ function createImageResizer({ uploadsDir, cacheDir }) {
         const frame = req.params.frame ? frameOf(req.params.frame, req.params.position) : null;
         if (!WIDTHS.includes(width) || !source || (req.params.frame && !frame)) return next();
 
-        fs.promises
-            .access(source)
-            .then(
-                () =>
-                    copyOf(source, width, frame).then(
-                        target =>
-                            res.sendFile(target, {
-                                maxAge: "1d",
-                                headers: { "Content-Type": "image/webp" }
-                            }),
-                        error => {
-                            const variant = frame ? `${frame.name} ${frame.x}-${frame.y} ` : "";
-                            console.error(`[img] ${req.params[0]} ${variant}@${width}: ${describe(error)}`);
-                            res.sendFile(source, { maxAge: "1h" });
+        Promise.all([fs.promises.access(source).then(() => true, () => false), frame ? allowFrame(req.params[0], frame) : true])
+            .then(([exists, allowed]) => {
+                if (!exists || !allowed) return next();
+                return copyOf(source, width, frame, { queueLimit: MAX_QUEUED }).then(
+                    target =>
+                        res.sendFile(target, {
+                            maxAge: "1d",
+                            headers: { "Content-Type": "image/webp" }
+                        }),
+                    error => {
+                        if (error instanceof QueueFullError) {
+                            // Busy: the original now, the copy on a later request.
+                            res.sendFile(source, { maxAge: 0 });
+                            return;
                         }
-                    ),
-                () => next()
-            )
+                        const variant = frame ? `${frame.name} ${frame.x}-${frame.y} ` : "";
+                        console.error(`[img] ${req.params[0]} ${variant}@${width}: ${describe(error)}`);
+                        res.sendFile(source, { maxAge: "1h" });
+                    }
+                );
+            })
             .catch(next);
     }
 
     return { handler, copyOf, sourcePath, frameOf, WIDTHS };
 }
 
-module.exports = { createImageResizer, describe, WIDTHS, FRAMES };
+module.exports = { createImageResizer, describe, WIDTHS, FRAMES, MAX_QUEUED };

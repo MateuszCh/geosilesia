@@ -13,8 +13,11 @@ import { PhotoHold } from './photo-hold';
  * The first value is therefore not written when the element already holds the server's
  * content; later values are.
  *
- * Sanitizes exactly like [innerHTML]: a plain string is cleaned, a value from the
- * `trusted` pipe passes untouched.
+ * Sanitizes exactly like [innerHTML], on the server render too: CMS HTML loses scripts, event
+ * handler attributes, iframes and `javascript:` links. Do not pass SafeHtml from
+ * bypassSecurityTrustHtml here – the rendered HTML is cached and sent to every visitor, and
+ * the site has no script-src CSP to stop what an editor's account (or anyone with database
+ * access) puts into the text.
  *
  * Photos from /uploads get a srcset of resized copies (see srcset.ts); `appHtmlSizes` is
  * the width they take, by default the text column. Below a photo hero they wait for the
@@ -26,7 +29,7 @@ import { PhotoHold } from './photo-hold';
  */
 @Directive({ selector: '[appHtml]' })
 export class HtmlDirective implements OnChanges {
-    /** Whatever [innerHTML] takes – a string, or SafeHtml from the `trusted` pipe. */
+    /** CMS HTML as a string; it is sanitized before it is written. */
     readonly appHtml = input<unknown>();
     /** `sizes` of the photos inside – the width of the text column by default. */
     readonly appHtmlSizes = input('(min-width: 1100px) 760px, 100vw');

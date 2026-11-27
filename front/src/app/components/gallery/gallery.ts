@@ -21,7 +21,6 @@ import { Top50Settings } from '../../core/top50-settings.service';
 import { ResourceService } from '../../core/resource.service';
 import { internalLink } from '../../core/cms-link';
 import * as seoMeta from '../../../../../shared/seo-meta';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { PhotoViewer, ViewerPhoto } from '../photo-viewer/photo-viewer';
 import { plural } from '../../shared/plural';
 import { HtmlDirective } from '../../shared/html.directive';
@@ -42,7 +41,7 @@ const OTHER_ALBUMS = 4;
     // <ul>), the browser rearranges the server-sent DOM and hydration breaks. So the
     // component re-renders in the browser; the content is in the HTML for robots anyway.
     host: { ngSkipHydration: 'true' },
-    imports: [RouterLink, TrustedPipe, PhotoViewer, HtmlDirective, PhotoDirective],
+    imports: [RouterLink, PhotoViewer, HtmlDirective, PhotoDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Gallery implements OnInit {

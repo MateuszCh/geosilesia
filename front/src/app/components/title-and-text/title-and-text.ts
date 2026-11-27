@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { ParagraphClass, TextRow, TitleAndTextData } from '../../models/row.model';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { HtmlDirective } from '../../shared/html.directive';
 
 type ParagraphKind = 'quote' | 'lead' | 'bold' | 'plain';
@@ -29,7 +28,7 @@ function newestFirst(list: ListItem[]): ListItem[] {
     // <ul>), the browser rearranges the server-sent DOM and hydration breaks. So the
     // component re-renders in the browser; the content is in the HTML for robots anyway.
     host: { ngSkipHydration: 'true' },
-    imports: [TrustedPipe, HtmlDirective],
+    imports: [HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TitleAndText {

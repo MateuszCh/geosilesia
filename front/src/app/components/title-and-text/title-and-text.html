@@ -10,29 +10,29 @@
                         <span class="pull-quote__bar trail-mark"
                               aria-hidden="true"></span>
                         <p class="pull-quote__text"
-                           [appHtml]="row.paragraph | trusted"></p>
+                           [appHtml]="row.paragraph"></p>
                     </blockquote>
                 }
                 @case ('lead') {
                     <p class="text-block__lead prose"
-                       [appHtml]="row.paragraph | trusted"></p>
+                       [appHtml]="row.paragraph"></p>
                 }
                 @case ('bold') {
                     <p class="text-block__p text-block__p--bold prose"
-                       [appHtml]="row.paragraph | trusted"></p>
+                       [appHtml]="row.paragraph"></p>
                 }
                 @default {
                     <!-- Any other stored class is kept, as the old front end applied it verbatim. -->
                     <p class="text-block__p prose"
                        [class]="row.paragraph_class ?? ''"
-                       [appHtml]="row.paragraph | trusted"></p>
+                       [appHtml]="row.paragraph"></p>
                 }
             }
         }
         @if (row.list?.length) {
             <ul class="text-block__list default-list prose">
                 @for (item of listItems(row); track $index) {
-                    <li [appHtml]="item.item | trusted"></li>
+                    <li [appHtml]="item.item"></li>
                 }
             </ul>
         }

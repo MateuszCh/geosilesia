@@ -7,7 +7,8 @@ import {
     inject,
     signal
 } from '@angular/core';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
+import { SwUpdate } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Footer } from './components/footer/footer';
@@ -37,6 +38,7 @@ export class App {
     private readonly resource = inject(ResourceService);
     private readonly visitEvents = inject(VisitEventsService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly updates = inject(SwUpdate);
 
     constructor() {
         this.router.events
@@ -64,6 +66,7 @@ export class App {
             this.schedulePrefetch(view);
 
             this.cleanLegacyCaches();
+            this.watchUpdates(view);
             // visible time and link clicks for the visit statistics (no cookies)
             this.visitEvents.start();
         });
@@ -105,6 +108,37 @@ export class App {
             clearTimeout(timer);
             if (idle !== undefined) view.cancelIdleCallback?.(idle);
         });
+    }
+
+    /**
+     * After a deployment the service worker keeps serving the version the tab started with,
+     * and a phone keeps an installed app in memory for days – while the API already sends data
+     * shaped for the new front. Once the new version is downloaded, the next link the reader
+     * follows inside the app is opened as a full load instead, which starts the new version
+     * without cutting into what they are reading. A worker that lost files of its own version
+     * cannot serve the app at all: then the page reloads at once.
+     */
+    private watchUpdates(view: Window): void {
+        if (!this.updates.isEnabled) return;
+        let ready = false;
+        this.updates.versionUpdates
+            .pipe(
+                filter(event => event.type === 'VERSION_READY'),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe(() => (ready = true));
+        this.router.events
+            .pipe(
+                filter((event): event is NavigationStart => event instanceof NavigationStart),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe(event => {
+                // popstate too: back/forward also lands on the new version
+                if (ready) view.location.assign(event.url);
+            });
+        this.updates.unrecoverable
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => view.location.reload());
     }
 
     private onNavigated(): void {

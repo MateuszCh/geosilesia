@@ -32,7 +32,7 @@
                 <h2 class="route__title">{{ stop.title }}</h2>
                 @if (stop.description) {
                     <div class="route__description prose"
-                         [appHtml]="stop.description | trusted"></div>
+                         [appHtml]="stop.description"></div>
                 }
                 <ng-container *ngTemplateOutlet="sourcesTpl; context: { $implicit: stop }" />
             </div>
@@ -93,7 +93,7 @@
             }
             @if (component().intro) {
                 <div class="prose"
-                     [appHtml]="component().intro | trusted"></div>
+                     [appHtml]="component().intro"></div>
             }
             <!-- Pointing at a place shows it beside; a click opens the route at that place. -->
             <ol class="route route--compact"
@@ -136,7 +136,7 @@
                     }
                     @if (component().intro) {
                         <div class="lead prose"
-                             [appHtml]="component().intro | trusted"></div>
+                             [appHtml]="component().intro"></div>
                     }
                 </div>
                 @if (link() && component().link_label) {

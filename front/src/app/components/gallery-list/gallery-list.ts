@@ -16,7 +16,6 @@ import { ALBUM_CATEGORY_PARAM, AlbumCategories } from '../../core/albums';
 import { ResourceService } from '../../core/resource.service';
 import { AlbumSummary } from '../../models/post.model';
 import { GalleryListData } from '../../models/row.model';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
 import { HtmlDirective } from '../../shared/html.directive';
 import { PhotoDirective } from '../../shared/photo-hold';
@@ -40,7 +39,7 @@ interface AlbumCard {
 @Component({
     selector: 'app-gallery-list',
     templateUrl: './gallery-list.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective, PhotoDirective],
+    imports: [NgTemplateOutlet, RouterLink, HtmlDirective, PhotoDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GalleryList implements OnInit {

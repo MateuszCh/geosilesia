@@ -4,7 +4,6 @@ import { RouterLink } from '@angular/router';
 import { Crumb, SectionLinks } from '../../core/navigation.service';
 import { Byline, PageHeader } from '../../core/page-layout';
 import { internalLink } from '../../core/cms-link';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { photoCredit } from '../../shared/photo-credit';
 import { SectionBar } from '../section-bar/section-bar';
 import { DictionarySearch } from '../dictionary/dictionary-search';
@@ -31,7 +30,7 @@ export function bylineText(byline: Byline | undefined): string {
 @Component({
     selector: 'app-page-hero',
     templateUrl: './page-hero.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, SectionBar, DictionarySearch, RowView, HtmlDirective, SrcsetPipe],
+    imports: [NgTemplateOutlet, RouterLink, SectionBar, DictionarySearch, RowView, HtmlDirective, SrcsetPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PageHero implements OnInit {

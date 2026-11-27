@@ -158,7 +158,12 @@ The script pulls the code itself (`--ff-only`: a server clone with commits of it
 stops there) and then runs again from the start, since the pull may have changed it. The
 build goes to `tmp/front-build` and replaces `front/dist/geosilesia` only once it has
 succeeded: the running process keeps serving the old build until the restart, and a failed
-or hung build leaves the site as it was.
+or hung build leaves the site as it was. The previous build's `main-*`, `chunk-*`,
+`polyfills-*` and `styles-*` files are copied into the new one and removed a week later
+(unless the new `ngsw.json` lists them): a tab opened before the deployment without a service
+worker still finds the lazy chunks of its deferred rows. After a deployment the front opens
+the next in-app link as a full load once the service worker has the new version
+(`SwUpdate` in `app.ts`), so nobody stays on an old front reading data shaped for the new one.
 
 Every deployment restarts the Node process, always after the build — the new server
 expects the new build. The restart is also what clears all in-memory caches (rendered
@@ -205,7 +210,9 @@ same `object-position` on the cut shows the same pixels as on the whole photo. T
 is `hero-phone` (430 × 520, the home hero on phones up to 430 px): a `<picture>` source in
 `homepage-banner.html` uses it with the editor's framing from the CMS, which halves the photo
 phones download for the LCP. `FRAMES` in `images.js` and `srcset.ts` must match. Framed
-copies are made on the first request, not by the warm script.
+copies are made on the first request, not by the warm script. Only the framings the CMS holds
+are served (`heroFrames` in `app.js`, computed like `framedSrcsetOf`); any other position is a
+404, so nobody can make the server convert and store 101 × 101 positions of every photo.
 
 Below a photo hero (the home banner or a page's photo band, the page's LCP) the photos wait
 until the hero is painted: `loading="lazy"` alone still fetched ~600 kB of them on phones
@@ -221,7 +228,8 @@ including the ones in rows that are not hydrated yet. A new below-the-fold photo
 `appPhoto`; a photo that may be the largest element of a page without a hero should not.
 
 Conversion uses `wasm-vips` (libvips in WebAssembly) because `sharp` has no binaries for the
-server's FreeBSD. Conversions run one at a time. After the first deployment, and whenever
+server's FreeBSD. Conversions run one at a time; with 16 waiting, a request for a copy that is
+not on disk yet gets the original at once (`MAX_QUEUED`). After the first deployment, and whenever
 many photos were uploaded at once, warm the cache so visitors do not wait:
 
 ```bash

@@ -29,6 +29,26 @@ app.set("trust proxy", 1);
 // app does not compress again a response that already has Content-Encoding.
 app.use(compression());
 
+// Security headers on every response – pages, API, static files and uploads. Nothing on the
+// hosting adds them (checked on production 2026-11-27). The CSP holds only directives that
+// break nothing: script-src would need the hashes of the inline scripts (index.html, the SSR
+// event replay) and the Google Maps hosts, so it is left for a Report-Only pass first.
+// HSTS without includeSubDomains: not every subdomain is known to serve HTTPS. Browsers ignore
+// it over plain http, so local development is not affected.
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+    res.set({
+        "Strict-Transport-Security": "max-age=31536000",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        // geolocation stays for the map's "my location" button
+        "Permissions-Policy": "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)",
+        "Content-Security-Policy": "frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+    });
+    next();
+});
+
 // Global indexing switch – one flag for the whole site, no per-page settings.
 // Deliberately OFF by default: a fresh clone or a staging instance without the entry
 // in config.json must never end up in Google. Compared with `true`, not truthiness –
@@ -50,27 +70,48 @@ let databaseError = false;
 let trackVisit = () => {};
 let trackEvent = () => false;
 
-const client = new MongoClient(config.mongoUrl);
+// A failed first connection is retried: otherwise a database that was down for a minute while
+// Passenger started the process left the site answering 503 until the next restart. Once
+// connected, the driver itself reconnects after an outage. The server starts listening after
+// the first attempt either way (until then requests wait instead of finding no collections).
+const CONNECT_RETRY_MS = 10000;
+let listening = false;
 
-client.connect()
-    .then(client => {
-        db = client.db(config.dbName);
-        collections.posts = db.collection("posts");
-        // Published pages only: every read adds `draft: { $ne: true }` (pages.js), so a
-        // page the CMS marks as a draft answers 404 everywhere, like a missing one.
-        collections.pages = publishedPages(db.collection("pages"));
-        collections.files = db.collection("files");
-        collections.meta = db.collection("meta");
-        const tracker = createVisitTracker(db, { siteUrl: config.siteUrl });
-        trackVisit = tracker.track;
-        trackEvent = tracker.event;
-        app.listen(app.get("port"), () => console.log("Running on port 3000"));
-    })
-    .catch(err => {
-        databaseError = err;
-        console.log(new Date(), err);
-        app.listen(app.get("port"), () => console.log("Running on port 3000"));
-    });
+function listen() {
+    if (listening) return;
+    listening = true;
+    app.listen(app.get("port"), () => console.log("Running on port 3000"));
+}
+
+function connectDatabase() {
+    const client = new MongoClient(config.mongoUrl);
+    client
+        .connect()
+        .then(client => {
+            db = client.db(config.dbName);
+            collections.posts = db.collection("posts");
+            // Published pages only: every read adds `draft: { $ne: true }` (pages.js), so a
+            // page the CMS marks as a draft answers 404 everywhere, like a missing one.
+            collections.pages = publishedPages(db.collection("pages"));
+            collections.files = db.collection("files");
+            collections.meta = db.collection("meta");
+            const tracker = createVisitTracker(db, { siteUrl: config.siteUrl });
+            trackVisit = tracker.track;
+            trackEvent = tracker.event;
+            if (databaseError) console.log(new Date(), "[db] connected after a failed attempt");
+            databaseError = false;
+            listen();
+        })
+        .catch(err => {
+            databaseError = err;
+            console.log(new Date(), `[db] connection failed, retrying in ${CONNECT_RETRY_MS / 1000} s:`, err.message);
+            client.close().catch(() => undefined);
+            setTimeout(connectDatabase, CONNECT_RETRY_MS);
+            listen();
+        });
+}
+
+connectDatabase();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -717,8 +758,50 @@ app.use("/uploads", express.static(`${__dirname}/uploads`, { maxAge: "1d" }));
 // Resized WebP copies of CMS photos for srcset (images.js); cached in tmp/img-cache.
 const images = createImageResizer({
     uploadsDir: `${__dirname}/uploads`,
-    cacheDir: path.join(__dirname, "tmp", "img-cache")
+    cacheDir: path.join(__dirname, "tmp", "img-cache"),
+    allowFrame: (relative, frame) =>
+        getPages()
+            .then(pages => heroFrames(pages).has(frameKey(frame.name, relative, frame.x, frame.y)))
+            // Database down: the framings cannot be checked, and the hero must still load.
+            .catch(() => true)
 });
+
+// The framed copies the pages ask for: the home hero's slides on phones ("hero-phone", see
+// framedSrcsetOf in front/src/app/shared/srcset.ts – the path and the per cents are computed
+// the same way here). Any other position is refused, so the copies on disk stay as many as
+// the slides in the CMS.
+const UPLOADS_PREFIX = "/uploads/";
+const heroFramesCache = new WeakMap();
+
+function framePercent(value) {
+    const number = Math.round(Number.parseFloat(String(value ?? "")));
+    return Number.isFinite(number) ? Math.min(100, Math.max(0, number)) : 50;
+}
+
+function frameKey(name, relative, x, y) {
+    return `${name}|${relative}|${x}-${y}`;
+}
+
+function heroFrames(pages) {
+    let keys = heroFramesCache.get(pages);
+    if (keys) return keys;
+    keys = new Set();
+    pages.forEach(page =>
+        forEachRow(page, row => {
+            if (row.type !== "homepage_banner" || !Array.isArray(row.data.slides)) return;
+            row.data.slides.forEach(slide => {
+                const src = slide && typeof slide.image === "string" ? slide.image : "";
+                const at = src.indexOf(UPLOADS_PREFIX);
+                if (at < 0) return;
+                // The front encodes the path once (encodeURI of decodeURI); Express decodes it.
+                const relative = decodePath(src.slice(at + UPLOADS_PREFIX.length).split(/[?#]/)[0]);
+                keys.add(frameKey("hero-phone", relative, framePercent(slide.left_position), framePercent(slide.top_position)));
+            });
+        })
+    );
+    heroFramesCache.set(pages, keys);
+    return keys;
+}
 app.get("/img/:width/*", images.handler);
 app.get("/img/:frame/:position/:width/*", images.handler);
 // Self-hosted fonts (copied from @fontsource at build time): their names carry no hash, but the

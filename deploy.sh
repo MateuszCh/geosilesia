@@ -44,6 +44,20 @@ if [ -d front/dist/geosilesia ]; then
     mv front/dist/geosilesia tmp/front-old
 fi
 mv tmp/front-build front/dist/geosilesia
+# The previous build's scripts and styles stay for a week: a tab opened before the deployment
+# without a service worker (a first visit, private mode) still loads its lazy chunks – the
+# deferred rows – by their old names, and the old process renders pages pointing at the old
+# main.js until the restart below. They are not in ngsw.json, so the service worker never
+# fetches them. -n keeps the new files, -p keeps the old mtime the cleanup counts from.
+if [ -d tmp/front-old/browser ]; then
+    find tmp/front-old/browser -maxdepth 1 -type f \( -name 'main-*.js' -o -name 'chunk-*.js' \
+        -o -name 'polyfills-*.js' -o -name 'styles-*.css' \) -exec cp -n -p {} front/dist/geosilesia/browser/ \;
+fi
+# Older than a week and not part of the new build (its ngsw.json lists every file it has).
+find front/dist/geosilesia/browser -maxdepth 1 -type f \( -name 'main-*.js' -o -name 'chunk-*.js' \
+    -o -name 'polyfills-*.js' -o -name 'styles-*.css' \) -mtime +7 | while read -r file; do
+    grep -q "\"/$(basename "$file")\"" front/dist/geosilesia/browser/ngsw.json || rm -f "$file"
+done
 rm -rf tmp/front-old
 
 devil www restart "$domain"

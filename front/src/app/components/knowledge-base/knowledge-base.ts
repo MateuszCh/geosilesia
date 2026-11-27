@@ -8,7 +8,6 @@ import { NavigationService } from '../../core/navigation.service';
 import { formatDate } from '../../core/dates';
 import { KnowledgeSection, ResourcePost, ResourcePostData } from '../../models/post.model';
 import { KnowledgeBaseData } from '../../models/row.model';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
 import { HtmlDirective } from '../../shared/html.directive';
 
@@ -43,7 +42,7 @@ interface ResourceView {
 @Component({
     selector: 'app-knowledge-base',
     templateUrl: './knowledge-base.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective],
+    imports: [NgTemplateOutlet, RouterLink, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class KnowledgeBase implements OnInit {

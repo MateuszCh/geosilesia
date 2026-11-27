@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, DOCUMENT, computed, inject, input, signal } from '@angular/core';
 import { ContactData } from '../../models/row.model';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { HtmlDirective } from '../../shared/html.directive';
 
 /**
@@ -10,7 +9,7 @@ import { HtmlDirective } from '../../shared/html.directive';
 @Component({
     selector: 'app-contact',
     templateUrl: './contact.html',
-    imports: [TrustedPipe, HtmlDirective],
+    imports: [HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Contact {
