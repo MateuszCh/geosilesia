@@ -3,8 +3,10 @@
 Data: 2026-11-27. Stan kodu: `master` @ `19ab215`. Produkcja (geosilesia.eu) działa na tym samym
 buildzie (`main-7RPYLJEZ.js` w moim buildzie i na produkcji). Audyt niczego nie zmienia w kodzie.
 
-**Status poprawek (branch `fix/audit-top5`):** B1 (bez `script-src` w CSP), B2, B4, D1, D2, D3 —
-wprowadzone, jeszcze nie wdrożone. Pozostałe znaleziska otwarte.
+**Status poprawek (branch `fix/audit-top5`):** B1 (bez `script-src` w CSP), B2, B3 (bez PDF), B4, B6,
+B7, D1, D2, D3, D4, D5, W3 — wprowadzone, jeszcze nie wdrożone. Otwarte: B5, B8, D6, W1, W2, P1, P2
+i `script-src` w CSP. Przy B7: 7 markerów ma w CMS błędny link (`ttp:`, `ttps:`, adres zamiast
+URL) — przycisk „Szczegóły” się przy nich nie pokazuje.
 
 ## 0. Rozpoznanie (co potwierdziłem, co poprawiam)
 

@@ -192,6 +192,9 @@ installed by the script as well (`npm ci --omit=dev` in the root, exactly as pin
 
 ## Images
 
+Files under `/uploads` (except PDFs) are served with a sandbox CSP: an SVG or HTML file opened
+by its own address cannot run scripts on the site's origin; `<img>` is not affected.
+
 CMS photos stay in `uploads/` as uploaded. `GET /img/<width>/<path under uploads/>`
 (`images.js`) answers with a WebP copy at most that wide (400, 800, 1200 or 1600 px, never
 upscaled), made once and kept in `tmp/img-cache/`; it is made again when the original is

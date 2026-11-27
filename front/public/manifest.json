@@ -44,8 +44,9 @@
             "purpose": "maskable"
         }
     ],
-    "start_url": "/index.html",
-    "scope": ".",
+    "id": "/index.html",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "orientation": "portrait-primary",
     "background_color": "#1e4d2f",

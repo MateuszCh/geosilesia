@@ -754,7 +754,21 @@ app.get(Object.keys(REDIRECTS), (req, res) => {
 
 // CMS uploads: a day in the browser cache, then a cheap revalidation (ETag) – a file
 // replaced under the same name shows up by the next day at the latest.
-app.use("/uploads", express.static(`${__dirname}/uploads`, { maxAge: "1d" }));
+// An SVG or HTML file opened by its own address would run its scripts on the site's origin
+// (its IndexedDB, its cookies-free but same-origin requests). The sandbox CSP turns that
+// document into a unique origin without scripts; <img src="….svg"> is not affected. PDFs are
+// left out: Chrome does not open its PDF viewer in a sandboxed document.
+// It replaces the site-wide CSP above, so it repeats frame-ancestors.
+const UPLOADS_CSP =
+    "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; frame-ancestors 'self'; sandbox";
+app.use(
+    "/uploads",
+    (req, res, next) => {
+        if (!/\.pdf$/i.test(req.path)) res.set("Content-Security-Policy", UPLOADS_CSP);
+        next();
+    },
+    express.static(`${__dirname}/uploads`, { maxAge: "1d" })
+);
 // Resized WebP copies of CMS photos for srcset (images.js); cached in tmp/img-cache.
 const images = createImageResizer({
     uploadsDir: `${__dirname}/uploads`,
@@ -891,17 +905,16 @@ app.get(["*"], (req, res, next) => {
         .catch(next);
 });
 
+// The full error goes to the log only: its message can name the database host. A client
+// error from the body parser (invalid JSON 400, too large 413) keeps its status; anything
+// else is the server's fault – 500, so the front and crawlers do not take it for a bad request.
 app.use((err, req, res, next) => {
-    console.log(err);
-    console.log(err.message);
-    if (typeof err === "string") {
-        res.status(422).send({ error: err });
-    } else if (typeof err.message === "string") {
-        res.status(422).send({ error: err.message });
-    } else if (err.errors) {
-        const firstError = Object.keys(err.errors)[0];
-        res.status(422).send({ error: err.errors[firstError].message });
+    console.error(err);
+    if (res.headersSent) return next(err);
+    const status = Number(err && (err.status || err.statusCode));
+    if (status >= 400 && status < 500) {
+        res.status(status).send({ error: "Bad request" });
     } else {
-        res.status(422).send(err.message);
+        res.status(500).send({ error: "Internal error" });
     }
 });

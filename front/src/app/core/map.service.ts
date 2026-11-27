@@ -1,6 +1,6 @@
 import { DOCUMENT, Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { GOOGLE_MAPS_URL } from './map.config';
+import { GOOGLE_MAPS_CALLBACK, GOOGLE_MAPS_URL } from './map.config';
 import { MapCategory, MapMarker, MapStyleDefinition } from './map.types';
 import { IconPost, MarkerPost, Top50Post } from '../models/post.model';
 import { NEUTRAL_COLOR, categoryLook, readableOnLight } from './categories';
@@ -38,19 +38,32 @@ export class MapService {
                 resolve(true);
                 return;
             }
-            const script = this.doc.createElement('script');
-            script.src = GOOGLE_MAPS_URL;
-            script.async = true;
-            script.onload = () => {
-                this.ready.set(true);
-                resolve(true);
-            };
-            script.onerror = () => {
-                // The page must keep working without the map: the result list renders from
-                // the API data, just without the preview and without address search.
+            // The page must keep working without the map: the result list renders from
+            // the API data, just without the preview and without address search.
+            const fail = () => {
                 this.loading = null;
                 resolve(false);
             };
+            const view = this.doc.defaultView as (Window & Record<string, unknown>) | null;
+            if (!view) return fail();
+            // With loading=async only the bootstrap is in when the callback runs. The
+            // libraries the site uses are loaded here; importLibrary also puts their classes
+            // on google.maps, where the rest of the code takes them from.
+            view[GOOGLE_MAPS_CALLBACK] = () => {
+                delete view[GOOGLE_MAPS_CALLBACK];
+                Promise.all([
+                    google.maps.importLibrary('maps'),
+                    google.maps.importLibrary('marker'),
+                    google.maps.importLibrary('geocoding')
+                ]).then(() => {
+                    this.ready.set(true);
+                    resolve(true);
+                }, fail);
+            };
+            const script = this.doc.createElement('script');
+            script.src = GOOGLE_MAPS_URL;
+            script.async = true;
+            script.onerror = fail;
             this.doc.head.appendChild(script);
         });
         return this.loading;
@@ -60,7 +73,9 @@ export class MapService {
         return (
             this.isBrowser &&
             typeof google !== 'undefined' &&
-            typeof google.maps !== 'undefined'
+            typeof google.maps !== 'undefined' &&
+            // the bootstrap alone defines google.maps; the classes come with importLibrary
+            typeof google.maps.Map !== 'undefined'
         );
     }
 
@@ -274,9 +289,10 @@ export class MapService {
         if (meta) body.appendChild(el('span', 'object-card__meta', meta));
 
         const actions = el('div', 'object-card__actions');
-        if (model.hyperlink) {
+        const hyperlink = safeLink(model.hyperlink);
+        if (hyperlink) {
             const details = el('a', 'btn btn--primary', 'Szczegóły') as HTMLAnchorElement;
-            details.href = model.hyperlink;
+            details.href = hyperlink;
             details.target = '_blank';
             details.rel = 'noreferrer';
             actions.appendChild(details);
@@ -369,6 +385,21 @@ export function formatKm(km: number): string {
 /** Google Maps route to the place from wherever the user is. */
 export function directionsUrl(model: MapMarker): string {
     return `https://www.google.com/maps/dir/?api=1&destination=${model.position.lat},${model.position.lng}`;
+}
+
+/**
+ * The CMS link of a marker, only when it opens a web page. Set through the DOM, `href` skips
+ * Angular's URL sanitizer, so a `javascript:` link would run on click. Relative links resolve
+ * against the site.
+ */
+function safeLink(link: string | undefined): string | undefined {
+    if (!link) return undefined;
+    try {
+        const url = new URL(link, document.baseURI);
+        return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 /** "Obiekty geologiczne" → "Geologiczne"; other names stay as they are. */

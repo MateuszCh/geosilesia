@@ -73,8 +73,13 @@ export class ResourceService {
             );
     }
 
+    /**
+     * A failed IndexedDB read counts as a cache miss: WebKit drops the database connection
+     * of a tab that comes back from the background ("Connection to Indexed Database server
+     * lost"), and a rejected read in the resolver would cancel every navigation of the tab.
+     */
     loadPageFromCache(pageKey: string): Promise<Page | undefined> {
-        return this.idb.getPage(pageKey);
+        return this.idb.getPage(pageKey).catch(() => undefined);
     }
 
     loadPostsFromNetwork<T>(type: string, transfer = true): Observable<Post<T>[]> {
@@ -99,8 +104,9 @@ export class ResourceService {
         );
     }
 
+    /** Like loadPageFromCache: a failed read is an empty cache. */
     loadPostsFromCache<T>(type: string): Promise<Post<T>[]> {
-        return this.idb.getPosts(type) as Promise<Post<T>[]>;
+        return (this.idb.getPosts(type) as Promise<Post<T>[]>).catch(() => [] as Post<T>[]);
     }
 
     /**
