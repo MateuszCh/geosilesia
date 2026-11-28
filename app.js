@@ -295,15 +295,13 @@ app.get("/api/posts/:type", (req, res, next) => {
         .catch(next);
 });
 
-// Per-IP limits (rate-limit.js), counted per minute in each process. Statistics: a person
-// sends a view, an engagement and maybe a click per page, so 120 events a minute is far
-// above anyone reading; over it the events are dropped silently – a beacon never reads the
-// answer and the page itself is still served. /api/appData: one per full visit at most.
+// Per-IP limits (rate-limit.js), counted per minute in each process. The statistics have
+// none: they are guarded by fromOwnSite below and the daily cap per visitor in visits.js.
+// /api/appData: one per full visit at most.
 // /img: a page asks for one copy per photo; over the limit a copy already on disk is still
 // served and only a new conversion is refused (images.js), so a group behind one address
 // (a school trip on one Wi-Fi) keeps seeing the photos.
 const MINUTE = 60 * 1000;
-const trackingLimit = createRateLimit({ windowMs: MINUTE, max: 120 });
 const appDataLimit = createRateLimit({ windowMs: MINUTE, max: 10 });
 const imageLimit = createRateLimit({ windowMs: MINUTE, max: 2000 });
 
@@ -311,8 +309,8 @@ const imageLimit = createRateLimit({ windowMs: MINUTE, max: 2000 });
 // from: Sec-Fetch-Site (every current one) or, in older ones, Origin on a POST. A request
 // that says it comes from another site – a page elsewhere sending beacons from its
 // visitors' browsers – is dropped. One that says nothing (an old browser, a script) passes:
-// a script can send any header anyway; against those stay the limits above and the daily
-// cap per visitor in visits.js.
+// a script can send any header anyway; against those stays the daily cap per visitor in
+// visits.js.
 function fromOwnSite(req) {
     const site = req.get("sec-fetch-site");
     if (site) return site === "same-origin";
@@ -332,7 +330,7 @@ function fromOwnSite(req) {
 // A link inside the site to a page that does not exist is recorded too: a broken link.
 function trackNavigation(req, pageUrl, found) {
     if (req.get("x-page-view") !== "1") return;
-    if (!fromOwnSite(req) || !trackingLimit.hit(req)) return;
+    if (!fromOwnSite(req)) return;
     if (found) {
         trackVisit(req, { path: seoMeta.normalizePath(pageUrl), source: "nav" });
     } else {
@@ -365,7 +363,7 @@ app.post(
     "/api/visit-event",
     bodyParser.text({ type: "*/*", limit: "2kb" }),
     (req, res) => {
-        if (!fromOwnSite(req) || !trackingLimit.hit(req)) return res.status(204).end();
+        if (!fromOwnSite(req)) return res.status(204).end();
         try {
             // text/plain from sendBeacon; application/json is already parsed above
             const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
@@ -404,6 +402,20 @@ app.post(
         res.status(204).end();
     }
 );
+
+// TEMPORARY – remove after the check on staging. Shows the caller their own address as the
+// app sees it (req.ip, which the limits and the visitor id use), next to the proxy's
+// X-Forwarded-For and the address of the connection itself, to confirm that `trust proxy`
+// gives the visitor's address behind the MyDevil proxy and not the proxy's.
+app.get("/api/debug-ip", (req, res) => {
+    res.set("Cache-Control", "no-store");
+    res.send({
+        ip: req.ip,
+        ips: req.ips,
+        forwardedFor: req.get("x-forwarded-for") || null,
+        remoteAddress: req.socket.remoteAddress
+    });
+});
 
 // What the browser would have blocked under the Report-Only policy (csp.js). The log is the
 // only output; always 204.

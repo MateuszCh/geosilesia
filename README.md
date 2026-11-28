@@ -81,8 +81,8 @@ Guards on these writes, the only ones the public site makes to the database:
 - a repeated `view` of the same visitor and page within 10 s counts once;
 - `engagement`, `outbound` and `download` count only on an existing page; an outbound
   target must look like `host/path`, a download like the path of a document;
-- one visitor writes at most 500 documents a day (per process), and one IP at most 120
-  a minute (see "Security").
+- one visitor writes at most 500 documents a day (per process). There is no per-IP limit
+  on these writes.
 
 ## Requirements
 
@@ -311,8 +311,8 @@ node scripts/warm-images.js   # every photo × every width; skips copies already
   `Content-Security-Policy` in `withScriptPolicy`; a new third-party script then needs its
   host in `SCRIPT_HOSTS` first.
 - **Request limits** (`rate-limit.js`, per IP and minute, counted in each process):
-  statistics 120 events (`/api/visit-event` and `X-Page-View`; above it they are dropped
-  without an error), `/api/appData` 10, `/img` 2000, CSP reports 30. Over the limit:
+  `/api/appData` 10, `/img` 2000, CSP reports 30 (the statistics have none, see "Visit
+  statistics"). Over the limit:
   `429` with `Retry-After`; for `/img` only when the copy would have to be made – one
   already on disk is still served, so many people behind one address keep their photos. The IP comes from `X-Forwarded-For` through `trust proxy`.
 - **`/api/appData`** (all content for offline mode, ~2.4 MB) is built once and kept in
