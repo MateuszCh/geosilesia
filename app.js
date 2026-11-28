@@ -403,20 +403,6 @@ app.post(
     }
 );
 
-// TEMPORARY – remove after the check on staging. Shows the caller their own address as the
-// app sees it (req.ip, which the limits and the visitor id use), next to the proxy's
-// X-Forwarded-For and the address of the connection itself, to confirm that `trust proxy`
-// gives the visitor's address behind the MyDevil proxy and not the proxy's.
-app.get("/api/debug-ip", (req, res) => {
-    res.set("Cache-Control", "no-store");
-    res.send({
-        ip: req.ip,
-        ips: req.ips,
-        forwardedFor: req.get("x-forwarded-for") || null,
-        remoteAddress: req.socket.remoteAddress
-    });
-});
-
 // What the browser would have blocked under the Report-Only policy (csp.js). The log is the
 // only output; always 204.
 const cspReportLimit = createRateLimit({ windowMs: MINUTE, max: 30 });

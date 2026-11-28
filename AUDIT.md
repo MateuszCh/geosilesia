@@ -7,9 +7,9 @@ buildzie (`main-7RPYLJEZ.js` w moim buildzie i na produkcji). Audyt niczego nie 
 D5, W1, W3 — wprowadzone, jeszcze nie wdrożone. `script-src` jest w trybie Report-Only (raporty
 w logu serwera jako `[csp]`). Otwarte: B8, W2, P2 (poza kodem) oraz D6, P1 (zostają celowo bez
 zmian). B5: limity na IP są dla `/api/appData`, `/img` i raportów CSP; statystyki nie mają limitu
-na IP (chroni je sprawdzanie pochodzenia i limit dzienny poniżej). Do sprawdzenia na stagingu:
-czy `req.ip` to adres odwiedzającego za proxy MyDevil (tymczasowy `GET /api/debug-ip`, do usunięcia
-po sprawdzeniu). Przy B7: 7 markerów ma w CMS błędny link (`ttp:`, `ttps:`, adres zamiast URL) — przycisk
+na IP (chroni je sprawdzanie pochodzenia i limit dzienny poniżej). Sprawdzone na stagingu (2026-11-28):
+`req.ip` to publiczny adres odwiedzającego za proxy MyDevil, a podany przez klienta
+`X-Forwarded-For` go nie zmienia (proxy dopisuje prawdziwy adres na końcu). Przy B7: 7 markerów ma w CMS błędny link (`ttp:`, `ttps:`, adres zamiast URL) — przycisk
 „Szczegóły” się przy nich nie pokazuje. P2 dotyczy teraz też `localStorage`
 (`geosilesia:appDataAt`, data ostatniego prefetchu). Statystyki (jedyne zapisy do bazy z publicznej
 strony): odrzucane żądania z innych stron (`Sec-Fetch-Site`/`Origin`), deduplikacja `view`
