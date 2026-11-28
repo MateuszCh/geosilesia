@@ -57,13 +57,29 @@ class QueueFullError extends Error {
     }
 }
 
+/** No up-to-date copy on disk, and the caller asked not to make one (`cachedOnly`). */
+class NotCachedError extends Error {
+    constructor() {
+        super("no cached copy");
+        this.code = "NOT_CACHED";
+    }
+}
+
 /**
  * `allowFrame(relative, frame)` – whether this photo may be cut to this frame and position
  * (a Promise of a boolean). Without it every position is accepted; app.js accepts only the
  * framings the CMS holds, otherwise 101 × 101 positions × every width × every photo could be
  * requested, each a conversion and a file on disk.
+ * `limit(req)` – counts the request against a rate limit and says whether it is within it
+ * (`{ ok, retryAfter }`, retryAfter in seconds). A request over the limit still gets a copy
+ * already on disk; one that would need a new conversion gets 429.
  */
-function createImageResizer({ uploadsDir, cacheDir, allowFrame = () => Promise.resolve(true) }) {
+function createImageResizer({
+    uploadsDir,
+    cacheDir,
+    allowFrame = () => Promise.resolve(true),
+    limit = () => ({ ok: true, retryAfter: 0 })
+}) {
     const uploadsRoot = path.resolve(uploadsDir) + path.sep;
     let vipsPromise = null;
     // One conversion at a time: decoding a 2000 px photo takes tens of MB, and the hosting
@@ -133,9 +149,10 @@ function createImageResizer({ uploadsDir, cacheDir, allowFrame = () => Promise.r
     /**
      * Path of an up-to-date copy, converting it first when needed. `frame` – from
      * frameOf() – cuts the photo to a frame before resizing. With `queueLimit` a new
-     * conversion is refused (QueueFullError) once that many are waiting.
+     * conversion is refused (QueueFullError) once that many are waiting; with `cachedOnly`
+     * a missing or outdated copy is not made (NotCachedError).
      */
-    async function copyOf(source, width, frame = null, { queueLimit = Infinity } = {}) {
+    async function copyOf(source, width, frame = null, { queueLimit = Infinity, cachedOnly = false } = {}) {
         const relative = path.relative(uploadsRoot, source);
         const variant = frame ? path.join(`${frame.name}-${frame.x}-${frame.y}`, String(width)) : String(width);
         const target = path.join(cacheDir, variant, `${relative}.webp`);
@@ -144,6 +161,7 @@ function createImageResizer({ uploadsDir, cacheDir, allowFrame = () => Promise.r
             fs.promises.stat(target).catch(() => null)
         ]);
         if (targetStat && targetStat.mtimeMs >= sourceStat.mtimeMs) return target;
+        if (cachedOnly) throw new NotCachedError();
 
         if (!pending.has(target)) {
             if (pending.size >= queueLimit) throw new QueueFullError();
@@ -176,6 +194,8 @@ function createImageResizer({ uploadsDir, cacheDir, allowFrame = () => Promise.r
 
     /** Express handler for /img/:width/* and /img/:frame/:position/:width/* */
     function handler(req, res, next) {
+        // counted first, so requests for photos that do not exist count too
+        const { ok, retryAfter } = limit(req);
         const width = Number(req.params.width);
         const source = sourcePath(req.params[0]);
         const frame = req.params.frame ? frameOf(req.params.frame, req.params.position) : null;
@@ -184,13 +204,18 @@ function createImageResizer({ uploadsDir, cacheDir, allowFrame = () => Promise.r
         Promise.all([fs.promises.access(source).then(() => true, () => false), frame ? allowFrame(req.params[0], frame) : true])
             .then(([exists, allowed]) => {
                 if (!exists || !allowed) return next();
-                return copyOf(source, width, frame, { queueLimit: MAX_QUEUED }).then(
+                return copyOf(source, width, frame, { queueLimit: MAX_QUEUED, cachedOnly: !ok }).then(
                     target =>
                         res.sendFile(target, {
                             maxAge: "1d",
                             headers: { "Content-Type": "image/webp" }
                         }),
                     error => {
+                        if (error instanceof NotCachedError) {
+                            res.set("Retry-After", String(retryAfter));
+                            res.status(429).send({ error: "Too many requests" });
+                            return;
+                        }
                         if (error instanceof QueueFullError) {
                             // Busy: the original now, the copy on a later request.
                             res.sendFile(source, { maxAge: 0 });

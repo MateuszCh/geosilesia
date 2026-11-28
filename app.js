@@ -299,11 +299,32 @@ app.get("/api/posts/:type", (req, res, next) => {
 // sends a view, an engagement and maybe a click per page, so 120 events a minute is far
 // above anyone reading; over it the events are dropped silently – a beacon never reads the
 // answer and the page itself is still served. /api/appData: one per full visit at most.
-// /img: a long gallery scrolled fast asks for a few hundred copies.
+// /img: a page asks for one copy per photo; over the limit a copy already on disk is still
+// served and only a new conversion is refused (images.js), so a group behind one address
+// (a school trip on one Wi-Fi) keeps seeing the photos.
 const MINUTE = 60 * 1000;
 const trackingLimit = createRateLimit({ windowMs: MINUTE, max: 120 });
 const appDataLimit = createRateLimit({ windowMs: MINUTE, max: 10 });
-const imageLimit = createRateLimit({ windowMs: MINUTE, max: 600 });
+const imageLimit = createRateLimit({ windowMs: MINUTE, max: 2000 });
+
+// Statistics are written only from the site's own pages. Browsers say where a request comes
+// from: Sec-Fetch-Site (every current one) or, in older ones, Origin on a POST. A request
+// that says it comes from another site – a page elsewhere sending beacons from its
+// visitors' browsers – is dropped. One that says nothing (an old browser, a script) passes:
+// a script can send any header anyway; against those stay the limits above and the daily
+// cap per visitor in visits.js.
+function fromOwnSite(req) {
+    const site = req.get("sec-fetch-site");
+    if (site) return site === "same-origin";
+    const origin = req.get("origin");
+    if (!origin) return true;
+    try {
+        const host = new URL(origin).hostname;
+        return host === req.hostname || host === new URL(config.siteUrl || "http://invalid").hostname;
+    } catch (err) {
+        return false;
+    }
+}
 
 // Only requests the front marks as page views count as in-app navigation: the router
 // resolver and the page component's refresh send `X-Page-View: 1`, while other reads of a
@@ -311,7 +332,7 @@ const imageLimit = createRateLimit({ windowMs: MINUTE, max: 600 });
 // A link inside the site to a page that does not exist is recorded too: a broken link.
 function trackNavigation(req, pageUrl, found) {
     if (req.get("x-page-view") !== "1") return;
-    if (!trackingLimit.hit(req)) return;
+    if (!fromOwnSite(req) || !trackingLimit.hit(req)) return;
     if (found) {
         trackVisit(req, { path: seoMeta.normalizePath(pageUrl), source: "nav" });
     } else {
@@ -344,7 +365,7 @@ app.post(
     "/api/visit-event",
     bodyParser.text({ type: "*/*", limit: "2kb" }),
     (req, res) => {
-        if (!trackingLimit.hit(req)) return res.status(204).end();
+        if (!fromOwnSite(req) || !trackingLimit.hit(req)) return res.status(204).end();
         try {
             // text/plain from sendBeacon; application/json is already parsed above
             const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
@@ -366,13 +387,16 @@ app.post(
                     })
                     .catch(() => undefined);
             } else if (body && ["engagement", "outbound", "download"].includes(body.type)) {
-                let path = null;
-                try {
-                    path = seoMeta.normalizePath(decodeURIComponent(String(body.path || "")));
-                } catch (err) {
-                    path = null;
-                }
-                trackEvent(req, { type: body.type, path, ms: body.ms, target: body.target });
+                // only about a page that exists, stored under its own address
+                const { type, ms, target } = body;
+                getPages()
+                    .then(pages => {
+                        const page = typeof body.path === "string" && findPage(pages, body.path);
+                        if (page) {
+                            trackEvent(req, { type, path: seoMeta.normalizePath(page.pageUrl), ms, target });
+                        }
+                    })
+                    .catch(() => undefined);
             }
         } catch (err) {
             // not JSON: nothing to record
@@ -842,7 +866,8 @@ const images = createImageResizer({
         getPages()
             .then(pages => heroFrames(pages).has(frameKey(frame.name, relative, frame.x, frame.y)))
             // Database down: the framings cannot be checked, and the hero must still load.
-            .catch(() => true)
+            .catch(() => true),
+    limit: req => ({ ok: imageLimit.hit(req), retryAfter: imageLimit.retryAfter() })
 });
 
 // The framed copies the pages ask for: the home hero's slides on phones ("hero-phone", see
@@ -881,8 +906,8 @@ function heroFrames(pages) {
     heroFramesCache.set(pages, keys);
     return keys;
 }
-app.get("/img/:width/*", imageLimit.middleware, images.handler);
-app.get("/img/:frame/:position/:width/*", imageLimit.middleware, images.handler);
+app.get("/img/:width/*", images.handler);
+app.get("/img/:frame/:position/:width/*", images.handler);
 // Self-hosted fonts (copied from @fontsource at build time): their names carry no hash, but the
 // files only change with a font package upgrade, so a month in the browser cache is safe and
 // saves a revalidation round trip on every reload.

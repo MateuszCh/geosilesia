@@ -63,6 +63,17 @@ const SALT_ID = "visit-salt";
 // page component refetching what the resolver has just shown. So is a second 404 of the
 // same address.
 const DEDUP_MS = 30 * 1000;
+// A "view" beacon of the same visitor and page this soon after the last one is the same
+// view sent again (a script repeating it); a reload after it counts.
+const VIEW_DEDUP_MS = 10 * 1000;
+// Documents one visitor may add in a day (hits and events together, per process). Reading
+// a hundred pages with a few clicks each stays far below; a script posing as one visitor
+// stops here instead of filling the database.
+const MAX_WRITES_PER_VISITOR_DAY = 500;
+// What the front sends as a click target (visit-events.service.ts): "host/path" of another
+// site, and the path of a document on this one (decoded, so it may hold spaces).
+const OUTBOUND_TARGET = /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i;
+const DOWNLOAD_TARGET = /^\/.*\.(pdf|docx?|xlsx?|pptx?|odt|ods|odp|rtf|csv|txt|zip|rar|7z|epub|gpx|kml|kmz)$/i;
 const MAX_ENTRIES = 50000;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -232,6 +243,8 @@ function createVisitTracker(db, { siteUrl } = {}) {
     const ownHosts = new Set([hostOf(siteUrl || "")].filter(Boolean));
     // `${visitor}|${path}` -> ts of the last hit, `404|${visitor}|${path}` of the last 404
     const recent = new Map();
+    // visitor -> documents written today (see MAX_WRITES_PER_VISITOR_DAY)
+    let writes = { day: null, counts: new Map() };
     let salt = { day: null, value: null, pending: null };
 
     Promise.all([
@@ -290,15 +303,24 @@ function createVisitTracker(db, { siteUrl } = {}) {
         );
     }
 
+    /** Counts one document of the visitor today; false once the day's cap is reached. */
+    function mayWrite(visitor, day) {
+        if (writes.day !== day) writes = { day, counts: new Map() };
+        const count = (writes.counts.get(visitor) || 0) + 1;
+        // evicting the oldest visitor at MAX_ENTRIES only resets that one's count
+        touch(writes.counts, visitor, count);
+        return count <= MAX_WRITES_PER_VISITOR_DAY;
+    }
+
     /** A request from a browser: not a bot that names itself, nor one without a user agent. */
     function isPerson(req) {
         const userAgent = req.get("user-agent") || "";
         return Boolean(userAgent) && !BOT_UA.test(userAgent);
     }
 
-    /** Whether `key` was seen within DEDUP_MS; marks it seen now either way. */
-    function seenRecently(key, ts) {
-        const seen = ts - (recent.get(key) || 0) < DEDUP_MS;
+    /** Whether `key` was seen within `windowMs`; marks it seen now either way. */
+    function seenRecently(key, ts, windowMs = DEDUP_MS) {
+        const seen = ts - (recent.get(key) || 0) < windowMs;
         touch(recent, key, ts);
         return seen;
     }
@@ -310,6 +332,10 @@ function createVisitTracker(db, { siteUrl } = {}) {
             if (seenRecently(`${visitor}|${path}`, now.getTime()) && source === "nav") {
                 return null;
             }
+            if (source === "ssr" && seenRecently(`view|${visitor}|${path}`, now.getTime(), VIEW_DEDUP_MS)) {
+                return null;
+            }
+            if (!mayWrite(visitor, day)) return null;
 
             return visits.insertOne({
                 ts: now,
@@ -363,7 +389,8 @@ function createVisitTracker(db, { siteUrl } = {}) {
                 doc.from = sourceOf(referrerOf(req, referrer), req, ownHosts);
             } else {
                 doc.target = shortText(target);
-                if (!doc.target) return false;
+                const format = type === "outbound" ? OUTBOUND_TARGET : DOWNLOAD_TARGET;
+                if (!doc.target || !format.test(doc.target)) return false;
             }
             const now = new Date();
             const day = dayOf(now);
@@ -372,6 +399,7 @@ function createVisitTracker(db, { siteUrl } = {}) {
                     if (type === "notFound" && seenRecently(`404|${visitor}|${doc.path}`, now.getTime())) {
                         return null;
                     }
+                    if (!mayWrite(visitor, day)) return null;
                     return events.insertOne({ ts: now, day, visitor, ...doc, confirmed: true });
                 })
                 .catch(err => console.log(new Date(), "[visits] event", err));

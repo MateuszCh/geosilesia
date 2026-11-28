@@ -24,15 +24,19 @@ function createRateLimit({ windowMs, max }) {
         return count <= max;
     }
 
+    /** Seconds until the current window ends – for Retry-After. */
+    function retryAfter() {
+        return Math.max(1, Math.ceil((windowStart + windowMs - Date.now()) / 1000));
+    }
+
     /** Express middleware: 429 with Retry-After once the address is over the limit. */
     function middleware(req, res, next) {
         if (hit(req)) return next();
-        const retryAfter = Math.max(1, Math.ceil((windowStart + windowMs - Date.now()) / 1000));
-        res.set("Retry-After", String(retryAfter));
+        res.set("Retry-After", String(retryAfter()));
         res.status(429).send({ error: "Too many requests" });
     }
 
-    return { hit, middleware };
+    return { hit, retryAfter, middleware };
 }
 
 module.exports = { createRateLimit };

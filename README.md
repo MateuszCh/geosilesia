@@ -73,6 +73,17 @@ themselves in the user agent are skipped as well. Everything written this way ca
 `confirmed: true`; the readers (Frodo, `scripts/stats.js`) count older documents only for
 visitors who ran the page's script that day.
 
+Guards on these writes, the only ones the public site makes to the database:
+- a request the browser marks as coming from another site (`Sec-Fetch-Site` other than
+  `same-origin`, or a foreign `Origin`) is dropped, so a page elsewhere cannot send views
+  from its visitors' browsers; a request without these headers passes (`fromOwnSite` in
+  `app.js`);
+- a repeated `view` of the same visitor and page within 10 s counts once;
+- `engagement`, `outbound` and `download` count only on an existing page; an outbound
+  target must look like `host/path`, a download like the path of a document;
+- one visitor writes at most 500 documents a day (per process), and one IP at most 120
+  a minute (see "Security").
+
 ## Requirements
 
 - Node.js `^22.22.3`, `^24.15.0` or `>=26` (required by Angular 22).
@@ -301,12 +312,15 @@ node scripts/warm-images.js   # every photo × every width; skips copies already
   host in `SCRIPT_HOSTS` first.
 - **Request limits** (`rate-limit.js`, per IP and minute, counted in each process):
   statistics 120 events (`/api/visit-event` and `X-Page-View`; above it they are dropped
-  without an error), `/api/appData` 10, `/img` 600, CSP reports 30. Over the limit:
-  `429` with `Retry-After`. The IP comes from `X-Forwarded-For` through `trust proxy`.
+  without an error), `/api/appData` 10, `/img` 2000, CSP reports 30. Over the limit:
+  `429` with `Retry-After`; for `/img` only when the copy would have to be made – one
+  already on disk is still served, so many people behind one address keep their photos. The IP comes from `X-Forwarded-For` through `trust proxy`.
 - **`/api/appData`** (all content for offline mode, ~2.4 MB) is built once and kept in
   memory with an ETag until the content version changes, like the SSR cache; a browser with
-  the current copy gets `304`. The front fetches it at most once a day (the time of the
-  last stored prefetch is in `localStorage`, `geosilesia:appDataAt`).
+  the current copy gets `304`. The front fetches it only in the installed app (started from
+  the home screen, `display-mode: standalone`) and at most once a day (the time of the last
+  stored prefetch is in `localStorage`, `geosilesia:appDataAt`). In a browser tab only the
+  pages the visitor opens are stored for offline use.
 
 ## Do not change without checking
 

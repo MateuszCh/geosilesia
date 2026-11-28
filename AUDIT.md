@@ -8,7 +8,11 @@ D5, W1, W3 — wprowadzone, jeszcze nie wdrożone. `script-src` jest w trybie Re
 w logu serwera jako `[csp]`). Otwarte: B8, W2, P2 (poza kodem) oraz D6, P1 (zostają celowo bez
 zmian). Przy B7: 7 markerów ma w CMS błędny link (`ttp:`, `ttps:`, adres zamiast URL) — przycisk
 „Szczegóły” się przy nich nie pokazuje. P2 dotyczy teraz też `localStorage`
-(`geosilesia:appDataAt`, data ostatniego prefetchu).
+(`geosilesia:appDataAt`, data ostatniego prefetchu). Statystyki (jedyne zapisy do bazy z publicznej
+strony): odrzucane żądania z innych stron (`Sec-Fetch-Site`/`Origin`), deduplikacja `view`
+(10 s), zdarzenia tylko dla istniejących stron i z poprawnym celem, limit 500 zapisów dziennie
+na odwiedzającego. W1: prefetch `/api/appData` tylko w zainstalowanej aplikacji (PWA), najwyżej raz
+na dobę.
 
 ## 0. Rozpoznanie (co potwierdziłem, co poprawiam)
 

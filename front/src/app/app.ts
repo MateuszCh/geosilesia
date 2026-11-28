@@ -78,9 +78,13 @@ export class App {
 
     /**
      * Offline prefetch: after the page has loaded, a quiet moment and an idle main thread.
-     * Skipped when the visitor asked to save data or is on a 2G-class connection.
+     * Only in the installed app (started from the home screen): that is where someone plans
+     * to use the site without a network, in the field. A visitor in a browser tab gets the
+     * pages they open stored on the way, not the whole site (~0.5 MB). Skipped as well when
+     * the visitor asked to save data or is on a 2G-class connection.
      */
     private schedulePrefetch(view: Window): void {
+        if (!isInstalledApp(view)) return;
         const connection = (view.navigator as Navigator & {
             connection?: { saveData?: boolean; effectiveType?: string };
         }).connection;
@@ -168,4 +172,16 @@ export class App {
                 // there is simply nothing to clean up.
             });
     }
+}
+
+/**
+ * Whether the site runs as the installed app: the display mode the manifest asks for
+ * ("standalone"), or Safari's own flag on iOS, where an app added to the home screen does
+ * not always report the display mode.
+ */
+function isInstalledApp(view: Window): boolean {
+    return (
+        view.matchMedia?.('(display-mode: standalone)').matches === true ||
+        (view.navigator as Navigator & { standalone?: boolean }).standalone === true
+    );
 }
