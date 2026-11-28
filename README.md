@@ -17,6 +17,8 @@ site visitors.
 | `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 1 hour |
 | `shared/seo-meta.js` | SEO rules (title, description, paths) shared by the server and the browser |
 | `images.js` | Resized WebP copies of CMS photos for `srcset` (`/img/<width>/…`, see below) |
+| `rate-limit.js` | Per-IP request limits in memory (see "Security") |
+| `csp.js` | The `script-src` policy of HTML responses, Report-Only for now (see "Security") |
 | `visits.js` | Visit statistics without cookies: page views and events in MongoDB, read by the CMS (see below) |
 | `front/` | Angular 22 application with server-side rendering and hydration |
 | `config.json` | Local configuration, not in git — copy `config.example.json` |
@@ -70,6 +72,17 @@ document request itself; a prerendered page counts only once it is shown. Bots t
 themselves in the user agent are skipped as well. Everything written this way carries
 `confirmed: true`; the readers (Frodo, `scripts/stats.js`) count older documents only for
 visitors who ran the page's script that day.
+
+Guards on these writes, the only ones the public site makes to the database:
+- a request the browser marks as coming from another site (`Sec-Fetch-Site` other than
+  `same-origin`, or a foreign `Origin`) is dropped, so a page elsewhere cannot send views
+  from its visitors' browsers; a request without these headers passes (`fromOwnSite` in
+  `app.js`);
+- a repeated `view` of the same visitor and page within 10 s counts once;
+- `engagement`, `outbound` and `download` count only on an existing page; an outbound
+  target must look like `host/path`, a download like the path of a document;
+- one visitor writes at most 500 documents a day (per process), and one IP at most 120
+  a minute (see "Security").
 
 ## Requirements
 
@@ -158,7 +171,12 @@ The script pulls the code itself (`--ff-only`: a server clone with commits of it
 stops there) and then runs again from the start, since the pull may have changed it. The
 build goes to `tmp/front-build` and replaces `front/dist/geosilesia` only once it has
 succeeded: the running process keeps serving the old build until the restart, and a failed
-or hung build leaves the site as it was.
+or hung build leaves the site as it was. The previous build's `main-*`, `chunk-*`,
+`polyfills-*` and `styles-*` files are copied into the new one and removed a week later
+(unless the new `ngsw.json` lists them): a tab opened before the deployment without a service
+worker still finds the lazy chunks of its deferred rows. After a deployment the front opens
+the next in-app link as a full load once the service worker has the new version
+(`SwUpdate` in `app.ts`), so nobody stays on an old front reading data shaped for the new one.
 
 Every deployment restarts the Node process, always after the build — the new server
 expects the new build. The restart is also what clears all in-memory caches (rendered
@@ -187,6 +205,9 @@ installed by the script as well (`npm ci --omit=dev` in the root, exactly as pin
 
 ## Images
 
+Files under `/uploads` (except PDFs) are served with a sandbox CSP: an SVG or HTML file opened
+by its own address cannot run scripts on the site's origin; `<img>` is not affected.
+
 CMS photos stay in `uploads/` as uploaded. `GET /img/<width>/<path under uploads/>`
 (`images.js`) answers with a WebP copy at most that wide (400, 800, 1200 or 1600 px, never
 upscaled), made once and kept in `tmp/img-cache/`; it is made again when the original is
@@ -205,7 +226,9 @@ same `object-position` on the cut shows the same pixels as on the whole photo. T
 is `hero-phone` (430 × 520, the home hero on phones up to 430 px): a `<picture>` source in
 `homepage-banner.html` uses it with the editor's framing from the CMS, which halves the photo
 phones download for the LCP. `FRAMES` in `images.js` and `srcset.ts` must match. Framed
-copies are made on the first request, not by the warm script.
+copies are made on the first request, not by the warm script. Only the framings the CMS holds
+are served (`heroFrames` in `app.js`, computed like `framedSrcsetOf`); any other position is a
+404, so nobody can make the server convert and store 101 × 101 positions of every photo.
 
 Below a photo hero (the home banner or a page's photo band, the page's LCP) the photos wait
 until the hero is painted: `loading="lazy"` alone still fetched ~600 kB of them on phones
@@ -221,7 +244,8 @@ including the ones in rows that are not hydrated yet. A new below-the-fold photo
 `appPhoto`; a photo that may be the largest element of a page without a hero should not.
 
 Conversion uses `wasm-vips` (libvips in WebAssembly) because `sharp` has no binaries for the
-server's FreeBSD. Conversions run one at a time. After the first deployment, and whenever
+server's FreeBSD. Conversions run one at a time; with 16 waiting, a request for a copy that is
+not on disk yet gets the original at once (`MAX_QUEUED`). After the first deployment, and whenever
 many photos were uploaded at once, warm the cache so visitors do not wait:
 
 ```bash
@@ -272,6 +296,31 @@ node scripts/warm-images.js   # every photo × every width; skips copies already
 - The first navigation on a server-rendered page skips IndexedDB in the resolver (the
   `RENDERED_ON_SERVER` flag in TransferState) — otherwise an older copy of the page from
   the offline database would not match the HTML.
+
+## Security
+
+- **Headers.** `app.js` sends HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy`,
+  `Permissions-Policy` and a CSP with `frame-ancestors`, `object-src` and `base-uri` on
+  every response; files under `/uploads` get a sandbox CSP instead (see "Images").
+- **`script-src` is Report-Only.** HTML responses carry
+  `Content-Security-Policy-Report-Only` with `'self'`, Google Maps and the hashes of the
+  inline scripts of that very document (`csp.js`: the SSR event replay bootstrap differs
+  from page to page, so the hashes are computed when the page is sent). Browsers report what
+  it would block to `POST /api/csp-report`, and the server logs one `[csp]` line per distinct
+  violation. When the log stays quiet for a while, rename the header to
+  `Content-Security-Policy` in `withScriptPolicy`; a new third-party script then needs its
+  host in `SCRIPT_HOSTS` first.
+- **Request limits** (`rate-limit.js`, per IP and minute, counted in each process):
+  statistics 120 events (`/api/visit-event` and `X-Page-View`; above it they are dropped
+  without an error), `/api/appData` 10, `/img` 2000, CSP reports 30. Over the limit:
+  `429` with `Retry-After`; for `/img` only when the copy would have to be made – one
+  already on disk is still served, so many people behind one address keep their photos. The IP comes from `X-Forwarded-For` through `trust proxy`.
+- **`/api/appData`** (all content for offline mode, ~2.4 MB) is built once and kept in
+  memory with an ETag until the content version changes, like the SSR cache; a browser with
+  the current copy gets `304`. The front fetches it only in the installed app (started from
+  the home screen, `display-mode: standalone`) and at most once a day (the time of the last
+  stored prefetch is in `localStorage`, `geosilesia:appDataAt`). In a browser tab only the
+  pages the visitor opens are stored for offline use.
 
 ## Do not change without checking
 

@@ -6,7 +6,6 @@ import { colorByName } from '../../core/categories';
 import { internalLink, isExternalLink } from '../../core/cms-link';
 import { ContentService } from '../../core/content.service';
 import { LinkCardsData } from '../../models/row.model';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
 import { HtmlDirective } from '../../shared/html.directive';
 import { PhotoDirective } from '../../shared/photo-hold';
@@ -22,7 +21,7 @@ export type SideForm = 'list' | 'figure' | 'card';
 @Component({
     selector: 'app-link-cards',
     templateUrl: './link-cards.html',
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective, PhotoDirective],
+    imports: [NgTemplateOutlet, RouterLink, HtmlDirective, PhotoDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LinkCards implements OnInit {

@@ -10,7 +10,10 @@ const express = require("express"),
     { createRenderer } = require("./ssr"),
     { publishedPages } = require("./pages"),
     { createVisitTracker } = require("./visits"),
-    { createImageResizer } = require("./images");
+    { createImageResizer } = require("./images"),
+    { createRateLimit } = require("./rate-limit"),
+    csp = require("./csp"),
+    crypto = require("crypto");
 
 const app = express();
 app.set("port", process.env.PORT || 3000);
@@ -28,6 +31,25 @@ app.set("trust proxy", 1);
 // ~530 kB to ~160 kB. Images are left alone (already compressed). A proxy in front of the
 // app does not compress again a response that already has Content-Encoding.
 app.use(compression());
+
+// Security headers on every response – pages, API, static files and uploads. Nothing on the
+// hosting adds them (checked on production 2026-11-27). The CSP holds only directives that
+// break nothing. script-src is sent on HTML responses only, for now as Report-Only (csp.js).
+// HSTS without includeSubDomains: not every subdomain is known to serve HTTPS. Browsers ignore
+// it over plain http, so local development is not affected.
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+    res.set({
+        "Strict-Transport-Security": "max-age=31536000",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        // geolocation stays for the map's "my location" button
+        "Permissions-Policy": "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)",
+        "Content-Security-Policy": "frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+    });
+    next();
+});
 
 // Global indexing switch – one flag for the whole site, no per-page settings.
 // Deliberately OFF by default: a fresh clone or a staging instance without the entry
@@ -50,27 +72,48 @@ let databaseError = false;
 let trackVisit = () => {};
 let trackEvent = () => false;
 
-const client = new MongoClient(config.mongoUrl);
+// A failed first connection is retried: otherwise a database that was down for a minute while
+// Passenger started the process left the site answering 503 until the next restart. Once
+// connected, the driver itself reconnects after an outage. The server starts listening after
+// the first attempt either way (until then requests wait instead of finding no collections).
+const CONNECT_RETRY_MS = 10000;
+let listening = false;
 
-client.connect()
-    .then(client => {
-        db = client.db(config.dbName);
-        collections.posts = db.collection("posts");
-        // Published pages only: every read adds `draft: { $ne: true }` (pages.js), so a
-        // page the CMS marks as a draft answers 404 everywhere, like a missing one.
-        collections.pages = publishedPages(db.collection("pages"));
-        collections.files = db.collection("files");
-        collections.meta = db.collection("meta");
-        const tracker = createVisitTracker(db, { siteUrl: config.siteUrl });
-        trackVisit = tracker.track;
-        trackEvent = tracker.event;
-        app.listen(app.get("port"), () => console.log("Running on port 3000"));
-    })
-    .catch(err => {
-        databaseError = err;
-        console.log(new Date(), err);
-        app.listen(app.get("port"), () => console.log("Running on port 3000"));
-    });
+function listen() {
+    if (listening) return;
+    listening = true;
+    app.listen(app.get("port"), () => console.log("Running on port 3000"));
+}
+
+function connectDatabase() {
+    const client = new MongoClient(config.mongoUrl);
+    client
+        .connect()
+        .then(client => {
+            db = client.db(config.dbName);
+            collections.posts = db.collection("posts");
+            // Published pages only: every read adds `draft: { $ne: true }` (pages.js), so a
+            // page the CMS marks as a draft answers 404 everywhere, like a missing one.
+            collections.pages = publishedPages(db.collection("pages"));
+            collections.files = db.collection("files");
+            collections.meta = db.collection("meta");
+            const tracker = createVisitTracker(db, { siteUrl: config.siteUrl });
+            trackVisit = tracker.track;
+            trackEvent = tracker.event;
+            if (databaseError) console.log(new Date(), "[db] connected after a failed attempt");
+            databaseError = false;
+            listen();
+        })
+        .catch(err => {
+            databaseError = err;
+            console.log(new Date(), `[db] connection failed, retrying in ${CONNECT_RETRY_MS / 1000} s:`, err.message);
+            client.close().catch(() => undefined);
+            setTimeout(connectDatabase, CONNECT_RETRY_MS);
+            listen();
+        });
+}
+
+connectDatabase();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -252,12 +295,44 @@ app.get("/api/posts/:type", (req, res, next) => {
         .catch(next);
 });
 
+// Per-IP limits (rate-limit.js), counted per minute in each process. Statistics: a person
+// sends a view, an engagement and maybe a click per page, so 120 events a minute is far
+// above anyone reading; over it the events are dropped silently – a beacon never reads the
+// answer and the page itself is still served. /api/appData: one per full visit at most.
+// /img: a page asks for one copy per photo; over the limit a copy already on disk is still
+// served and only a new conversion is refused (images.js), so a group behind one address
+// (a school trip on one Wi-Fi) keeps seeing the photos.
+const MINUTE = 60 * 1000;
+const trackingLimit = createRateLimit({ windowMs: MINUTE, max: 120 });
+const appDataLimit = createRateLimit({ windowMs: MINUTE, max: 10 });
+const imageLimit = createRateLimit({ windowMs: MINUTE, max: 2000 });
+
+// Statistics are written only from the site's own pages. Browsers say where a request comes
+// from: Sec-Fetch-Site (every current one) or, in older ones, Origin on a POST. A request
+// that says it comes from another site – a page elsewhere sending beacons from its
+// visitors' browsers – is dropped. One that says nothing (an old browser, a script) passes:
+// a script can send any header anyway; against those stay the limits above and the daily
+// cap per visitor in visits.js.
+function fromOwnSite(req) {
+    const site = req.get("sec-fetch-site");
+    if (site) return site === "same-origin";
+    const origin = req.get("origin");
+    if (!origin) return true;
+    try {
+        const host = new URL(origin).hostname;
+        return host === req.hostname || host === new URL(config.siteUrl || "http://invalid").hostname;
+    } catch (err) {
+        return false;
+    }
+}
+
 // Only requests the front marks as page views count as in-app navigation: the router
 // resolver and the page component's refresh send `X-Page-View: 1`, while other reads of a
 // page (the home page banner, for one) do not.
 // A link inside the site to a page that does not exist is recorded too: a broken link.
 function trackNavigation(req, pageUrl, found) {
     if (req.get("x-page-view") !== "1") return;
+    if (!fromOwnSite(req) || !trackingLimit.hit(req)) return;
     if (found) {
         trackVisit(req, { path: seoMeta.normalizePath(pageUrl), source: "nav" });
     } else {
@@ -290,6 +365,7 @@ app.post(
     "/api/visit-event",
     bodyParser.text({ type: "*/*", limit: "2kb" }),
     (req, res) => {
+        if (!fromOwnSite(req) || !trackingLimit.hit(req)) return res.status(204).end();
         try {
             // text/plain from sendBeacon; application/json is already parsed above
             const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
@@ -311,17 +387,35 @@ app.post(
                     })
                     .catch(() => undefined);
             } else if (body && ["engagement", "outbound", "download"].includes(body.type)) {
-                let path = null;
-                try {
-                    path = seoMeta.normalizePath(decodeURIComponent(String(body.path || "")));
-                } catch (err) {
-                    path = null;
-                }
-                trackEvent(req, { type: body.type, path, ms: body.ms, target: body.target });
+                // only about a page that exists, stored under its own address
+                const { type, ms, target } = body;
+                getPages()
+                    .then(pages => {
+                        const page = typeof body.path === "string" && findPage(pages, body.path);
+                        if (page) {
+                            trackEvent(req, { type, path: seoMeta.normalizePath(page.pageUrl), ms, target });
+                        }
+                    })
+                    .catch(() => undefined);
             }
         } catch (err) {
             // not JSON: nothing to record
         }
+        res.status(204).end();
+    }
+);
+
+// What the browser would have blocked under the Report-Only policy (csp.js). The log is the
+// only output; always 204.
+const cspReportLimit = createRateLimit({ windowMs: MINUTE, max: 30 });
+app.post(
+    csp.REPORT_PATH,
+    bodyParser.json({
+        type: ["application/csp-report", "application/reports+json", "application/json"],
+        limit: "16kb"
+    }),
+    (req, res) => {
+        if (cspReportLimit.hit(req)) csp.logReport(req.body);
         res.status(204).end();
     }
 );
@@ -337,12 +431,47 @@ app.get("/api/page/", (req, res, next) => {
         .catch(next);
 });
 
-app.get("/api/appData/", (req, res, next) => {
-    Promise.all([
-        collections.pages.find({}).toArray().then(attachGalleries),
-        collections.posts.find({}).toArray()
-    ])
-        .then(([pages, posts]) => res.send({ pages, posts }))
+// The whole content for offline mode (~2.4 MB of JSON). Built once and kept until the
+// content changes (clearContentCaches) or PAGES_TTL passes, with an ETag from its hash: a
+// repeated request costs neither the database nor the serialization, and a browser that has
+// the current version gets a 304 without the body.
+let appDataCache = null;
+let appDataBuild = null;
+
+function getAppData() {
+    if (databaseError || !collections.pages) {
+        return Promise.reject(new Error("Database unavailable"));
+    }
+    return syncContentVersion().then(() => {
+        if (appDataCache && Date.now() - appDataCache.at < PAGES_TTL) return appDataCache;
+        if (appDataBuild) return appDataBuild;
+        const generation = cacheGeneration;
+        appDataBuild = Promise.all([
+            collections.pages.find({}).toArray().then(attachGalleries),
+            collections.posts.find({}).toArray()
+        ])
+            .then(([pages, posts]) => {
+                const body = JSON.stringify({ pages, posts });
+                const hash = crypto.createHash("sha1").update(body).digest("base64url");
+                const data = { body, etag: `"${hash}"`, at: Date.now() };
+                // a clear during the build: serve it this once, do not keep it
+                if (generation === cacheGeneration) appDataCache = data;
+                return data;
+            })
+            .finally(() => {
+                appDataBuild = null;
+            });
+        return appDataBuild;
+    });
+}
+
+app.get("/api/appData/", appDataLimit.middleware, (req, res, next) => {
+    getAppData()
+        .then(data => {
+            // res.send answers 304 by itself when If-None-Match matches this ETag
+            res.set("ETag", data.etag);
+            res.type("json").send(data.body);
+        })
         .catch(next);
 });
 
@@ -387,6 +516,7 @@ let cacheGeneration = 0;
 function clearContentCaches() {
     cacheGeneration++;
     pagesCache = null;
+    appDataCache = null;
     renderer.clear();
     console.log(new Date(), "[ssr] content changed, cache cleared");
 }
@@ -698,7 +828,7 @@ app.get(["/index.html", "/index.csr.html"], (req, res, next) => {
     getIndexHtml()
         .then(html => {
             res.set("Link", `<${siteUrl(req)}/>; rel="canonical"`);
-            res.type("html").send(html);
+            res.type("html").send(csp.withScriptPolicy(res, html));
         })
         .catch(next);
 });
@@ -713,12 +843,69 @@ app.get(Object.keys(REDIRECTS), (req, res) => {
 
 // CMS uploads: a day in the browser cache, then a cheap revalidation (ETag) – a file
 // replaced under the same name shows up by the next day at the latest.
-app.use("/uploads", express.static(`${__dirname}/uploads`, { maxAge: "1d" }));
+// An SVG or HTML file opened by its own address would run its scripts on the site's origin
+// (its IndexedDB, its cookies-free but same-origin requests). The sandbox CSP turns that
+// document into a unique origin without scripts; <img src="….svg"> is not affected. PDFs are
+// left out: Chrome does not open its PDF viewer in a sandboxed document.
+// It replaces the site-wide CSP above, so it repeats frame-ancestors.
+const UPLOADS_CSP =
+    "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; frame-ancestors 'self'; sandbox";
+app.use(
+    "/uploads",
+    (req, res, next) => {
+        if (!/\.pdf$/i.test(req.path)) res.set("Content-Security-Policy", UPLOADS_CSP);
+        next();
+    },
+    express.static(`${__dirname}/uploads`, { maxAge: "1d" })
+);
 // Resized WebP copies of CMS photos for srcset (images.js); cached in tmp/img-cache.
 const images = createImageResizer({
     uploadsDir: `${__dirname}/uploads`,
-    cacheDir: path.join(__dirname, "tmp", "img-cache")
+    cacheDir: path.join(__dirname, "tmp", "img-cache"),
+    allowFrame: (relative, frame) =>
+        getPages()
+            .then(pages => heroFrames(pages).has(frameKey(frame.name, relative, frame.x, frame.y)))
+            // Database down: the framings cannot be checked, and the hero must still load.
+            .catch(() => true),
+    limit: req => ({ ok: imageLimit.hit(req), retryAfter: imageLimit.retryAfter() })
 });
+
+// The framed copies the pages ask for: the home hero's slides on phones ("hero-phone", see
+// framedSrcsetOf in front/src/app/shared/srcset.ts – the path and the per cents are computed
+// the same way here). Any other position is refused, so the copies on disk stay as many as
+// the slides in the CMS.
+const UPLOADS_PREFIX = "/uploads/";
+const heroFramesCache = new WeakMap();
+
+function framePercent(value) {
+    const number = Math.round(Number.parseFloat(String(value ?? "")));
+    return Number.isFinite(number) ? Math.min(100, Math.max(0, number)) : 50;
+}
+
+function frameKey(name, relative, x, y) {
+    return `${name}|${relative}|${x}-${y}`;
+}
+
+function heroFrames(pages) {
+    let keys = heroFramesCache.get(pages);
+    if (keys) return keys;
+    keys = new Set();
+    pages.forEach(page =>
+        forEachRow(page, row => {
+            if (row.type !== "homepage_banner" || !Array.isArray(row.data.slides)) return;
+            row.data.slides.forEach(slide => {
+                const src = slide && typeof slide.image === "string" ? slide.image : "";
+                const at = src.indexOf(UPLOADS_PREFIX);
+                if (at < 0) return;
+                // The front encodes the path once (encodeURI of decodeURI); Express decodes it.
+                const relative = decodePath(src.slice(at + UPLOADS_PREFIX.length).split(/[?#]/)[0]);
+                keys.add(frameKey("hero-phone", relative, framePercent(slide.left_position), framePercent(slide.top_position)));
+            });
+        })
+    );
+    heroFramesCache.set(pages, keys);
+    return keys;
+}
 app.get("/img/:width/*", images.handler);
 app.get("/img/:frame/:position/:width/*", images.handler);
 // Self-hosted fonts (copied from @fontsource at build time): their names carry no hash, but the
@@ -775,13 +962,16 @@ app.get(["*"], (req, res, next) => {
                             .set("X-Render", renderLabel(result))
                             .type("html")
                             .send(
-                                injectSeo(
-                                    html,
-                                    buildSeoBlock(
-                                        metaForPage(page),
-                                        base,
-                                        canonical,
-                                        seoMeta.updatedIso(page)
+                                csp.withScriptPolicy(
+                                    res,
+                                    injectSeo(
+                                        html,
+                                        buildSeoBlock(
+                                            metaForPage(page),
+                                            base,
+                                            canonical,
+                                            seoMeta.updatedIso(page)
+                                        )
                                     )
                                 )
                             );
@@ -802,23 +992,22 @@ app.get(["*"], (req, res, next) => {
                         .set("Retry-After", "120")
                         .set("X-Render", renderLabel(null))
                         .type("html")
-                        .send(injectSeo(html, defaultSeoBlock(base)))
+                        .send(csp.withScriptPolicy(res, injectSeo(html, defaultSeoBlock(base))))
                 )
         )
         .catch(next);
 });
 
+// The full error goes to the log only: its message can name the database host. A client
+// error from the body parser (invalid JSON 400, too large 413) keeps its status; anything
+// else is the server's fault – 500, so the front and crawlers do not take it for a bad request.
 app.use((err, req, res, next) => {
-    console.log(err);
-    console.log(err.message);
-    if (typeof err === "string") {
-        res.status(422).send({ error: err });
-    } else if (typeof err.message === "string") {
-        res.status(422).send({ error: err.message });
-    } else if (err.errors) {
-        const firstError = Object.keys(err.errors)[0];
-        res.status(422).send({ error: err.errors[firstError].message });
+    console.error(err);
+    if (res.headersSent) return next(err);
+    const status = Number(err && (err.status || err.statusCode));
+    if (status >= 400 && status < 500) {
+        res.status(status).send({ error: "Bad request" });
     } else {
-        res.status(422).send(err.message);
+        res.status(500).send({ error: "Internal error" });
     }
 });

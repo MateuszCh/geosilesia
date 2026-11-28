@@ -38,7 +38,7 @@
 <ng-template #leadTpl>
     @if (hero().lead) {
         <div class="page-hero__lead-text lead prose"
-             [appHtml]="hero().lead | trusted"></div>
+             [appHtml]="hero().lead"></div>
     }
 </ng-template>
 
@@ -86,7 +86,7 @@
             <div class="page-hero__below container">
                 @if (hero().lead) {
                     <div class="page-hero__lead lead prose"
-                         [appHtml]="hero().lead | trusted"></div>
+                         [appHtml]="hero().lead"></div>
                 }
                 <ng-container *ngTemplateOutlet="extrasTpl" />
             </div>

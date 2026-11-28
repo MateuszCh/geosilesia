@@ -21,7 +21,6 @@ import { PostRefs, pickPosts, postIds } from '../../core/post-refs';
 import { MONTHS_SHORT, dateParts, toDate } from '../../core/dates';
 import { EventPost } from '../../models/post.model';
 import { NewsData } from '../../models/row.model';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
 import { HtmlDirective } from '../../shared/html.directive';
 
@@ -119,7 +118,7 @@ function pickedViews(picked: PostRefs | null | undefined, events: EventPost[]): 
 @Component({
     selector: 'app-news',
     templateUrl: './news.html',
-    imports: [RouterLink, TrustedPipe, HtmlDirective],
+    imports: [RouterLink, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class News implements OnInit {

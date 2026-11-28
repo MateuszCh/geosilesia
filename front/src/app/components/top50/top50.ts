@@ -20,7 +20,6 @@ import { internalLink, isExternalLink } from '../../core/cms-link';
 import { postIds } from '../../core/post-refs';
 import { Top50PostData } from '../../models/post.model';
 import { Row, Top50Data } from '../../models/row.model';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { HtmlDirective } from '../../shared/html.directive';
 import { RowView } from '../row/row';
 import { PhotoDirective } from '../../shared/photo-hold';
@@ -62,7 +61,7 @@ function chips(links: Top50PostData['links']): Stop['links'] {
     selector: 'app-top50',
     templateUrl: './top50.html',
     // RowView draws the component under the route and itself imports this one: forwardRef breaks the cycle.
-    imports: [NgTemplateOutlet, RouterLink, TrustedPipe, HtmlDirective, forwardRef(() => RowView), PhotoDirective],
+    imports: [NgTemplateOutlet, RouterLink, HtmlDirective, forwardRef(() => RowView), PhotoDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Top50 implements OnInit {

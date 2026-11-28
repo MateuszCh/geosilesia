@@ -7,7 +7,8 @@ import {
     inject,
     signal
 } from '@angular/core';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
+import { SwUpdate } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Footer } from './components/footer/footer';
@@ -37,6 +38,7 @@ export class App {
     private readonly resource = inject(ResourceService);
     private readonly visitEvents = inject(VisitEventsService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly updates = inject(SwUpdate);
 
     constructor() {
         this.router.events
@@ -64,6 +66,7 @@ export class App {
             this.schedulePrefetch(view);
 
             this.cleanLegacyCaches();
+            this.watchUpdates(view);
             // visible time and link clicks for the visit statistics (no cookies)
             this.visitEvents.start();
         });
@@ -75,9 +78,13 @@ export class App {
 
     /**
      * Offline prefetch: after the page has loaded, a quiet moment and an idle main thread.
-     * Skipped when the visitor asked to save data or is on a 2G-class connection.
+     * Only in the installed app (started from the home screen): that is where someone plans
+     * to use the site without a network, in the field. A visitor in a browser tab gets the
+     * pages they open stored on the way, not the whole site (~0.5 MB). Skipped as well when
+     * the visitor asked to save data or is on a 2G-class connection.
      */
     private schedulePrefetch(view: Window): void {
+        if (!isInstalledApp(view)) return;
         const connection = (view.navigator as Navigator & {
             connection?: { saveData?: boolean; effectiveType?: string };
         }).connection;
@@ -107,6 +114,37 @@ export class App {
         });
     }
 
+    /**
+     * After a deployment the service worker keeps serving the version the tab started with,
+     * and a phone keeps an installed app in memory for days – while the API already sends data
+     * shaped for the new front. Once the new version is downloaded, the next link the reader
+     * follows inside the app is opened as a full load instead, which starts the new version
+     * without cutting into what they are reading. A worker that lost files of its own version
+     * cannot serve the app at all: then the page reloads at once.
+     */
+    private watchUpdates(view: Window): void {
+        if (!this.updates.isEnabled) return;
+        let ready = false;
+        this.updates.versionUpdates
+            .pipe(
+                filter(event => event.type === 'VERSION_READY'),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe(() => (ready = true));
+        this.router.events
+            .pipe(
+                filter((event): event is NavigationStart => event instanceof NavigationStart),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe(event => {
+                // popstate too: back/forward also lands on the new version
+                if (ready) view.location.assign(event.url);
+            });
+        this.updates.unrecoverable
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => view.location.reload());
+    }
+
     private onNavigated(): void {
         // The photo preview may have locked page scrolling; leaving the gallery through
         // a link has to unlock it.
@@ -134,4 +172,16 @@ export class App {
                 // there is simply nothing to clean up.
             });
     }
+}
+
+/**
+ * Whether the site runs as the installed app: the display mode the manifest asks for
+ * ("standalone"), or Safari's own flag on iOS, where an app added to the home screen does
+ * not always report the display mode.
+ */
+function isInstalledApp(view: Window): boolean {
+    return (
+        view.matchMedia?.('(display-mode: standalone)').matches === true ||
+        (view.navigator as Navigator & { standalone?: boolean }).standalone === true
+    );
 }

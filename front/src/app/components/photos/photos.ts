@@ -6,7 +6,6 @@ import { ResourceService } from '../../core/resource.service';
 import { internalLink } from '../../core/cms-link';
 import { GalleryImage, PhotosData, Slide } from '../../models/row.model';
 import { AlbumSummary } from '../../models/post.model';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
 import { photoCredit } from '../../shared/photo-credit';
 import { PhotoViewer, ViewerPhoto } from '../photo-viewer/photo-viewer';
@@ -63,7 +62,7 @@ function fromFile(file: GalleryImage): PhotoView {
 @Component({
     selector: 'app-photos',
     templateUrl: './photos.html',
-    imports: [RouterLink, TrustedPipe, PhotoViewer, HtmlDirective, SrcsetPipe, PhotoDirective],
+    imports: [RouterLink, PhotoViewer, HtmlDirective, SrcsetPipe, PhotoDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Photos implements OnInit {

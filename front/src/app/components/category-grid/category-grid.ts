@@ -8,7 +8,6 @@ import { categoryLook } from '../../core/categories';
 import { internalLink } from '../../core/cms-link';
 import { IconPost, IconPostData } from '../../models/post.model';
 import { CategoryGridData } from '../../models/row.model';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { plural } from '../../shared/plural';
 import { HtmlDirective } from '../../shared/html.directive';
 
@@ -16,7 +15,7 @@ import { HtmlDirective } from '../../shared/html.directive';
 @Component({
     selector: 'app-category-grid',
     templateUrl: './category-grid.html',
-    imports: [RouterLink, TrustedPipe, HtmlDirective],
+    imports: [RouterLink, HtmlDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CategoryGrid implements OnInit {

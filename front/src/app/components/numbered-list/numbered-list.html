@@ -6,7 +6,7 @@
             }
             @if (component().intro) {
                 <div class="text-block__p prose"
-                     [appHtml]="component().intro | trusted"></div>
+                     [appHtml]="component().intro"></div>
             }
         </div>
     }
@@ -17,7 +17,7 @@
                     <span class="points__number"
                           [style.border-color]="colors[$index % colors.length]">{{ $index + 1 }}</span>
                     <div class="points__text prose"
-                         [appHtml]="item.text | trusted"></div>
+                         [appHtml]="item.text"></div>
                 </li>
             }
         </ol>
@@ -50,7 +50,7 @@
                                 <div class="numbered__text">
                                     @if (item.text) {
                                         <div class="prose"
-                                             [appHtml]="item.text | trusted"></div>
+                                             [appHtml]="item.text"></div>
                                     }
                                     @if (item.link) {
                                         <a class="more-link"

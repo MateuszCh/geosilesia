@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { NumberedListData } from '../../models/row.model';
-import { TrustedPipe } from '../../shared/trusted.pipe';
 import { photoCredit } from '../../shared/photo-credit';
 import { HtmlDirective } from '../../shared/html.directive';
 import { PhotoDirective } from '../../shared/photo-hold';
@@ -9,7 +8,7 @@ import { PhotoDirective } from '../../shared/photo-hold';
 @Component({
     selector: 'app-numbered-list',
     templateUrl: './numbered-list.html',
-    imports: [TrustedPipe, HtmlDirective, PhotoDirective],
+    imports: [HtmlDirective, PhotoDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NumberedList {
