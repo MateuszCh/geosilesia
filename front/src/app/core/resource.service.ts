@@ -8,6 +8,27 @@ import { VisitEventsService } from './visit-events.service';
 import { Page, PagesResponse } from '../models/page.model';
 import { AlbumSummary, AppData, Post } from '../models/post.model';
 
+/** localStorage key: when the last /api/appData prefetch was stored in IndexedDB. */
+const PREFETCH_AT_KEY = 'geosilesia:appDataAt';
+const PREFETCH_EVERY_MS = 24 * 60 * 60 * 1000;
+
+/** Storage can be blocked (private mode, site data off): then the mark is simply missing. */
+function readStorage(key: string): string | null {
+    try {
+        return localStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+function writeStorage(key: string, value: string): void {
+    try {
+        localStorage.setItem(key, value);
+    } catch {
+        // nothing to remember – the next visit prefetches again
+    }
+}
+
 /**
  * The single place all API data passes through.
  *
@@ -112,15 +133,33 @@ export class ResourceService {
     /**
      * Bulk prefetch for offline mode – the counterpart of pwa.run.js. Fired once after the
      * app starts, and deliberately delayed: it is the heaviest request of the site and
-     * must not compete for bandwidth with the content the user is looking at.
+     * must not compete for bandwidth with the content the user is looking at. At most once
+     * a day: every page the reader opens is stored on the way anyway, so a day-old copy of
+     * the rest is good enough offline, and a phone does not fetch ~0.5 MB on every visit.
      */
     prefetchAppData(): void {
         if (!this.idb.isAvailable()) return;
-        this.api
-            .get<AppData>('/api/appData')
-            .pipe(catchError(() => of({} as AppData)))
-            .subscribe(data => {
-                void this.idb.replaceAll(data.pages ?? [], data.posts ?? []);
-            });
+        void this.prefetchDue().then(due => {
+            if (!due) return;
+            this.api
+                .get<AppData>('/api/appData')
+                .pipe(catchError(() => of({} as AppData)))
+                .subscribe(data => {
+                    if (!data.pages?.length) return;
+                    void this.idb
+                        .replaceAll(data.pages, data.posts ?? [])
+                        .then(() => writeStorage(PREFETCH_AT_KEY, String(Date.now())))
+                        .catch(() => undefined);
+                });
+        });
+    }
+
+    private async prefetchDue(): Promise<boolean> {
+        const at = Number(readStorage(PREFETCH_AT_KEY));
+        const age = Date.now() - at;
+        if (!(at > 0 && age >= 0 && age < PREFETCH_EVERY_MS)) return true;
+        // The mark outlives a cleared or evicted database: without the home page in it, the
+        // content is fetched again.
+        return !(await this.idb.getPage('/').catch(() => undefined));
     }
 }

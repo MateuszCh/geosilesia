@@ -17,6 +17,8 @@ site visitors.
 | `ssr.js` | Renders pages with the Angular server bundle and caches the HTML for 1 hour |
 | `shared/seo-meta.js` | SEO rules (title, description, paths) shared by the server and the browser |
 | `images.js` | Resized WebP copies of CMS photos for `srcset` (`/img/<width>/…`, see below) |
+| `rate-limit.js` | Per-IP request limits in memory (see "Security") |
+| `csp.js` | The `script-src` policy of HTML responses, Report-Only for now (see "Security") |
 | `visits.js` | Visit statistics without cookies: page views and events in MongoDB, read by the CMS (see below) |
 | `front/` | Angular 22 application with server-side rendering and hydration |
 | `config.json` | Local configuration, not in git — copy `config.example.json` |
@@ -283,6 +285,28 @@ node scripts/warm-images.js   # every photo × every width; skips copies already
 - The first navigation on a server-rendered page skips IndexedDB in the resolver (the
   `RENDERED_ON_SERVER` flag in TransferState) — otherwise an older copy of the page from
   the offline database would not match the HTML.
+
+## Security
+
+- **Headers.** `app.js` sends HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy`,
+  `Permissions-Policy` and a CSP with `frame-ancestors`, `object-src` and `base-uri` on
+  every response; files under `/uploads` get a sandbox CSP instead (see "Images").
+- **`script-src` is Report-Only.** HTML responses carry
+  `Content-Security-Policy-Report-Only` with `'self'`, Google Maps and the hashes of the
+  inline scripts of that very document (`csp.js`: the SSR event replay bootstrap differs
+  from page to page, so the hashes are computed when the page is sent). Browsers report what
+  it would block to `POST /api/csp-report`, and the server logs one `[csp]` line per distinct
+  violation. When the log stays quiet for a while, rename the header to
+  `Content-Security-Policy` in `withScriptPolicy`; a new third-party script then needs its
+  host in `SCRIPT_HOSTS` first.
+- **Request limits** (`rate-limit.js`, per IP and minute, counted in each process):
+  statistics 120 events (`/api/visit-event` and `X-Page-View`; above it they are dropped
+  without an error), `/api/appData` 10, `/img` 600, CSP reports 30. Over the limit:
+  `429` with `Retry-After`. The IP comes from `X-Forwarded-For` through `trust proxy`.
+- **`/api/appData`** (all content for offline mode, ~2.4 MB) is built once and kept in
+  memory with an ETag until the content version changes, like the SSR cache; a browser with
+  the current copy gets `304`. The front fetches it at most once a day (the time of the
+  last stored prefetch is in `localStorage`, `geosilesia:appDataAt`).
 
 ## Do not change without checking
 

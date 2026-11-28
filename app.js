@@ -10,7 +10,10 @@ const express = require("express"),
     { createRenderer } = require("./ssr"),
     { publishedPages } = require("./pages"),
     { createVisitTracker } = require("./visits"),
-    { createImageResizer } = require("./images");
+    { createImageResizer } = require("./images"),
+    { createRateLimit } = require("./rate-limit"),
+    csp = require("./csp"),
+    crypto = require("crypto");
 
 const app = express();
 app.set("port", process.env.PORT || 3000);
@@ -31,8 +34,7 @@ app.use(compression());
 
 // Security headers on every response – pages, API, static files and uploads. Nothing on the
 // hosting adds them (checked on production 2026-11-27). The CSP holds only directives that
-// break nothing: script-src would need the hashes of the inline scripts (index.html, the SSR
-// event replay) and the Google Maps hosts, so it is left for a Report-Only pass first.
+// break nothing. script-src is sent on HTML responses only, for now as Report-Only (csp.js).
 // HSTS without includeSubDomains: not every subdomain is known to serve HTTPS. Browsers ignore
 // it over plain http, so local development is not affected.
 app.disable("x-powered-by");
@@ -293,12 +295,23 @@ app.get("/api/posts/:type", (req, res, next) => {
         .catch(next);
 });
 
+// Per-IP limits (rate-limit.js), counted per minute in each process. Statistics: a person
+// sends a view, an engagement and maybe a click per page, so 120 events a minute is far
+// above anyone reading; over it the events are dropped silently – a beacon never reads the
+// answer and the page itself is still served. /api/appData: one per full visit at most.
+// /img: a long gallery scrolled fast asks for a few hundred copies.
+const MINUTE = 60 * 1000;
+const trackingLimit = createRateLimit({ windowMs: MINUTE, max: 120 });
+const appDataLimit = createRateLimit({ windowMs: MINUTE, max: 10 });
+const imageLimit = createRateLimit({ windowMs: MINUTE, max: 600 });
+
 // Only requests the front marks as page views count as in-app navigation: the router
 // resolver and the page component's refresh send `X-Page-View: 1`, while other reads of a
 // page (the home page banner, for one) do not.
 // A link inside the site to a page that does not exist is recorded too: a broken link.
 function trackNavigation(req, pageUrl, found) {
     if (req.get("x-page-view") !== "1") return;
+    if (!trackingLimit.hit(req)) return;
     if (found) {
         trackVisit(req, { path: seoMeta.normalizePath(pageUrl), source: "nav" });
     } else {
@@ -331,6 +344,7 @@ app.post(
     "/api/visit-event",
     bodyParser.text({ type: "*/*", limit: "2kb" }),
     (req, res) => {
+        if (!trackingLimit.hit(req)) return res.status(204).end();
         try {
             // text/plain from sendBeacon; application/json is already parsed above
             const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
@@ -367,6 +381,21 @@ app.post(
     }
 );
 
+// What the browser would have blocked under the Report-Only policy (csp.js). The log is the
+// only output; always 204.
+const cspReportLimit = createRateLimit({ windowMs: MINUTE, max: 30 });
+app.post(
+    csp.REPORT_PATH,
+    bodyParser.json({
+        type: ["application/csp-report", "application/reports+json", "application/json"],
+        limit: "16kb"
+    }),
+    (req, res) => {
+        if (cspReportLimit.hit(req)) csp.logReport(req.body);
+        res.status(204).end();
+    }
+);
+
 app.get("/api/page/", (req, res, next) => {
     collections.pages
         .find({ pageUrl: "/" })
@@ -378,12 +407,47 @@ app.get("/api/page/", (req, res, next) => {
         .catch(next);
 });
 
-app.get("/api/appData/", (req, res, next) => {
-    Promise.all([
-        collections.pages.find({}).toArray().then(attachGalleries),
-        collections.posts.find({}).toArray()
-    ])
-        .then(([pages, posts]) => res.send({ pages, posts }))
+// The whole content for offline mode (~2.4 MB of JSON). Built once and kept until the
+// content changes (clearContentCaches) or PAGES_TTL passes, with an ETag from its hash: a
+// repeated request costs neither the database nor the serialization, and a browser that has
+// the current version gets a 304 without the body.
+let appDataCache = null;
+let appDataBuild = null;
+
+function getAppData() {
+    if (databaseError || !collections.pages) {
+        return Promise.reject(new Error("Database unavailable"));
+    }
+    return syncContentVersion().then(() => {
+        if (appDataCache && Date.now() - appDataCache.at < PAGES_TTL) return appDataCache;
+        if (appDataBuild) return appDataBuild;
+        const generation = cacheGeneration;
+        appDataBuild = Promise.all([
+            collections.pages.find({}).toArray().then(attachGalleries),
+            collections.posts.find({}).toArray()
+        ])
+            .then(([pages, posts]) => {
+                const body = JSON.stringify({ pages, posts });
+                const hash = crypto.createHash("sha1").update(body).digest("base64url");
+                const data = { body, etag: `"${hash}"`, at: Date.now() };
+                // a clear during the build: serve it this once, do not keep it
+                if (generation === cacheGeneration) appDataCache = data;
+                return data;
+            })
+            .finally(() => {
+                appDataBuild = null;
+            });
+        return appDataBuild;
+    });
+}
+
+app.get("/api/appData/", appDataLimit.middleware, (req, res, next) => {
+    getAppData()
+        .then(data => {
+            // res.send answers 304 by itself when If-None-Match matches this ETag
+            res.set("ETag", data.etag);
+            res.type("json").send(data.body);
+        })
         .catch(next);
 });
 
@@ -428,6 +492,7 @@ let cacheGeneration = 0;
 function clearContentCaches() {
     cacheGeneration++;
     pagesCache = null;
+    appDataCache = null;
     renderer.clear();
     console.log(new Date(), "[ssr] content changed, cache cleared");
 }
@@ -739,7 +804,7 @@ app.get(["/index.html", "/index.csr.html"], (req, res, next) => {
     getIndexHtml()
         .then(html => {
             res.set("Link", `<${siteUrl(req)}/>; rel="canonical"`);
-            res.type("html").send(html);
+            res.type("html").send(csp.withScriptPolicy(res, html));
         })
         .catch(next);
 });
@@ -816,8 +881,8 @@ function heroFrames(pages) {
     heroFramesCache.set(pages, keys);
     return keys;
 }
-app.get("/img/:width/*", images.handler);
-app.get("/img/:frame/:position/:width/*", images.handler);
+app.get("/img/:width/*", imageLimit.middleware, images.handler);
+app.get("/img/:frame/:position/:width/*", imageLimit.middleware, images.handler);
 // Self-hosted fonts (copied from @fontsource at build time): their names carry no hash, but the
 // files only change with a font package upgrade, so a month in the browser cache is safe and
 // saves a revalidation round trip on every reload.
@@ -872,13 +937,16 @@ app.get(["*"], (req, res, next) => {
                             .set("X-Render", renderLabel(result))
                             .type("html")
                             .send(
-                                injectSeo(
-                                    html,
-                                    buildSeoBlock(
-                                        metaForPage(page),
-                                        base,
-                                        canonical,
-                                        seoMeta.updatedIso(page)
+                                csp.withScriptPolicy(
+                                    res,
+                                    injectSeo(
+                                        html,
+                                        buildSeoBlock(
+                                            metaForPage(page),
+                                            base,
+                                            canonical,
+                                            seoMeta.updatedIso(page)
+                                        )
                                     )
                                 )
                             );
@@ -899,7 +967,7 @@ app.get(["*"], (req, res, next) => {
                         .set("Retry-After", "120")
                         .set("X-Render", renderLabel(null))
                         .type("html")
-                        .send(injectSeo(html, defaultSeoBlock(base)))
+                        .send(csp.withScriptPolicy(res, injectSeo(html, defaultSeoBlock(base))))
                 )
         )
         .catch(next);
