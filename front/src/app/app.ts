@@ -3,16 +3,19 @@ import {
     Component,
     DOCUMENT,
     DestroyRef,
+    PLATFORM_ID,
     afterNextRender,
     inject,
     signal
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Footer } from './components/footer/footer';
 import { Header } from './components/header/header';
+import { watchBrokenImages } from './core/image-fallback';
 import { ResourceService } from './core/resource.service';
 import { ScrollService } from './core/scroll.service';
 import { VisitEventsService } from './core/visit-events.service';
@@ -41,6 +44,12 @@ export class App {
     private readonly updates = inject(SwUpdate);
 
     constructor() {
+        // Before the first render, so the images it creates are covered from the start.
+        const view = this.doc.defaultView;
+        if (isPlatformBrowser(inject(PLATFORM_ID)) && view) {
+            this.destroyRef.onDestroy(watchBrokenImages(this.doc, view));
+        }
+
         this.router.events
             .pipe(
                 filter(event => event instanceof NavigationEnd),
